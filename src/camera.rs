@@ -10,19 +10,25 @@ use crate::transforms::OPENGL_TO_WGPU_MATRIX;
 #[derive(Copy, Clone)]
 pub struct BasicCamera {
     pub transform: Transform,
+    pub aspect_ratio: f32,
+    pub z_near: f32,
+    pub z_far: f32
 }
 
 impl BasicCamera {
-    pub fn new() -> BasicCamera {
+    pub fn new(aspect_ratio: f32) -> BasicCamera {
         BasicCamera {
-            transform: Transform::new()
+            transform: Transform::new(),
+            aspect_ratio,
+            z_near: 0.1,
+            z_far: 100.0
         }
     }
     pub fn get_view_matrix(&self) -> Matrix4<f32> {
         Matrix4::look_at_rh(self.transform.position, Point3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 1.0, 0.0))
     }
     pub fn get_projection_matrix(&self) -> Matrix4<f32> {
-        OPENGL_TO_WGPU_MATRIX * perspective(Rad(2.0 * PI / 5.0), 16.0 / 9.0, 0.1, 100.0)
+        OPENGL_TO_WGPU_MATRIX * perspective(Rad(2.0 * PI / 5.0), self.aspect_ratio, self.z_near, self.z_far)
     }
 }
 
@@ -31,9 +37,9 @@ pub struct FreeCamera {
 }
 
 impl FreeCamera {
-    pub fn new() -> FreeCamera {
+    pub fn new(aspect_ratio: f32) -> FreeCamera {
         FreeCamera {
-            basic_camera: BasicCamera::new()
+            basic_camera: BasicCamera::new(aspect_ratio)
         }
     }
 }

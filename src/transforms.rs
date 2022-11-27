@@ -63,60 +63,6 @@ impl InitWgpu {
     }
 }
 
-pub fn create_view(camera_position: Point3<f32>, look_direction: Point3<f32>, up_direction: Vector3<f32>) -> Matrix4<f32> {
-    Matrix4::look_at_rh(camera_position, look_direction, up_direction)
-}
-
-pub fn create_projection(aspect:f32, is_perspective:bool) -> Matrix4<f32> {
-    let project_mat:Matrix4<f32>;
-    if is_perspective {
-        project_mat = OPENGL_TO_WGPU_MATRIX * perspective(Rad(2.0*PI/5.0), aspect, 0.1, 100.0);
-    } else {
-        project_mat = OPENGL_TO_WGPU_MATRIX * ortho(-4.0, 4.0, -3.0, 3.0, -1.0, 6.0);
-    }
-    project_mat
-}
-
-pub fn create_view_projection(camera_position: Point3<f32>, look_direction: Point3<f32>, up_direction: Vector3<f32>,
-                              aspect:f32, is_perspective:bool) -> (Matrix4<f32>, Matrix4<f32>, Matrix4<f32>) {
-
-    // construct view matrix
-    let view_mat = Matrix4::look_at_rh(camera_position, look_direction, up_direction);
-
-    // construct projection matrix
-    let project_mat:Matrix4<f32> = create_projection(aspect, is_perspective);
-
-    // contruct view-projection matrix
-    let view_project_mat = project_mat * view_mat;
-
-    // return various matrices
-    return (view_mat, project_mat, view_project_mat)
-}
-
-pub fn create_perspective_projection(fovy:Rad<f32>, aspect:f32, near: f32, far:f32) -> Matrix4<f32> {
-    OPENGL_TO_WGPU_MATRIX * perspective(fovy, aspect, near, far)
-}
-
-pub fn create_projection_ortho(left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) -> Matrix4<f32> {
-    OPENGL_TO_WGPU_MATRIX * ortho(left, right, bottom, top, near, far)
-}
-
-pub fn create_view_projection_ortho(left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32, camera_position: Point3<f32>,
-                                    look_direction: Point3<f32>, up_direction: Vector3<f32>) -> (Matrix4<f32>, Matrix4<f32>, Matrix4<f32>) {
-
-    // construct view matrix
-    let view_mat = Matrix4::look_at_rh(camera_position, look_direction, up_direction);
-
-    // construct projection matrix
-    let project_mat = OPENGL_TO_WGPU_MATRIX * ortho(left, right, bottom, top, near, far);
-
-    // contruct view-projection matrix
-    let view_project_mat = project_mat * view_mat;
-
-    // return various matrices
-    (view_mat, project_mat, view_project_mat)
-}
-
 pub fn create_transforms(translation:[f32; 3], rotation:[f32; 3], scaling:[f32; 3]) -> Matrix4<f32> {
 
     // create transformation matrices

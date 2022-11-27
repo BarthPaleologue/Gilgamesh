@@ -44,7 +44,7 @@ impl State {
             source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
         });
 
-        let mut camera = FreeCamera::new();
+        let mut camera = FreeCamera::new(window.inner_size().width as f32 / window.inner_size().height as f32);
         let basic_camera = camera.basic_camera;
 
         camera.tf().set_position(3.0, 1.5, 3.0);
@@ -62,7 +62,7 @@ impl State {
         let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
         let uniform_buffer = init.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Uniform Buffer"),
-            contents: bytemuck::cast_slice(mvp_ref),
+            contents: cast_slice(mvp_ref),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
@@ -118,10 +118,9 @@ impl State {
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
-                //cull_mode: Some(wgpu::Face::Back),
+                cull_mode: Some(wgpu::Face::Back),
                 ..Default::default()
             },
-            //depth_stencil: None,
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: wgpu::TextureFormat::Depth24Plus,
                 depth_write_enabled: true,
@@ -161,7 +160,8 @@ impl State {
             self.init.config.height = new_size.height;
             self.init.surface.configure(&self.init.device, &self.init.config);
 
-            self.project_mat = transforms::create_projection(new_size.width as f32 / new_size.height as f32, IS_PERSPECTIVE);
+            self.basic_camera.aspect_ratio = new_size.width as f32 / new_size.height as f32;
+            self.project_mat = self.basic_camera.get_projection_matrix();
             let mvp_mat = self.project_mat * self.view_mat * self.model_mat;
             let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
             self.init.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(mvp_ref));
@@ -174,8 +174,8 @@ impl State {
     }
 
     fn update(&mut self, dt: std::time::Duration) {
-        let dt = ANIMATION_SPEED * dt.as_secs_f32();
-        let model_mat = transforms::create_transforms([0.0,0.0,0.0], [0.0, dt, 0.0], [1.0, 1.0, 1.0]);
+        let dt = dt.as_secs_f32();
+        let model_mat = transforms::create_transforms([0.0,0.0,0.0], [0.0, ANIMATION_SPEED * dt, 0.0], [1.0, 1.0, 1.0]);
         let mvp_mat = self.project_mat * self.view_mat * model_mat;
         let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
         self.init.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(mvp_ref));
