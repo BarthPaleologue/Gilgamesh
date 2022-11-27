@@ -32,8 +32,6 @@ struct State {
     model_mat: Matrix4<f32>,
     basic_camera: BasicCamera,
     cube: Mesh,
-    view_mat: Matrix4<f32>,
-    project_mat: Matrix4<f32>,
 }
 
 impl State {
@@ -45,18 +43,17 @@ impl State {
             source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
         });
 
-        let mut camera = FreeCamera::new(window.inner_size().width as f32 / window.inner_size().height as f32);
-        let basic_camera = camera.basic_camera;
+        let mut free_camera = FreeCamera::new(window.inner_size().width as f32 / window.inner_size().height as f32);
 
-        camera.tf().set_position(3.0, 1.5, 3.0);
+        free_camera.tf().set_position(3.0, 1.5, 3.0);
 
         let cube = Mesh::new_cube();
 
         let model_mat = cube.transform.compute_world_matrix();
 
-        let view_mat = camera.basic_camera.get_view_matrix();
+        let view_mat = free_camera.basic_camera.get_view_matrix();
 
-        let project_mat = camera.basic_camera.get_projection_matrix();
+        let project_mat = free_camera.basic_camera.get_projection_matrix();
 
         let view_project_mat = project_mat * view_mat;
 
@@ -148,10 +145,8 @@ impl State {
             uniform_buffer,
             uniform_bind_group,
             model_mat,
-            basic_camera,
+            basic_camera: free_camera.basic_camera,
             cube,
-            view_mat,
-            project_mat,
         }
     }
 
@@ -163,8 +158,8 @@ impl State {
             self.init.surface.configure(&self.init.device, &self.init.config);
 
             self.basic_camera.aspect_ratio = new_size.width as f32 / new_size.height as f32;
-            self.project_mat = self.basic_camera.get_projection_matrix();
-            let mvp_mat = self.project_mat * self.view_mat * self.model_mat;
+            //self.project_mat = self.basic_camera.get_projection_matrix();
+            let mvp_mat = self.basic_camera.get_projection_matrix() * self.basic_camera.get_view_matrix() * self.model_mat;
             let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
             self.init.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(mvp_ref));
         }
@@ -179,7 +174,7 @@ impl State {
         let dt = dt.as_secs_f32();
         self.cube.transform.rotation.y = ANIMATION_SPEED * dt;
         let model_mat = self.cube.transform.compute_world_matrix();
-        let mvp_mat = self.project_mat * self.view_mat * model_mat;
+        let mvp_mat = self.basic_camera.get_projection_matrix() * self.basic_camera.get_view_matrix() * model_mat;
         let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
         self.init.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(mvp_ref));
     }
