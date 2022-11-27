@@ -31,6 +31,7 @@ struct State {
     uniform_bind_group: wgpu::BindGroup,
     model_mat: Matrix4<f32>,
     basic_camera: BasicCamera,
+    cube: Mesh,
     view_mat: Matrix4<f32>,
     project_mat: Matrix4<f32>,
 }
@@ -49,7 +50,9 @@ impl State {
 
         camera.tf().set_position(3.0, 1.5, 3.0);
 
-        let model_mat = transforms::create_transforms([0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [1.0, 1.0, 1.0]);
+        let cube = Mesh::new_cube();
+
+        let model_mat = cube.transform.compute_world_matrix();
 
         let view_mat = camera.basic_camera.get_view_matrix();
 
@@ -132,8 +135,6 @@ impl State {
             multiview: None,
         });
 
-        let cube = Mesh::new_cube();
-
         let vertex_buffer = init.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
             contents: cast_slice(&zip_vertex_data(&cube)),
@@ -148,6 +149,7 @@ impl State {
             uniform_bind_group,
             model_mat,
             basic_camera,
+            cube,
             view_mat,
             project_mat,
         }
@@ -175,7 +177,8 @@ impl State {
 
     fn update(&mut self, dt: std::time::Duration) {
         let dt = dt.as_secs_f32();
-        let model_mat = transforms::create_transforms([0.0,0.0,0.0], [0.0, ANIMATION_SPEED * dt, 0.0], [1.0, 1.0, 1.0]);
+        self.cube.transform.rotation.y = ANIMATION_SPEED * dt;
+        let model_mat = self.cube.transform.compute_world_matrix();
         let mvp_mat = self.project_mat * self.view_mat * model_mat;
         let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
         self.init.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(mvp_ref));
