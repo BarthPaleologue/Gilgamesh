@@ -1,4 +1,4 @@
-mod transforms;
+mod init_wgpu;
 mod vertex_data;
 mod transform;
 mod camera;
@@ -24,7 +24,7 @@ const IS_PERSPECTIVE: bool = true;
 const ANIMATION_SPEED: f32 = 1.0;
 
 struct State {
-    init: transforms::InitWgpu,
+    init: init_wgpu::InitWgpu,
     pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     uniform_buffer: wgpu::Buffer,
@@ -36,7 +36,7 @@ struct State {
 
 impl State {
     async fn new(window: &Window) -> State {
-        let init = transforms::InitWgpu::init_wgpu(window).await;
+        let init = init_wgpu::InitWgpu::init_wgpu(window).await;
 
         let shader = init.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
