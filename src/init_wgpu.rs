@@ -20,8 +20,8 @@ pub struct InitWgpu {
 impl InitWgpu {
     pub async fn init_wgpu(window: &Window) -> Self {
         let size = window.inner_size();
-        //let instance = wgpu::Instance::new(wgpu::Backends::all());
-        let instance = wgpu::Instance::new(wgpu::Backends::VULKAN);
+        let instance = wgpu::Instance::new(wgpu::Backends::all());
+        //let instance = wgpu::Instance::new(wgpu::Backends::VULKAN);
         let surface = unsafe { instance.create_surface(window) };
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
