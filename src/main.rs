@@ -4,8 +4,7 @@ mod transform;
 mod camera;
 mod mesh;
 
-use std::{iter, mem};
-use std::borrow::Borrow;
+use std::{iter};
 
 use camera::*;
 use transform::{Transform};
@@ -15,48 +14,14 @@ use winit::{
     event_loop::{EventLoop, ControlFlow},
     window::{Window, WindowBuilder},
 };
-use bytemuck::{Pod, Zeroable, cast_slice};
+use bytemuck::{cast_slice};
 use wgpu::util::DeviceExt;
 
 use cgmath::*;
+use crate::mesh::{Vertex, Mesh, zip_vertex_data};
 
 const IS_PERSPECTIVE: bool = true;
 const ANIMATION_SPEED: f32 = 1.0;
-
-#[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
-struct Vertex {
-    position: [f32; 4],
-    color: [f32; 4],
-}
-
-fn vertex(p: [f32; 3], c: [f32; 3]) -> Vertex {
-    Vertex {
-        position: [p[0], p[1], p[2], 1.0],
-        color: [c[0], c[1], c[2], 1.0],
-    }
-}
-
-fn create_vertices() -> Vec<Vertex> {
-    let pos = vertex_data::cube_positions();
-    let col = vertex_data::cube_colors();
-    let mut data: Vec<Vertex> = Vec::with_capacity(pos.len());
-    for i in 0..pos.len() {
-        data.push(vertex(pos[i], col[i]));
-    }
-    data.to_vec()
-}
-
-impl Vertex {
-    const ATTRIBUTES: [wgpu::VertexAttribute; 2] = wgpu::vertex_attr_array![0=>Float32x4, 1=>Float32x4];
-    fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
-        wgpu::VertexBufferLayout {
-            array_stride: mem::size_of::<Vertex>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &Self::ATTRIBUTES,
-        }
-    }
-}
 
 struct State {
     init: transforms::InitWgpu,
@@ -168,9 +133,11 @@ impl State {
             multiview: None,
         });
 
+        let cube = Mesh::new_cube();
+
         let vertex_buffer = init.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
-            contents: cast_slice(&create_vertices()),
+            contents: cast_slice(&zip_vertex_data(&cube)),
             usage: wgpu::BufferUsages::VERTEX,
         });
 

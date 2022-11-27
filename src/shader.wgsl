@@ -23,8 +23,6 @@ fn vs_main(in: VertexInput) -> VertexOutput {
     return output;
 }
 
-// fragment shader
-
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     return in.vColor;
