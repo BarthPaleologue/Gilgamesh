@@ -3,10 +3,12 @@ mod vertex_data;
 mod transform;
 mod camera;
 mod mesh;
+mod material;
 
 use std::{iter};
 
 use camera::*;
+use engine::Engine;
 use transform::{Transform};
 
 use winit::{
@@ -22,7 +24,7 @@ use crate::mesh::{Vertex, Mesh, zip_vertex_data};
 const ANIMATION_SPEED: f32 = 1.0;
 
 struct Scene {
-    engine: engine::Engine,
+    engine: Engine,
 
     // this is material related
     pipeline: wgpu::RenderPipeline,
@@ -36,18 +38,18 @@ struct Scene {
 
 impl Scene {
     async fn new(window: &Window) -> Scene {
-        let init = engine::Engine::init_wgpu(window).await;
-
-        let shader = init.device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
-        });
+        let engine = Engine::init_wgpu(window).await;
 
         let mut free_camera = FreeCamera::new(window.inner_size().width as f32 / window.inner_size().height as f32);
 
         free_camera.tf().set_position(3.0, 1.5, 3.0);
 
         let cube = Mesh::new_cube();
+
+        let shader = engine.device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Shader"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
+        });
 
         let world_mat = cube.transform.compute_world_matrix();
         let view_mat = free_camera.basic_camera.get_view_matrix();
@@ -56,13 +58,13 @@ impl Scene {
         let mvp_mat = project_mat * view_mat * world_mat;
 
         let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
-        let uniform_buffer = init.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        let uniform_buffer = engine.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Uniform Buffer"),
             contents: cast_slice(mvp_ref),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
-        let uniform_bind_group_layout = init.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        let uniform_bind_group_layout = engine.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
                 visibility: wgpu::ShaderStages::VERTEX,
@@ -76,7 +78,7 @@ impl Scene {
             label: Some("Uniform Bind Group Layout"),
         });
 
-        let uniform_bind_group = init.device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let uniform_bind_group = engine.device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &uniform_bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
@@ -85,13 +87,13 @@ impl Scene {
             label: Some("Uniform Bind Group"),
         });
 
-        let pipeline_layout = init.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        let pipeline_layout = engine.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
             bind_group_layouts: &[&uniform_bind_group_layout],
             push_constant_ranges: &[],
         });
 
-        let pipeline = init.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let pipeline = engine.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Render Pipeline"),
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
@@ -103,7 +105,7 @@ impl Scene {
                 module: &shader,
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState {
-                    format: init.config.format,
+                    format: engine.config.format,
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent::REPLACE,
                         alpha: wgpu::BlendComponent::REPLACE,
@@ -128,14 +130,14 @@ impl Scene {
             multiview: None,
         });
 
-        let vertex_buffer = init.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        let vertex_buffer = engine.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
             contents: cast_slice(&zip_vertex_data(&cube)),
             usage: wgpu::BufferUsages::VERTEX,
         });
 
         Scene {
-            engine: init,
+            engine,
             pipeline,
             vertex_buffer,
             uniform_buffer,
