@@ -1,7 +1,9 @@
 use std::mem;
-use crate::{Transform, vertex_data};
+use crate::{Engine, Transform, vertex_data};
 
-use bytemuck::{Pod, Zeroable};
+use bytemuck::{cast_slice, Pod, Zeroable};
+use wgpu::Buffer;
+use wgpu::util::DeviceExt;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
@@ -25,32 +27,46 @@ pub struct Mesh {
     pub transform: Transform,
     pub positions: Vec<[f32;3]>,
     pub colors: Vec<[f32;3]>,
+    pub vertex_buffer: Buffer,
 }
 
 impl Mesh {
-    pub fn new() -> Mesh {
+    pub fn new(engine: &Engine) -> Mesh {
         Mesh {
             transform: Transform::new(),
             positions: Vec::new(),
-            colors: Vec::new()
+            colors: Vec::new(),
+            vertex_buffer: engine.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Vertex Buffer"),
+                contents: &[],
+                usage: wgpu::BufferUsages::VERTEX,
+            })
         }
     }
 
-    pub fn new_cube() -> Mesh {
+    pub fn new_cube(engine: &Engine) -> Mesh {
+        let positions = vertex_data::cube_positions();
+        let colors = vertex_data::cube_colors();
+        let vertex_buffer = engine.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Vertex Buffer"),
+            contents: cast_slice(&zip_vertex_data(&positions, &colors)),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
         Mesh {
             transform: Transform::new(),
-            positions: vertex_data::cube_positions(),
-            colors: vertex_data::cube_colors(),
+            positions: positions.clone(),
+            colors: colors.clone(),
+            vertex_buffer
         }
     }
 }
 
-pub fn zip_vertex_data(mesh: &Mesh) -> Vec<Vertex> {
-    let mut data: Vec<Vertex> = Vec::with_capacity(mesh.positions.len());
-    for i in 0..mesh.positions.len() {
+pub fn zip_vertex_data(positions: &Vec<[f32;3]>, colors: &Vec<[f32;3]>) -> Vec<Vertex> {
+    let mut data: Vec<Vertex> = Vec::with_capacity(positions.len());
+    for i in 0..positions.len() {
         data.push(Vertex {
-            position: [mesh.positions[i][0], mesh.positions[i][1], mesh.positions[i][2], 1.0],
-            color: [mesh.colors[i][0], mesh.colors[i][1], mesh.colors[i][2], 1.0]
+            position: [positions[i][0], positions[i][1], positions[i][2], 1.0],
+            color: [colors[i][0], colors[i][1], colors[i][2], 1.0]
         });
     }
     data.to_vec()

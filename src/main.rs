@@ -20,7 +20,7 @@ use bytemuck::{cast_slice};
 use cgmath::{Matrix4, SquareMatrix};
 use wgpu::util::DeviceExt;
 
-use crate::mesh::{Vertex, Mesh, zip_vertex_data};
+use crate::mesh::{Vertex, Mesh};
 
 const ANIMATION_SPEED: f32 = 1.0;
 
@@ -29,7 +29,6 @@ struct Scene {
 
     // this is material related
     pipeline: wgpu::RenderPipeline,
-    vertex_buffer: wgpu::Buffer,
     uniform_buffer: wgpu::Buffer,
     uniform_bind_group: wgpu::BindGroup,
 
@@ -45,7 +44,7 @@ impl Scene {
 
         free_camera.tf().set_position(3.0, 1.5, 3.0);
 
-        let cube = Mesh::new_cube();
+        let cube = Mesh::new_cube(&engine);
 
         let shader = engine.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
@@ -126,16 +125,9 @@ impl Scene {
             multiview: None,
         });
 
-        let vertex_buffer = engine.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: cast_slice(&zip_vertex_data(&cube)),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
-
         Scene {
             engine,
             pipeline,
-            vertex_buffer,
             uniform_buffer,
             uniform_bind_group,
             basic_camera: free_camera.basic_camera,
@@ -207,8 +199,8 @@ impl Scene {
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
                             r: 0.2,
-                            g: 0.247,
-                            b: 0.314,
+                            g: 0.2,
+                            b: 0.2,
                             a: 1.0,
                         }),
                         store: true,
@@ -226,7 +218,7 @@ impl Scene {
             });
 
             render_pass.set_pipeline(&self.pipeline);
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            render_pass.set_vertex_buffer(0, self.cube.vertex_buffer.slice(..));
             render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
             render_pass.draw(0..36, 0..1);
         }
