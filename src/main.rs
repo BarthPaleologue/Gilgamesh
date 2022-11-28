@@ -17,6 +17,7 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 use bytemuck::{cast_slice};
+use cgmath::num_traits::ToPrimitive;
 
 use crate::mesh::{Vertex, Mesh};
 
@@ -51,14 +52,9 @@ impl Scene {
             self.engine.surface.configure(&self.engine.device, &self.engine.config);
 
             self.basic_camera.aspect_ratio = new_size.width as f32 / new_size.height as f32;
-            //self.project_mat = self.basic_camera.get_projection_matrix();
-            let mvp_mat = self.basic_camera.get_projection_matrix() * self.basic_camera.get_view_matrix() * self.cube.transform.compute_world_matrix();
-            let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
-            self.engine.queue.write_buffer(&self.cube.material.uniform_buffer, 0, cast_slice(mvp_ref));
         }
     }
 
-    #[allow(unused_variables)]
     fn input(&mut self, event: &WindowEvent) -> bool {
         false
     }
@@ -128,7 +124,7 @@ impl Scene {
             render_pass.set_pipeline(&self.cube.material.pipeline);
             render_pass.set_vertex_buffer(0, self.cube.vertex_buffer.slice(..));
             render_pass.set_bind_group(0, &self.cube.material.uniform_bind_group, &[]);
-            render_pass.draw(0..36, 0..1);
+            render_pass.draw(0..self.cube.positions.len().to_u32().unwrap(), 0..1);
         }
 
         self.engine.queue.submit(iter::once(encoder.finish()));
