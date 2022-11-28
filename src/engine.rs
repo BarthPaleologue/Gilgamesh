@@ -9,7 +9,7 @@ pub const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
     0.0, 0.0, 0.5, 1.0,
 );
 
-pub struct InitWgpu {
+pub struct Engine {
     pub surface: wgpu::Surface,
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
@@ -17,7 +17,7 @@ pub struct InitWgpu {
     pub size: winit::dpi::PhysicalSize<u32>,
 }
 
-impl InitWgpu {
+impl Engine {
     pub async fn init_wgpu(window: &Window) -> Self {
         let size = window.inner_size();
         let instance = wgpu::Instance::new(wgpu::Backends::all());

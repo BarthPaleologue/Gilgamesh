@@ -1,4 +1,4 @@
-mod init_wgpu;
+mod engine;
 mod vertex_data;
 mod transform;
 mod camera;
@@ -24,7 +24,7 @@ const IS_PERSPECTIVE: bool = true;
 const ANIMATION_SPEED: f32 = 1.0;
 
 struct State {
-    init: init_wgpu::InitWgpu,
+    engine: engine::Engine,
     pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     uniform_buffer: wgpu::Buffer,
@@ -36,7 +36,7 @@ struct State {
 
 impl State {
     async fn new(window: &Window) -> State {
-        let init = init_wgpu::InitWgpu::init_wgpu(window).await;
+        let init = engine::Engine::init_wgpu(window).await;
 
         let shader = init.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
@@ -139,7 +139,7 @@ impl State {
         });
 
         State {
-            init,
+            engine: init,
             pipeline,
             vertex_buffer,
             uniform_buffer,
@@ -152,16 +152,16 @@ impl State {
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
-            self.init.size = new_size;
-            self.init.config.width = new_size.width;
-            self.init.config.height = new_size.height;
-            self.init.surface.configure(&self.init.device, &self.init.config);
+            self.engine.size = new_size;
+            self.engine.config.width = new_size.width;
+            self.engine.config.height = new_size.height;
+            self.engine.surface.configure(&self.engine.device, &self.engine.config);
 
             self.basic_camera.aspect_ratio = new_size.width as f32 / new_size.height as f32;
             //self.project_mat = self.basic_camera.get_projection_matrix();
             let mvp_mat = self.basic_camera.get_projection_matrix() * self.basic_camera.get_view_matrix() * self.model_mat;
             let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
-            self.init.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(mvp_ref));
+            self.engine.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(mvp_ref));
         }
     }
 
@@ -176,19 +176,19 @@ impl State {
         let model_mat = self.cube.transform.compute_world_matrix();
         let mvp_mat = self.basic_camera.get_projection_matrix() * self.basic_camera.get_view_matrix() * model_mat;
         let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
-        self.init.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(mvp_ref));
+        self.engine.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(mvp_ref));
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         //let output = self.init.surface.get_current_frame()?.output;
-        let output = self.init.surface.get_current_texture()?;
+        let output = self.engine.surface.get_current_texture()?;
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
-        let depth_texture = self.init.device.create_texture(&wgpu::TextureDescriptor {
+        let depth_texture = self.engine.device.create_texture(&wgpu::TextureDescriptor {
             size: wgpu::Extent3d {
-                width: self.init.config.width,
-                height: self.init.config.height,
+                width: self.engine.config.width,
+                height: self.engine.config.height,
                 depth_or_array_layers: 1,
             },
             mip_level_count: 1,
@@ -201,7 +201,7 @@ impl State {
         let depth_view = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         let mut encoder = self
-            .init.device
+            .engine.device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("Render Encoder"),
             });
@@ -239,7 +239,7 @@ impl State {
             render_pass.draw(0..36, 0..1);
         }
 
-        self.init.queue.submit(iter::once(encoder.finish()));
+        self.engine.queue.submit(iter::once(encoder.finish()));
         output.present();
 
         Ok(())
@@ -289,7 +289,7 @@ fn main() {
 
             match state.render() {
                 Ok(_) => {}
-                Err(wgpu::SurfaceError::Lost) => state.resize(state.init.size),
+                Err(wgpu::SurfaceError::Lost) => state.resize(state.engine.size),
                 Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
                 Err(e) => eprintln!("{}", e)
             }
