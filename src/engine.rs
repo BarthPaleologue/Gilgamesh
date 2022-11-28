@@ -1,4 +1,3 @@
-use std::f32::consts::PI;
 use winit::window::Window;
 use cgmath::*;
 

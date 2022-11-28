@@ -17,25 +17,25 @@ use winit::{
 use bytemuck::{cast_slice};
 use wgpu::util::DeviceExt;
 
-use cgmath::*;
 use crate::mesh::{Vertex, Mesh, zip_vertex_data};
 
-const IS_PERSPECTIVE: bool = true;
 const ANIMATION_SPEED: f32 = 1.0;
 
-struct State {
+struct Scene {
     engine: engine::Engine,
+
+    // this is material related
     pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     uniform_buffer: wgpu::Buffer,
     uniform_bind_group: wgpu::BindGroup,
-    model_mat: Matrix4<f32>,
+
     basic_camera: BasicCamera,
     cube: Mesh,
 }
 
-impl State {
-    async fn new(window: &Window) -> State {
+impl Scene {
+    async fn new(window: &Window) -> Scene {
         let init = engine::Engine::init_wgpu(window).await;
 
         let shader = init.device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -49,15 +49,11 @@ impl State {
 
         let cube = Mesh::new_cube();
 
-        let model_mat = cube.transform.compute_world_matrix();
-
+        let world_mat = cube.transform.compute_world_matrix();
         let view_mat = free_camera.basic_camera.get_view_matrix();
-
         let project_mat = free_camera.basic_camera.get_projection_matrix();
 
-        let view_project_mat = project_mat * view_mat;
-
-        let mvp_mat = view_project_mat * model_mat;
+        let mvp_mat = project_mat * view_mat * world_mat;
 
         let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
         let uniform_buffer = init.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -138,13 +134,12 @@ impl State {
             usage: wgpu::BufferUsages::VERTEX,
         });
 
-        State {
+        Scene {
             engine: init,
             pipeline,
             vertex_buffer,
             uniform_buffer,
             uniform_bind_group,
-            model_mat,
             basic_camera: free_camera.basic_camera,
             cube,
         }
@@ -159,7 +154,7 @@ impl State {
 
             self.basic_camera.aspect_ratio = new_size.width as f32 / new_size.height as f32;
             //self.project_mat = self.basic_camera.get_projection_matrix();
-            let mvp_mat = self.basic_camera.get_projection_matrix() * self.basic_camera.get_view_matrix() * self.model_mat;
+            let mvp_mat = self.basic_camera.get_projection_matrix() * self.basic_camera.get_view_matrix() * self.cube.transform.compute_world_matrix();
             let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
             self.engine.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(mvp_ref));
         }
@@ -173,8 +168,7 @@ impl State {
     fn update(&mut self, dt: std::time::Duration) {
         let dt = dt.as_secs_f32();
         self.cube.transform.rotation.y = ANIMATION_SPEED * dt;
-        let model_mat = self.cube.transform.compute_world_matrix();
-        let mvp_mat = self.basic_camera.get_projection_matrix() * self.basic_camera.get_view_matrix() * model_mat;
+        let mvp_mat = self.basic_camera.get_projection_matrix() * self.basic_camera.get_view_matrix() * self.cube.transform.compute_world_matrix();
         let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
         self.engine.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(mvp_ref));
     }
@@ -254,7 +248,7 @@ fn main() {
 
     let start_time = std::time::Instant::now();
 
-    let mut state = pollster::block_on(State::new(&window));
+    let mut state = pollster::block_on(Scene::new(&window));
 
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
