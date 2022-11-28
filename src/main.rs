@@ -17,6 +17,7 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 use bytemuck::{cast_slice};
+use cgmath::{Matrix4, SquareMatrix};
 use wgpu::util::DeviceExt;
 
 use crate::mesh::{Vertex, Mesh, zip_vertex_data};
@@ -51,12 +52,7 @@ impl Scene {
             source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
         });
 
-        let world_mat = cube.transform.compute_world_matrix();
-        let view_mat = free_camera.basic_camera.get_view_matrix();
-        let project_mat = free_camera.basic_camera.get_projection_matrix();
-
-        let mvp_mat = project_mat * view_mat * world_mat;
-
+        let mvp_mat = Matrix4::identity();
         let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
         let uniform_buffer = engine.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Uniform Buffer"),
@@ -158,7 +154,7 @@ impl Scene {
             //self.project_mat = self.basic_camera.get_projection_matrix();
             let mvp_mat = self.basic_camera.get_projection_matrix() * self.basic_camera.get_view_matrix() * self.cube.transform.compute_world_matrix();
             let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
-            self.engine.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(mvp_ref));
+            self.engine.queue.write_buffer(&self.uniform_buffer, 0, cast_slice(mvp_ref));
         }
     }
 
@@ -172,7 +168,7 @@ impl Scene {
         self.cube.transform.rotation.y = ANIMATION_SPEED * dt;
         let mvp_mat = self.basic_camera.get_projection_matrix() * self.basic_camera.get_view_matrix() * self.cube.transform.compute_world_matrix();
         let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
-        self.engine.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(mvp_ref));
+        self.engine.queue.write_buffer(&self.uniform_buffer, 0, cast_slice(mvp_ref));
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
