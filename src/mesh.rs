@@ -4,6 +4,7 @@ use crate::{Engine, Transform, vertex_data};
 use bytemuck::{cast_slice, Pod, Zeroable};
 use wgpu::Buffer;
 use wgpu::util::DeviceExt;
+use crate::material::Material;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
@@ -28,6 +29,7 @@ pub struct Mesh {
     pub positions: Vec<[f32;3]>,
     pub colors: Vec<[f32;3]>,
     pub vertex_buffer: Buffer,
+    pub material: Material,
 }
 
 impl Mesh {
@@ -40,7 +42,8 @@ impl Mesh {
                 label: Some("Vertex Buffer"),
                 contents: &[],
                 usage: wgpu::BufferUsages::VERTEX,
-            })
+            }),
+            material: Material::new(engine)
         }
     }
 
@@ -56,7 +59,8 @@ impl Mesh {
             transform: Transform::new(),
             positions: positions.clone(),
             colors: colors.clone(),
-            vertex_buffer
+            vertex_buffer,
+            material: Material::new(engine)
         }
     }
 }

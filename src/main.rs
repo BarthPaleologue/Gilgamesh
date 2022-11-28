@@ -17,8 +17,6 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 use bytemuck::{cast_slice};
-use cgmath::{Matrix4, SquareMatrix};
-use wgpu::util::DeviceExt;
 
 use crate::mesh::{Vertex, Mesh};
 
@@ -26,110 +24,20 @@ const ANIMATION_SPEED: f32 = 1.0;
 
 struct Scene {
     engine: Engine,
-
-    // this is material related
-    pipeline: wgpu::RenderPipeline,
-    uniform_buffer: wgpu::Buffer,
-    uniform_bind_group: wgpu::BindGroup,
-
     basic_camera: BasicCamera,
     cube: Mesh,
 }
 
 impl Scene {
-    async fn new(window: &Window) -> Scene {
-        let engine = Engine::init_wgpu(window).await;
-
+    fn new(engine: Engine, window: &Window) -> Scene {
         let mut free_camera = FreeCamera::new(window.inner_size().width as f32 / window.inner_size().height as f32);
 
         free_camera.tf().set_position(3.0, 1.5, 3.0);
 
         let cube = Mesh::new_cube(&engine);
 
-        let shader = engine.device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
-        });
-
-        let mvp_mat = Matrix4::identity();
-        let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
-        let uniform_buffer = engine.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Uniform Buffer"),
-            contents: cast_slice(mvp_ref),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-
-        let uniform_bind_group_layout = engine.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            }],
-            label: Some("Uniform Bind Group Layout"),
-        });
-
-        let uniform_bind_group = engine.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &uniform_bind_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
-            }],
-            label: Some("Uniform Bind Group"),
-        });
-
-        let pipeline_layout = engine.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[&uniform_bind_group_layout],
-            push_constant_ranges: &[],
-        });
-
-        let pipeline = engine.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Render Pipeline"),
-            layout: Some(&pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: "vs_main",
-                buffers: &[Vertex::desc()],
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: "fs_main",
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: engine.config.format,
-                    blend: Some(wgpu::BlendState {
-                        color: wgpu::BlendComponent::REPLACE,
-                        alpha: wgpu::BlendComponent::REPLACE,
-                    }),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                cull_mode: Some(wgpu::Face::Back),
-                ..Default::default()
-            },
-            depth_stencil: Some(wgpu::DepthStencilState {
-                format: wgpu::TextureFormat::Depth24Plus,
-                depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::LessEqual,
-                stencil: wgpu::StencilState::default(),
-                bias: wgpu::DepthBiasState::default(),
-            }),
-            multisample: wgpu::MultisampleState::default(),
-            multiview: None,
-        });
-
         Scene {
             engine,
-            pipeline,
-            uniform_buffer,
-            uniform_bind_group,
             basic_camera: free_camera.basic_camera,
             cube,
         }
@@ -146,7 +54,7 @@ impl Scene {
             //self.project_mat = self.basic_camera.get_projection_matrix();
             let mvp_mat = self.basic_camera.get_projection_matrix() * self.basic_camera.get_view_matrix() * self.cube.transform.compute_world_matrix();
             let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
-            self.engine.queue.write_buffer(&self.uniform_buffer, 0, cast_slice(mvp_ref));
+            self.engine.queue.write_buffer(&self.cube.material.uniform_buffer, 0, cast_slice(mvp_ref));
         }
     }
 
@@ -160,7 +68,7 @@ impl Scene {
         self.cube.transform.rotation.y = ANIMATION_SPEED * dt;
         let mvp_mat = self.basic_camera.get_projection_matrix() * self.basic_camera.get_view_matrix() * self.cube.transform.compute_world_matrix();
         let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
-        self.engine.queue.write_buffer(&self.uniform_buffer, 0, cast_slice(mvp_ref));
+        self.engine.queue.write_buffer(&self.cube.material.uniform_buffer, 0, cast_slice(mvp_ref));
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -217,9 +125,9 @@ impl Scene {
                 }),
             });
 
-            render_pass.set_pipeline(&self.pipeline);
+            render_pass.set_pipeline(&self.cube.material.pipeline);
             render_pass.set_vertex_buffer(0, self.cube.vertex_buffer.slice(..));
-            render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
+            render_pass.set_bind_group(0, &self.cube.material.uniform_bind_group, &[]);
             render_pass.draw(0..36, 0..1);
         }
 
@@ -238,14 +146,16 @@ fn main() {
 
     let start_time = std::time::Instant::now();
 
-    let mut state = pollster::block_on(Scene::new(&window));
+    let engine = pollster::block_on(Engine::init_wgpu(&window));
+
+    let mut scene = Scene::new(engine, &window);
 
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
             ref event,
             window_id
         } if window_id == window.id() => {
-            if !state.input(event) {
+            if !scene.input(event) {
                 match event {
                     WindowEvent::CloseRequested | WindowEvent::KeyboardInput {
                         input:
@@ -257,10 +167,10 @@ fn main() {
                         ..
                     } => *control_flow = ControlFlow::Exit,
                     WindowEvent::Resized(physical_size) => {
-                        state.resize(*physical_size)
+                        scene.resize(*physical_size)
                     }
                     WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                        state.resize(**new_inner_size);
+                        scene.resize(**new_inner_size);
                     }
                     _ => {}
                 }
@@ -269,11 +179,11 @@ fn main() {
         Event::RedrawRequested(_) => {
             let now = std::time::Instant::now();
             let dt = now - start_time;
-            state.update(dt);
+            scene.update(dt);
 
-            match state.render() {
+            match scene.render() {
                 Ok(_) => {}
-                Err(wgpu::SurfaceError::Lost) => state.resize(state.engine.size),
+                Err(wgpu::SurfaceError::Lost) => scene.resize(scene.engine.size),
                 Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
                 Err(e) => eprintln!("{}", e)
             }
