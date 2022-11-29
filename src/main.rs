@@ -26,7 +26,7 @@ const ANIMATION_SPEED: f32 = 1.0;
 struct Scene {
     engine: Engine,
     basic_camera: BasicCamera,
-    cube: Mesh,
+    meshes: Vec<Mesh>
 }
 
 impl Scene {
@@ -37,10 +37,13 @@ impl Scene {
 
         let cube = Mesh::new_cube(&engine);
 
+        let mut meshes: Vec<Mesh> = Vec::new();
+        meshes.push(cube);
+
         Scene {
             engine,
             basic_camera: free_camera.basic_camera,
-            cube,
+            meshes
         }
     }
 
@@ -61,10 +64,12 @@ impl Scene {
 
     fn update(&mut self, dt: std::time::Duration) {
         let dt = dt.as_secs_f32();
-        self.cube.transform.rotation.y = ANIMATION_SPEED * dt;
-        let mvp_mat = self.basic_camera.get_projection_matrix() * self.basic_camera.get_view_matrix() * self.cube.transform.compute_world_matrix();
-        let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
-        self.engine.queue.write_buffer(&self.cube.material.uniform_buffer, 0, cast_slice(mvp_ref));
+        for mut mesh in &mut self.meshes {
+            mesh.transform.rotation.y = ANIMATION_SPEED * dt;
+            let mvp_mat = self.basic_camera.get_projection_matrix() * self.basic_camera.get_view_matrix() * mesh.transform.compute_world_matrix();
+            let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
+            self.engine.queue.write_buffer(&mesh.material.uniform_buffer, 0, cast_slice(mvp_ref));
+        }
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -121,10 +126,9 @@ impl Scene {
                 }),
             });
 
-            render_pass.set_pipeline(&self.cube.material.pipeline);
-            render_pass.set_vertex_buffer(0, self.cube.vertex_buffer.slice(..));
-            render_pass.set_bind_group(0, &self.cube.material.uniform_bind_group, &[]);
-            render_pass.draw(0..self.cube.positions.len().to_u32().unwrap(), 0..1);
+            for mesh in &self.meshes {
+                mesh.draw(&mut render_pass);
+            }
         }
 
         self.engine.queue.submit(iter::once(encoder.finish()));

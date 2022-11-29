@@ -1,6 +1,6 @@
 use bytemuck::cast_slice;
 use cgmath::{Matrix4, SquareMatrix};
-use wgpu::{BindGroup, BindGroupLayout, Buffer, PipelineLayout, RenderPipeline, ShaderModule};
+use wgpu::{BindGroup, BindGroupLayout, Buffer, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
 use wgpu::util::DeviceExt;
 use crate::{Engine, Vertex};
 
@@ -102,5 +102,10 @@ impl Material {
             pipeline_layout,
             pipeline
         }
+    }
+
+    pub fn bind<'a, 'b>(&'a self, render_pass: &'b mut RenderPass<'a>) -> () {
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
     }
 }

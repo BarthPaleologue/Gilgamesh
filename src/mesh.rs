@@ -1,8 +1,8 @@
 use std::mem;
-use crate::{Engine, Transform, vertex_data};
+use crate::{Engine, ToPrimitive, Transform, vertex_data};
 
 use bytemuck::{cast_slice, Pod, Zeroable};
-use wgpu::Buffer;
+use wgpu::{Buffer, RenderPass};
 use wgpu::util::DeviceExt;
 use crate::material::Material;
 
@@ -62,6 +62,13 @@ impl Mesh {
             vertex_buffer,
             material: Material::new(engine)
         }
+    }
+
+    pub fn draw<'a, 'b>(&'a self, render_pass: &'b mut RenderPass<'a>) -> () {
+        self.material.bind(render_pass);
+
+        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        render_pass.draw(0..self.positions.len().to_u32().unwrap(), 0..1);
     }
 }
 
