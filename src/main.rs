@@ -18,7 +18,7 @@ use winit::{
 use cgmath::num_traits::ToPrimitive;
 
 use crate::mesh::{Vertex, Mesh};
-use crate::scene::Scene;
+use crate::scene::{ANIMATION_SPEED, Scene};
 
 fn main() {
     env_logger::init();
@@ -40,12 +40,12 @@ fn main() {
     scene.meshes.push(cube);
     scene.meshes.push(cube2);
 
-    /*fn update_meshes(scene: &mut Scene) -> () {
-        let dt = std::time::Instant::now().as_secs_f32();
+    let update_meshes = || {
+        let dt = (std::time::Instant::now() - start_time).as_secs_f32();
         for mut mesh in &mut scene.meshes {
             mesh.transform.rotation.y = ANIMATION_SPEED * dt;
         }
-    }*/
+    };
 
     //scene.execute_before_render = update_meshes;
 

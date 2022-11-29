@@ -4,13 +4,13 @@ use winit::event::WindowEvent;
 use winit::window::Window;
 use crate::{BasicCamera, Engine, FreeCamera, Mesh, Transformable};
 
-const ANIMATION_SPEED: f32 = 1.0;
+pub const ANIMATION_SPEED: f32 = 1.0;
 
 pub struct Scene {
     pub(crate) engine: Engine,
     pub(crate) basic_camera: BasicCamera,
     pub(crate) meshes: Vec<Mesh>,
-    //pub(crate) execute_before_render: fn(&mut Scene)
+    //pub(crate) execute_before_render: &'a mut dyn FnMut() -> ()
 }
 
 impl Scene {
@@ -18,11 +18,13 @@ impl Scene {
         let mut free_camera = FreeCamera::new(window.inner_size().width as f32 / window.inner_size().height as f32);
         free_camera.tf().set_position(3.0, 1.5, 3.0);
 
+        let mut a = || {};
+
         Scene {
             engine,
             basic_camera: free_camera.basic_camera,
             meshes: Vec::new(),
-            //execute_before_render:
+            //execute_before_render: &mut a
         }
     }
 
