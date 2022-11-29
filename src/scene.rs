@@ -10,7 +10,7 @@ pub struct Scene {
     pub(crate) engine: Engine,
     pub(crate) basic_camera: BasicCamera,
     pub(crate) meshes: Vec<Mesh>,
-    //pub(crate) execute_before_render: &'a mut dyn FnMut() -> ()
+    pub(crate) execute_before_render: Box<dyn FnMut() -> ()>
 }
 
 impl Scene {
@@ -18,13 +18,13 @@ impl Scene {
         let mut free_camera = FreeCamera::new(window.inner_size().width as f32 / window.inner_size().height as f32);
         free_camera.tf().set_position(3.0, 1.5, 3.0);
 
-        let mut a = || {};
+        let a = || {};
 
         Scene {
             engine,
             basic_camera: free_camera.basic_camera,
             meshes: Vec::new(),
-            //execute_before_render: &mut a
+            execute_before_render: Box::new(a)
         }
     }
 
@@ -44,7 +44,7 @@ impl Scene {
     }
 
     pub(crate) fn update(&mut self, dt: std::time::Duration) {
-        //self.execute_before_render();
+        (self.execute_before_render)();
 
         let dt = dt.as_secs_f32();
         for mut mesh in &mut self.meshes {
