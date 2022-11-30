@@ -7,7 +7,6 @@ mod transform;
 use transform::{Transform};
 use crate::engine::OPENGL_TO_WGPU_MATRIX;
 
-#[derive(Copy, Clone)]
 pub struct BasicCamera {
     pub transform: Transform,
     pub aspect_ratio: f32,

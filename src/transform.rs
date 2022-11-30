@@ -1,6 +1,6 @@
 use cgmath::{Matrix4, Point3, Rad, Vector3};
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Debug)]
 pub struct Transform {
     pub position: Vector3<f32>,
     pub rotation: Point3<f32>,
