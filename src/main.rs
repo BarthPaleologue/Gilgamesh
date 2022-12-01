@@ -32,9 +32,9 @@ fn main() {
 
     let mut scene = Scene::new(engine, &window);
 
-    let cube = Mesh::new_cube(&scene.engine);
+    let cube = Mesh::new_cube(&scene);
 
-    let mut cube2 = Mesh::new_cube(&scene.engine);
+    let mut cube2 = Mesh::new_cube(&scene);
     cube2.transform.position.y = 2.5;
 
     scene.meshes.push(cube);

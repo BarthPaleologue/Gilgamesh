@@ -2,7 +2,7 @@ use bytemuck::cast_slice;
 use cgmath::{Matrix4, SquareMatrix};
 use wgpu::{BindGroup, BindGroupLayout, Buffer, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
 use wgpu::util::DeviceExt;
-use crate::{Engine, Vertex};
+use crate::{Engine, Scene, Vertex};
 
 pub struct Material {
     pub shader_module: ShaderModule,
@@ -14,21 +14,21 @@ pub struct Material {
 }
 
 impl Material {
-    pub fn new(engine: &Engine) -> Material {
-        let shader = engine.device.create_shader_module(wgpu::ShaderModuleDescriptor {
+    pub fn new(scene: &Scene) -> Material {
+        let shader = scene.engine.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
         });
 
         let mvp: Matrix4<f32> = Matrix4::identity();
         let mvp_ref: &[f32; 16] = mvp.as_ref();
-        let uniform_buffer = engine.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        let uniform_buffer = scene.engine.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Uniform Buffer"),
             contents: cast_slice(mvp_ref),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
-        let uniform_bind_group_layout = engine.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        let uniform_bind_group_layout = scene.engine.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
                 visibility: wgpu::ShaderStages::VERTEX,
@@ -42,7 +42,7 @@ impl Material {
             label: Some("Uniform Bind Group Layout"),
         });
 
-        let uniform_bind_group = engine.device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let uniform_bind_group = scene.engine.device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &uniform_bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
@@ -51,13 +51,13 @@ impl Material {
             label: Some("Uniform Bind Group"),
         });
 
-        let pipeline_layout = engine.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        let pipeline_layout = scene.engine.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
             bind_group_layouts: &[&uniform_bind_group_layout],
             push_constant_ranges: &[],
         });
 
-        let pipeline = engine.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let pipeline = scene.engine.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Render Pipeline"),
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
@@ -69,7 +69,7 @@ impl Material {
                 module: &shader,
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState {
-                    format: engine.config.format,
+                    format: scene.engine.config.format,
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent::REPLACE,
                         alpha: wgpu::BlendComponent::REPLACE,

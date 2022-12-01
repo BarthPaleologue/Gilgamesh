@@ -26,7 +26,7 @@ impl Engine {
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::default(),
                 compatible_surface: Some(&surface),
-                force_fallback_adapter:false,
+                force_fallback_adapter: false,
             })
             .await
             .unwrap();
@@ -52,12 +52,19 @@ impl Engine {
         };
         surface.configure(&device, &config);
 
-        Self{
+        Self {
             surface,
             device,
             queue,
             config,
             size,
         }
+    }
+
+    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
+        self.size = new_size;
+        self.config.width = new_size.width;
+        self.config.height = new_size.height;
+        self.surface.configure(&self.device, &self.config);
     }
 }

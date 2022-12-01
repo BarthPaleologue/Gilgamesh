@@ -30,11 +30,7 @@ impl Scene {
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
-            self.engine.size = new_size;
-            self.engine.config.width = new_size.width;
-            self.engine.config.height = new_size.height;
-            self.engine.surface.configure(&self.engine.device, &self.engine.config);
-
+            self.engine.resize(new_size);
             self.basic_camera.aspect_ratio = new_size.width as f32 / new_size.height as f32;
         }
     }
