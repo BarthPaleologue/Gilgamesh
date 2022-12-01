@@ -1,5 +1,6 @@
 use std::mem;
-use crate::{Engine, Scene, ToPrimitive, Transform, vertex_data};
+use std::rc::Rc;
+use crate::{Scene, ToPrimitive, Transform, vertex_data};
 
 use bytemuck::{cast_slice, Pod, Zeroable};
 use wgpu::{Buffer, RenderPass};
@@ -29,7 +30,7 @@ pub struct Mesh {
     pub positions: Vec<[f32;3]>,
     pub colors: Vec<[f32;3]>,
     pub vertex_buffer: Buffer,
-    pub material: Material,
+    pub material: Rc<Material>,
 }
 
 impl Mesh {
@@ -38,19 +39,19 @@ impl Mesh {
             transform: Transform::new(),
             positions: Vec::new(),
             colors: Vec::new(),
-            vertex_buffer: scene.engine.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            vertex_buffer: (*scene.engine).borrow_mut().device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("Vertex Buffer"),
                 contents: &[],
                 usage: wgpu::BufferUsages::VERTEX,
             }),
-            material: Material::new(scene)
+            material: Rc::new(Material::new(scene))
         }
     }
 
     pub fn new_cube(scene: &Scene) -> Mesh {
         let positions = vertex_data::cube_positions();
         let colors = vertex_data::cube_colors();
-        let vertex_buffer = scene.engine.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        let vertex_buffer = (*scene.engine).borrow_mut().device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
             contents: cast_slice(&zip_vertex_data(&positions, &colors)),
             usage: wgpu::BufferUsages::VERTEX,
@@ -60,7 +61,7 @@ impl Mesh {
             positions,
             colors,
             vertex_buffer,
-            material: Material::new(scene)
+            material: Rc::new(Material::new(scene))
         }
     }
 

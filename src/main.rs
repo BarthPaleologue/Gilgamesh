@@ -6,6 +6,8 @@ mod mesh;
 mod material;
 mod scene;
 
+use std::cell::RefCell;
+use std::rc::Rc;
 use camera::*;
 use engine::Engine;
 use transform::{Transform};
@@ -28,9 +30,9 @@ fn main() {
 
     let start_time = std::time::Instant::now();
 
-    let engine = pollster::block_on(Engine::init_wgpu(&window));
+    let engine = Rc::new(RefCell::new(pollster::block_on(Engine::init_wgpu(&window))));
 
-    let mut scene = Scene::new(engine, &window);
+    let mut scene = Scene::new(&engine, &window);
 
     let cube = Mesh::new_cube(&scene);
 
@@ -82,7 +84,7 @@ fn main() {
 
             match scene.render() {
                 Ok(_) => {}
-                Err(wgpu::SurfaceError::Lost) => scene.resize(scene.engine.size),
+                Err(wgpu::SurfaceError::Lost) => scene.resize((*engine).borrow_mut().size),
                 Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
                 Err(e) => eprintln!("{}", e)
             }
