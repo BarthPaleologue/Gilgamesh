@@ -57,8 +57,8 @@ impl Mesh {
         });
         Mesh {
             transform: Transform::new(),
-            positions: positions.clone(),
-            colors: colors.clone(),
+            positions,
+            colors,
             vertex_buffer,
             material: Material::new(scene)
         }
