@@ -12,7 +12,7 @@ pub struct Scene {
     pub(crate) engine: Rc<RefCell<Engine>>,
     pub(crate) basic_camera: BasicCamera,
     pub(crate) meshes: Vec<Mesh>,
-    pub(crate) execute_before_render: Box<dyn FnMut() -> ()>
+    pub(crate) execute_before_render: Box<dyn 'static + FnMut()>
 }
 
 impl Scene {
@@ -20,7 +20,7 @@ impl Scene {
         let mut free_camera = FreeCamera::new(window.inner_size().width as f32 / window.inner_size().height as f32);
         free_camera.tf().set_position(3.0, 1.5, 3.0);
 
-        let a = || {};
+        let a = move || {};
 
         Scene {
             engine: Rc::clone(engine),

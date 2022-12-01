@@ -42,14 +42,15 @@ fn main() {
     scene.meshes.push(cube);
     scene.meshes.push(cube2);
 
-    let update_meshes = || {
-        let dt = (std::time::Instant::now() - start_time).as_secs_f32();
+    let update_meshes = move || {
+        /*let dt = (std::time::Instant::now() - start_time).as_secs_f32();
         for mut mesh in &mut scene.meshes {
             mesh.transform.rotation.y = ANIMATION_SPEED * dt;
-        }
+        }*/
+        //cube2.transform.rotation.y += ANIMATION_SPEED;
     };
 
-    //scene.execute_before_render = update_meshes;
+    scene.execute_before_render = Box::new(update_meshes);
 
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
