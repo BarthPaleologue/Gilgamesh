@@ -1,4 +1,7 @@
+use std::borrow::{Borrow, BorrowMut};
+use std::cell::RefCell;
 use std::iter;
+use std::rc::Rc;
 use bytemuck::cast_slice;
 use winit::event::WindowEvent;
 use winit::window::Window;
@@ -8,7 +11,7 @@ pub const ANIMATION_SPEED: f32 = 1.0;
 
 pub struct Scene {
     pub(crate) basic_camera: BasicCamera,
-    pub(crate) meshes: Vec<Mesh>,
+    pub(crate) meshes: Vec<Rc<Mesh>>,
     pub(crate) execute_before_render: Box<dyn 'static + FnMut()>
 }
 
@@ -40,8 +43,8 @@ impl Scene {
         (self.execute_before_render)();
 
         let dt = dt.as_secs_f32();
-        for mut mesh in &mut self.meshes {
-            mesh.transform.rotation.y = ANIMATION_SPEED * dt;
+        for mut mesh in &self.meshes {
+            //mesh.transform.rotation.y = ANIMATION_SPEED * dt;
             let mvp_mat = self.basic_camera.get_projection_matrix() * self.basic_camera.get_view_matrix() * mesh.transform.compute_world_matrix();
             let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
             engine.queue.write_buffer(&mesh.material.uniform_buffer, 0, cast_slice(mvp_ref));
