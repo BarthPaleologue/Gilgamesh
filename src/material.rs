@@ -2,7 +2,7 @@ use bytemuck::cast_slice;
 use cgmath::{Matrix4, SquareMatrix};
 use wgpu::{BindGroup, BindGroupLayout, Buffer, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
 use wgpu::util::DeviceExt;
-use crate::{Scene, Vertex};
+use crate::{Engine, Vertex};
 
 pub struct Material {
     pub shader_module: ShaderModule,
@@ -14,8 +14,7 @@ pub struct Material {
 }
 
 impl Material {
-    pub fn new(scene: &Scene) -> Material {
-        let engine = (*scene.engine).borrow_mut();
+    pub fn new(engine: &mut Engine) -> Material {
         let shader = engine.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),

@@ -1,6 +1,4 @@
-use std::cell::RefCell;
 use std::iter;
-use std::rc::Rc;
 use bytemuck::cast_slice;
 use winit::event::WindowEvent;
 use winit::window::Window;
@@ -9,30 +7,28 @@ use crate::{BasicCamera, Engine, FreeCamera, Mesh, Transformable};
 pub const ANIMATION_SPEED: f32 = 1.0;
 
 pub struct Scene {
-    pub(crate) engine: Rc<RefCell<Engine>>,
     pub(crate) basic_camera: BasicCamera,
     pub(crate) meshes: Vec<Mesh>,
     pub(crate) execute_before_render: Box<dyn 'static + FnMut()>
 }
 
 impl Scene {
-    pub fn new(engine: &Rc<RefCell<Engine>>, window: &Window) -> Scene {
+    pub fn new(window: &Window) -> Scene {
         let mut free_camera = FreeCamera::new(window.inner_size().width as f32 / window.inner_size().height as f32);
         free_camera.tf().set_position(3.0, 1.5, 3.0);
 
         let a = move || {};
 
         Scene {
-            engine: Rc::clone(engine),
             basic_camera: free_camera.basic_camera,
             meshes: Vec::new(),
             execute_before_render: Box::new(a)
         }
     }
 
-    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
+    pub fn resize(&mut self, engine: &mut Engine, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
-            (*self.engine).borrow_mut().resize(new_size);
+            engine.resize(new_size);
             self.basic_camera.aspect_ratio = new_size.width as f32 / new_size.height as f32;
         }
     }
@@ -41,7 +37,7 @@ impl Scene {
         false
     }
 
-    pub(crate) fn update(&mut self, dt: std::time::Duration) {
+    pub(crate) fn update(&mut self, engine: &mut Engine, dt: std::time::Duration) {
         (self.execute_before_render)();
 
         let dt = dt.as_secs_f32();
@@ -49,13 +45,12 @@ impl Scene {
             mesh.transform.rotation.y = ANIMATION_SPEED * dt;
             let mvp_mat = self.basic_camera.get_projection_matrix() * self.basic_camera.get_view_matrix() * mesh.transform.compute_world_matrix();
             let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
-            (*self.engine).borrow_mut().queue.write_buffer(&mesh.material.uniform_buffer, 0, cast_slice(mvp_ref));
+            engine.queue.write_buffer(&mesh.material.uniform_buffer, 0, cast_slice(mvp_ref));
         }
     }
 
-    pub(crate) fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+    pub(crate) fn render(&mut self, engine: &mut Engine) -> Result<(), wgpu::SurfaceError> {
         //let output = self.init.surface.get_current_frame()?.output;
-        let engine = (*self.engine).borrow_mut();
         let output = engine.surface.get_current_texture()?;
         let view = output
             .texture

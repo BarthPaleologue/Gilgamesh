@@ -6,8 +6,6 @@ mod mesh;
 mod material;
 mod scene;
 
-use std::cell::RefCell;
-use std::rc::Rc;
 use camera::*;
 use engine::Engine;
 use transform::{Transform};
@@ -30,13 +28,13 @@ fn main() {
 
     let start_time = std::time::Instant::now();
 
-    let engine = Rc::new(RefCell::new(pollster::block_on(Engine::init_wgpu(&window))));
+    let mut engine = pollster::block_on(Engine::init_wgpu(&window));
 
-    let mut scene = Scene::new(&engine, &window);
+    let mut scene = Scene::new(&window);
 
-    let cube = Mesh::new_cube(&scene);
+    let cube = Mesh::new_cube(&mut engine);
 
-    let mut cube2 = Mesh::new_cube(&scene);
+    let mut cube2 = Mesh::new_cube(&mut engine);
     cube2.transform.position.y = 2.5;
 
     scene.meshes.push(cube);
@@ -69,10 +67,10 @@ fn main() {
                         ..
                     } => *control_flow = ControlFlow::Exit,
                     WindowEvent::Resized(physical_size) => {
-                        scene.resize(*physical_size)
+                        scene.resize(&mut engine, *physical_size)
                     }
                     WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                        scene.resize(**new_inner_size);
+                        scene.resize(&mut engine, **new_inner_size);
                     }
                     _ => {}
                 }
@@ -81,11 +79,11 @@ fn main() {
         Event::RedrawRequested(_) => {
             let now = std::time::Instant::now();
             let dt = now - start_time;
-            scene.update(dt);
+            scene.update(&mut engine, dt);
 
-            match scene.render() {
+            match scene.render(&mut engine) {
                 Ok(_) => {}
-                Err(wgpu::SurfaceError::Lost) => scene.resize((*engine).borrow_mut().size),
+                Err(wgpu::SurfaceError::Lost) => scene.resize(&mut engine, window.inner_size()),
                 Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
                 Err(e) => eprintln!("{}", e)
             }
