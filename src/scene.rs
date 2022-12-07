@@ -26,9 +26,8 @@ impl Scene {
         }
     }
 
-    pub fn resize(&mut self, engine: &mut Engine, new_size: winit::dpi::PhysicalSize<u32>) {
+    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
-            engine.resize(new_size);
             self.basic_camera.aspect_ratio = new_size.width as f32 / new_size.height as f32;
         }
     }

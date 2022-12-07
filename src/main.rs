@@ -67,10 +67,12 @@ fn main() {
                         ..
                     } => *control_flow = ControlFlow::Exit,
                     WindowEvent::Resized(physical_size) => {
-                        scene.resize(&mut engine, *physical_size)
+                        scene.resize(*physical_size);
+                        engine.resize(*physical_size);
                     }
                     WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                        scene.resize(&mut engine, **new_inner_size);
+                        scene.resize(**new_inner_size);
+                        engine.resize(**new_inner_size);
                     }
                     _ => {}
                 }
@@ -83,7 +85,10 @@ fn main() {
 
             match scene.render(&mut engine) {
                 Ok(_) => {}
-                Err(wgpu::SurfaceError::Lost) => scene.resize(&mut engine, window.inner_size()),
+                Err(wgpu::SurfaceError::Lost) => {
+                    scene.resize(window.inner_size());
+                    engine.resize(window.inner_size());
+                },
                 Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
                 Err(e) => eprintln!("{}", e)
             }
