@@ -9,7 +9,6 @@ pub const ANIMATION_SPEED: f32 = 1.0;
 pub struct Scene {
     pub(crate) basic_camera: BasicCamera,
     pub(crate) meshes: Vec<Mesh>,
-    pub(crate) execute_before_render: Box<dyn 'static + FnMut()>
 }
 
 impl Scene {
@@ -17,12 +16,9 @@ impl Scene {
         let mut free_camera = FreeCamera::new(window.inner_size().width as f32 / window.inner_size().height as f32);
         free_camera.tf().set_position(3.0, 1.5, 3.0);
 
-        let a = move || {};
-
         Scene {
             basic_camera: free_camera.basic_camera,
             meshes: Vec::new(),
-            execute_before_render: Box::new(a)
         }
     }
 
@@ -37,8 +33,6 @@ impl Scene {
     }
 
     pub(crate) fn update(&mut self, engine: &mut Engine, dt: std::time::Duration) {
-        (self.execute_before_render)();
-
         let dt = dt.as_secs_f32();
         for mut mesh in &mut self.meshes {
             mesh.transform.rotation.y = ANIMATION_SPEED * dt;
