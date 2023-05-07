@@ -24,7 +24,7 @@ impl Scene {
         }
     }
 
-    pub fn add_mesh(&mut self, mesh: Mesh) -> & mut Mesh {
+    pub fn add_mesh(&mut self, mesh: Mesh) -> &mut Mesh {
         self.meshes.push(mesh);
         self.meshes.last_mut().unwrap()
     }
