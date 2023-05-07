@@ -1,5 +1,6 @@
 use winit::window::Window;
 use cgmath::*;
+use winit::event::WindowEvent;
 
 pub const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
     1.0, 0.0, 0.0, 0.0,
@@ -67,6 +68,18 @@ impl Engine {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
+        }
+    }
+
+    pub fn manage_event(&mut self, event: &WindowEvent) {
+        match event {
+            WindowEvent::Resized(physical_size) => {
+                self.resize(*physical_size);
+            }
+            WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                self.resize(**new_inner_size);
+            }
+            _ => {}
         }
     }
 }

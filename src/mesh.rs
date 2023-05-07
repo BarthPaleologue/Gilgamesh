@@ -1,11 +1,14 @@
 use std::mem;
 use std::rc::Rc;
-use crate::{Engine, ToPrimitive, Transform, vertex_data};
 
 use bytemuck::{cast_slice, Pod, Zeroable};
 use wgpu::{Buffer, RenderPass};
 use wgpu::util::DeviceExt;
+
+use crate::transform::Transform;
 use crate::material::Material;
+use crate::engine::Engine;
+use crate::vertex_data;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]

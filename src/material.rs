@@ -2,7 +2,9 @@ use bytemuck::cast_slice;
 use cgmath::{Matrix4, SquareMatrix};
 use wgpu::{BindGroup, BindGroupLayout, Buffer, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
 use wgpu::util::DeviceExt;
-use crate::{Engine, Vertex};
+
+use crate::engine::Engine;
+use crate::mesh::Vertex;
 
 pub struct Material {
     pub shader_module: ShaderModule,

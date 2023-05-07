@@ -1,49 +1,36 @@
-extern crate core;
+use gfx_hal::pso::PrimitiveAssemblerDesc::Mesh;
+use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
+use winit::event_loop::{ControlFlow, EventLoop};
+use winit::window::{Window, WindowBuilder};
 
 mod engine;
-mod vertex_data;
-mod transform;
+mod scene;
 mod camera;
 mod mesh;
-mod material;
-mod scene;
 mod procedural_plane;
+mod transform;
+mod vertex_data;
+mod material;
 
-use cgmath::{InnerSpace, Rotation3};
-use camera::*;
-use engine::Engine;
-use transform::{Transform};
+use crate::engine::Engine;
+use crate::scene::Scene;
 
-use winit::{
-    event::*,
-    event_loop::{EventLoop, ControlFlow},
-    window::{WindowBuilder},
-};
-use cgmath::num_traits::ToPrimitive;
-
-use crate::mesh::{Vertex, Mesh};
-use crate::scene::{ANIMATION_SPEED, Scene};
-
-fn main() {
+pub fn init_gilgamesh() -> (EventLoop<()>, Window, Engine, Scene) {
     env_logger::init();
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new().build(&event_loop).unwrap();
     window.set_title("Gilgamesh");
 
-    let start_time = std::time::Instant::now();
-
     let mut engine = pollster::block_on(Engine::init_wgpu(&window));
-
     let mut scene = Scene::new(&window);
 
-    let mut procedural_plane = Mesh::new_procedural_terrain(10.0, 64, &|x: f32, y: f32| x.sin() * y.sin(), &mut engine);
+    scene.execute_before_render = Box::new(move || {});
 
-    let mut plane = scene.add_mesh(procedural_plane);
+    (event_loop, window, engine, scene)
+}
 
-    scene.execute_before_render = Box::new(move || {
-        let dt = std::time::Instant::now() - start_time;
-        let dt = dt.as_secs_f32();
-    });
+pub fn start_gilgamesh(event_loop: EventLoop<()>, window: Window, mut engine: Engine, mut scene: Scene) {
+    let start_time = std::time::Instant::now();
 
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {

@@ -3,7 +3,12 @@ use bytemuck::cast_slice;
 use cgmath::{InnerSpace, Rotation3};
 use winit::event::{ElementState, Event, KeyboardInput, MouseScrollDelta, VirtualKeyCode, WindowEvent};
 use winit::window::Window;
-use crate::{BasicCamera, Engine, FreeCamera, Mesh, Transformable};
+use crate::engine::Engine;
+use crate::transform::Transform;
+use crate::camera::{BasicCamera, FreeCamera};
+use crate::mesh::{Vertex, Mesh};
+use crate::material::Material;
+use crate::camera::Transformable;
 
 pub const ANIMATION_SPEED: f32 = 1.0;
 
