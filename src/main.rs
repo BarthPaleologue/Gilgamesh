@@ -50,77 +50,24 @@ fn main() {
             ref event,
             window_id
         } if window_id == window.id() => {
-            if !scene.input(event) {
-                match event {
-                    WindowEvent::CloseRequested | WindowEvent::KeyboardInput {
-                        input:
-                        KeyboardInput {
-                            state: ElementState::Pressed,
-                            virtual_keycode: Some(VirtualKeyCode::Escape),
-                            ..
-                        },
+            scene.manage_event(event);
+            match event {
+                WindowEvent::CloseRequested | WindowEvent::KeyboardInput {
+                    input:
+                    KeyboardInput {
+                        state: ElementState::Pressed,
+                        virtual_keycode: Some(VirtualKeyCode::Escape),
                         ..
-                    } => *control_flow = ControlFlow::Exit,
-                    WindowEvent::Resized(physical_size) => {
-                        scene.resize(*physical_size);
-                        engine.resize(*physical_size);
-                    }
-                    WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                        scene.resize(**new_inner_size);
-                        engine.resize(**new_inner_size);
-                    }
-                    WindowEvent::MouseWheel {
-                        delta: MouseScrollDelta::LineDelta(_, y),
-                        ..
-                    } => {
-                        let out_dir = scene.basic_camera.transform.position.normalize();
-                        scene.basic_camera.transform.position -= out_dir * *y * 0.1;
-                    }
-                    WindowEvent::KeyboardInput {
-                        input:
-                        KeyboardInput {
-                            state: ElementState::Pressed,
-                            virtual_keycode: Some(VirtualKeyCode::Left),
-                            ..
-                        },
-                        ..
-                    } => {
-                        // rotate camera around the y axis
-                        let rotation = cgmath::Quaternion::from_axis_angle(
-                            cgmath::Vector3::unit_y(),
-                            cgmath::Deg(-1.0),
-                        );
-                        scene.basic_camera.transform.position = rotation * scene.basic_camera.transform.position;
-                    }
-                    WindowEvent::KeyboardInput {
-                        input:
-                        KeyboardInput {
-                            state: ElementState::Pressed,
-                            virtual_keycode: Some(VirtualKeyCode::Right),
-                            ..
-                        },
-                        ..
-                    } => {
-                        // rotate camera around the y axis
-                        let rotation = cgmath::Quaternion::from_axis_angle(
-                            cgmath::Vector3::unit_y(),
-                            cgmath::Deg(1.0),
-                        );
-                        scene.basic_camera.transform.position = rotation * scene.basic_camera.transform.position;
-                    }
-                    WindowEvent::KeyboardInput {
-                        input:
-                        KeyboardInput {
-                            state: ElementState::Pressed,
-                            virtual_keycode: Some(VirtualKeyCode::W),
-                            ..
-                        },
-                        ..
-                    } => {
-                        scene.meshes.first_mut().unwrap().transform.position.z += 0.1;
-                    }
-                    _ => {}
+                    },
+                    ..
+                } => *control_flow = ControlFlow::Exit,
+                WindowEvent::Resized(physical_size) => {
+                    engine.resize(*physical_size);
                 }
+                WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                    engine.resize(**new_inner_size);
+                }
+                _ => {}
             }
         }
         Event::RedrawRequested(_) => {

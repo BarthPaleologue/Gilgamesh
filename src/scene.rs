@@ -1,6 +1,7 @@
 use std::iter;
 use bytemuck::cast_slice;
-use winit::event::WindowEvent;
+use cgmath::{InnerSpace, Rotation3};
+use winit::event::{ElementState, Event, KeyboardInput, MouseScrollDelta, VirtualKeyCode, WindowEvent};
 use winit::window::Window;
 use crate::{BasicCamera, Engine, FreeCamera, Mesh, Transformable};
 
@@ -35,8 +36,66 @@ impl Scene {
         }
     }
 
-    pub fn input(&mut self, event: &WindowEvent) -> bool {
-        false
+    pub fn manage_event(&mut self, event: &WindowEvent) -> () {
+        match event {
+            WindowEvent::Resized(physical_size) => {
+                self.resize(*physical_size);
+            }
+            WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                self.resize(**new_inner_size);
+            }
+            WindowEvent::MouseWheel {
+                delta: MouseScrollDelta::LineDelta(_, y),
+                ..
+            } => {
+                let out_dir = self.basic_camera.transform.position.normalize();
+                self.basic_camera.transform.position -= out_dir * *y * 0.1;
+            }
+            WindowEvent::KeyboardInput {
+                input:
+                KeyboardInput {
+                    state: ElementState::Pressed,
+                    virtual_keycode: Some(VirtualKeyCode::Left),
+                    ..
+                },
+                ..
+            } => {
+                // rotate camera around the y axis
+                let rotation = cgmath::Quaternion::from_axis_angle(
+                    cgmath::Vector3::unit_y(),
+                    cgmath::Deg(-1.0),
+                );
+                self.basic_camera.transform.position = rotation * self.basic_camera.transform.position;
+            }
+            WindowEvent::KeyboardInput {
+                input:
+                KeyboardInput {
+                    state: ElementState::Pressed,
+                    virtual_keycode: Some(VirtualKeyCode::Right),
+                    ..
+                },
+                ..
+            } => {
+                // rotate camera around the y axis
+                let rotation = cgmath::Quaternion::from_axis_angle(
+                    cgmath::Vector3::unit_y(),
+                    cgmath::Deg(1.0),
+                );
+                self.basic_camera.transform.position = rotation * self.basic_camera.transform.position;
+            }
+            WindowEvent::KeyboardInput {
+                input:
+                KeyboardInput {
+                    state: ElementState::Pressed,
+                    virtual_keycode: Some(VirtualKeyCode::W),
+                    ..
+                },
+                ..
+            } => {
+                self.meshes.first_mut().unwrap().transform.position.z += 0.1;
+            }
+            _ => {}
+        }
     }
 
     pub fn update(&mut self, engine: &mut Engine, dt: std::time::Duration) {
