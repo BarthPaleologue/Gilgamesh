@@ -55,7 +55,7 @@ impl Mesh {
     pub fn from_data(indices: Vec<u32>, positions: Vec<[f32;3]>, engine: &mut Engine) -> Mesh {
         let mut colors = Vec::new();
         for _ in 0..positions.len() {
-            colors.push([1.0, 1.0, 1.0]);
+            colors.push([0.2, 0.2, 0.2]);
         }
         let vertex_buffer = engine.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),

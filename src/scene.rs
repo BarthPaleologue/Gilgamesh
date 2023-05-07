@@ -7,8 +7,9 @@ use crate::{BasicCamera, Engine, FreeCamera, Mesh, Transformable};
 pub const ANIMATION_SPEED: f32 = 1.0;
 
 pub struct Scene {
-    pub(crate) basic_camera: BasicCamera,
-    pub(crate) meshes: Vec<Mesh>,
+    pub basic_camera: BasicCamera,
+    pub meshes: Vec<Mesh>,
+    pub execute_before_render: Box<dyn FnMut()>,
 }
 
 impl Scene {
@@ -19,7 +20,13 @@ impl Scene {
         Scene {
             basic_camera: free_camera.basic_camera,
             meshes: Vec::new(),
+            execute_before_render: Box::new(|| {}),
         }
+    }
+
+    pub fn add_mesh(&mut self, mesh: Mesh) -> & mut Mesh {
+        self.meshes.push(mesh);
+        self.meshes.last_mut().unwrap()
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
@@ -28,11 +35,11 @@ impl Scene {
         }
     }
 
-    pub(crate) fn input(&mut self, event: &WindowEvent) -> bool {
+    pub fn input(&mut self, event: &WindowEvent) -> bool {
         false
     }
 
-    pub(crate) fn update(&mut self, engine: &mut Engine, dt: std::time::Duration) {
+    pub fn update(&mut self, engine: &mut Engine, dt: std::time::Duration) {
         let dt = dt.as_secs_f32();
         for mut mesh in &mut self.meshes {
             //mesh.transform.rotation.y = ANIMATION_SPEED * dt;
@@ -40,9 +47,11 @@ impl Scene {
             let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
             engine.queue.write_buffer(&mesh.material.uniform_buffer, 0, cast_slice(mvp_ref));
         }
+
+        (self.execute_before_render)();
     }
 
-    pub(crate) fn render(&mut self, engine: &mut Engine) -> Result<(), wgpu::SurfaceError> {
+    pub fn render(&mut self, engine: &mut Engine) -> Result<(), wgpu::SurfaceError> {
         //let output = self.init.surface.get_current_frame()?.output;
         let output = engine.surface.get_current_texture()?;
         let view = output
@@ -76,8 +85,8 @@ impl Scene {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.2,
-                            g: 0.2,
+                            r: 0.1,
+                            g: 0.1,
                             b: 0.2,
                             a: 1.0,
                         }),

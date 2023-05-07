@@ -35,9 +35,14 @@ fn main() {
 
     let mut scene = Scene::new(&window);
 
-    let procedurla_plane = Mesh::new_procedural_plane(10.0, 64, &mut engine);
+    let mut procedural_plane = Mesh::new_procedural_terrain(10.0, 64, &|x: f32, y: f32| x.sin() * y.sin(), &mut engine);
 
-    scene.meshes.push(procedurla_plane);
+    let mut plane = scene.add_mesh(procedural_plane);
+
+    scene.execute_before_render = Box::new(move || {
+        let dt = std::time::Instant::now() - start_time;
+        let dt = dt.as_secs_f32();
+    });
 
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
@@ -77,7 +82,7 @@ fn main() {
                 Err(wgpu::SurfaceError::Lost) => {
                     scene.resize(window.inner_size());
                     engine.resize(window.inner_size());
-                },
+                }
                 Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
                 Err(e) => eprintln!("{}", e)
             }
