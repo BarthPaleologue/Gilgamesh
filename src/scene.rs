@@ -35,7 +35,7 @@ impl Scene {
     pub(crate) fn update(&mut self, engine: &mut Engine, dt: std::time::Duration) {
         let dt = dt.as_secs_f32();
         for mut mesh in &mut self.meshes {
-            mesh.transform.rotation.y = ANIMATION_SPEED * dt;
+            //mesh.transform.rotation.y = ANIMATION_SPEED * dt;
             let mvp_mat = self.basic_camera.get_projection_matrix() * self.basic_camera.get_view_matrix() * mesh.transform.compute_world_matrix();
             let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
             engine.queue.write_buffer(&mesh.material.uniform_buffer, 0, cast_slice(mvp_ref));

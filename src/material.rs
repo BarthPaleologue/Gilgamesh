@@ -79,8 +79,6 @@ impl Material {
             }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                cull_mode: None,
                 polygon_mode: wgpu::PolygonMode::Line,
                 ..Default::default()
             },

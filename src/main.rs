@@ -1,3 +1,5 @@
+extern crate core;
+
 mod engine;
 mod vertex_data;
 mod transform;
@@ -5,6 +7,7 @@ mod camera;
 mod mesh;
 mod material;
 mod scene;
+mod procedural_plane;
 
 use camera::*;
 use engine::Engine;
@@ -32,9 +35,9 @@ fn main() {
 
     let mut scene = Scene::new(&window);
 
-    let cube = Mesh::new_cube(&mut engine);
+    let procedurla_plane = Mesh::new_procedural_plane(10.0, 64, &mut engine);
 
-    scene.meshes.push(cube);
+    scene.meshes.push(procedurla_plane);
 
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
