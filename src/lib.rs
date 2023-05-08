@@ -1,6 +1,7 @@
 use gfx_hal::pso::PrimitiveAssemblerDesc::Mesh;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
+use winit::platform::unix::EventLoopExtUnix;
 use winit::window::{Window, WindowBuilder};
 use crate::app::App;
 
@@ -19,7 +20,7 @@ use crate::scene::Scene;
 
 pub fn init_gilgamesh() -> App {
     env_logger::init();
-    let event_loop = EventLoop::new();
+    let event_loop = EventLoop::new_any_thread();
     let window = WindowBuilder::new().build(&event_loop).unwrap();
     window.set_title("Gilgamesh");
 
