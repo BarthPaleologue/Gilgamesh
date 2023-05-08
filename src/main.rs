@@ -3,7 +3,6 @@ extern crate gilgamesh;
 use gilgamesh::{init_gilgamesh, start_gilgamesh};
 use gilgamesh::mesh::Mesh;
 
-#[test]
 fn main() {
     let mut app = init_gilgamesh();
 
