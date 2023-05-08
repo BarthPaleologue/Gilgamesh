@@ -25,7 +25,7 @@ impl Mesh {
             }
         }
 
-        Mesh::from_vertex_data(indices, positions, engine)
+        Mesh::from_vertex_data(indices, positions, None, engine)
     }
 
     pub fn new_procedural_plane(size: f32, nb_subdivisions: u32, engine: &mut Engine) -> Mesh {

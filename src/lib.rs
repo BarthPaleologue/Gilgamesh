@@ -10,7 +10,6 @@ pub mod camera;
 pub mod mesh;
 pub mod procedural_plane;
 pub mod transform;
-pub mod vertex_data;
 pub mod material;
 pub mod app;
 
