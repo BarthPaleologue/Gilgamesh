@@ -1,8 +1,7 @@
-use gfx_hal::pso::PrimitiveAssemblerDesc::Mesh;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::platform::unix::EventLoopExtUnix;
-use winit::window::{Window, WindowBuilder};
+use winit::window::{WindowBuilder};
 use crate::app::App;
 
 pub mod engine;
@@ -24,7 +23,7 @@ pub fn init_gilgamesh() -> App {
     let window = WindowBuilder::new().build(&event_loop).unwrap();
     window.set_title("Gilgamesh");
 
-    let mut engine = pollster::block_on(Engine::init_wgpu(&window));
+    let engine = pollster::block_on(Engine::init_wgpu(&window));
     let mut scene = Scene::new(&window);
 
     scene.execute_before_render = Box::new(move || {});
@@ -37,9 +36,7 @@ pub fn init_gilgamesh() -> App {
     }
 }
 
-pub fn start_gilgamesh(mut app: App) {
-    let start_time = std::time::Instant::now();
-
+pub fn start_gilgamesh(app: App) {
     let event_loop = app.event_loop;
     let window = app.window;
     let mut engine = app.engine;
@@ -67,9 +64,7 @@ pub fn start_gilgamesh(mut app: App) {
             }
         }
         Event::RedrawRequested(_) => {
-            let now = std::time::Instant::now();
-            let dt = now - start_time;
-            scene.update(&mut engine, dt);
+            scene.update(&mut engine);
 
             match scene.render(&mut engine) {
                 Ok(_) => {}

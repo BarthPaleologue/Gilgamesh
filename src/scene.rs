@@ -1,13 +1,11 @@
 use std::iter;
 use bytemuck::cast_slice;
 use cgmath::{InnerSpace, Rotation3};
-use winit::event::{ElementState, Event, KeyboardInput, MouseScrollDelta, VirtualKeyCode, WindowEvent};
+use winit::event::{ElementState, KeyboardInput, MouseScrollDelta, VirtualKeyCode, WindowEvent};
 use winit::window::Window;
 use crate::engine::Engine;
-use crate::transform::Transform;
 use crate::camera::{BasicCamera, FreeCamera};
-use crate::mesh::{Vertex, Mesh};
-use crate::material::Material;
+use crate::mesh::{Mesh};
 use crate::camera::Transformable;
 
 pub const ANIMATION_SPEED: f32 = 1.0;
@@ -103,10 +101,8 @@ impl Scene {
         }
     }
 
-    pub fn update(&mut self, engine: &mut Engine, dt: std::time::Duration) {
-        let dt = dt.as_secs_f32();
-        for mut mesh in &mut self.meshes {
-            //mesh.transform.rotation.y = ANIMATION_SPEED * dt;
+    pub fn update(&mut self, engine: &mut Engine) {
+        for mesh in self.meshes.iter() {
             let mvp_mat = self.basic_camera.get_projection_matrix() * self.basic_camera.get_view_matrix() * mesh.transform.compute_world_matrix();
             let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
             engine.queue.write_buffer(&mesh.material.uniform_buffer, 0, cast_slice(mvp_ref));

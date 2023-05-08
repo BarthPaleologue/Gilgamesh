@@ -3,8 +3,8 @@ use crate::mesh::Mesh;
 
 impl Mesh {
     pub fn new_procedural_terrain(size: f32, nb_subdivisions: u32, height_fn: &dyn Fn(f32, f32) -> f32, engine: &mut Engine) -> Mesh {
-        let mut positions = vec!([0.0, 0.0, 0.0]; ((nb_subdivisions * nb_subdivisions) as usize));
-        let mut indices = vec!(0; ((6 * (nb_subdivisions - 1) * (nb_subdivisions - 1)) as usize));
+        let mut positions = vec!([0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize);
+        let mut indices = vec!(0; (6 * (nb_subdivisions - 1) * (nb_subdivisions - 1)) as usize);
 
         for x in 0..nb_subdivisions {
             for y in 0..nb_subdivisions {
