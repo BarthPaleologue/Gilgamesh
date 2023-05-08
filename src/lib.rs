@@ -17,6 +17,7 @@ use crate::engine::Engine;
 use crate::scene::Scene;
 
 pub fn init_gilgamesh() -> App {
+    env_logger::init();
     let event_loop = EventLoop::new_any_thread();
     let window = WindowBuilder::new().build(&event_loop).unwrap();
     window.set_title("Gilgamesh");
