@@ -11,7 +11,7 @@ use crate::camera::Transformable;
 pub const ANIMATION_SPEED: f32 = 1.0;
 
 pub struct Scene {
-    pub basic_camera: BasicCamera,
+    pub active_camera: BasicCamera,
     pub meshes: Vec<Mesh>,
     pub execute_before_render: Box<dyn FnMut()>,
 }
@@ -22,7 +22,7 @@ impl Scene {
         free_camera.tf().set_position(3.0, 1.5, 3.0);
 
         Scene {
-            basic_camera: free_camera.basic_camera,
+            active_camera: free_camera.basic_camera,
             meshes: Vec::new(),
             execute_before_render: Box::new(|| {}),
         }
@@ -35,7 +35,7 @@ impl Scene {
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
-            self.basic_camera.aspect_ratio = new_size.width as f32 / new_size.height as f32;
+            self.active_camera.aspect_ratio = new_size.width as f32 / new_size.height as f32;
         }
     }
 
@@ -51,8 +51,8 @@ impl Scene {
                 delta: MouseScrollDelta::LineDelta(_, y),
                 ..
             } => {
-                let out_dir = self.basic_camera.transform.position.normalize();
-                self.basic_camera.transform.position -= out_dir * *y * 0.1;
+                let out_dir = self.active_camera.transform.position.normalize();
+                self.active_camera.transform.position -= out_dir * *y * 0.1;
             }
             WindowEvent::KeyboardInput {
                 input:
@@ -68,7 +68,7 @@ impl Scene {
                     cgmath::Vector3::unit_y(),
                     cgmath::Deg(-1.0),
                 );
-                self.basic_camera.transform.position = rotation * self.basic_camera.transform.position;
+                self.active_camera.transform.position = rotation * self.active_camera.transform.position;
             }
             WindowEvent::KeyboardInput {
                 input:
@@ -84,7 +84,39 @@ impl Scene {
                     cgmath::Vector3::unit_y(),
                     cgmath::Deg(1.0),
                 );
-                self.basic_camera.transform.position = rotation * self.basic_camera.transform.position;
+                self.active_camera.transform.position = rotation * self.active_camera.transform.position;
+            },
+            WindowEvent::KeyboardInput {
+                input:
+                KeyboardInput {
+                    state: ElementState::Pressed,
+                    virtual_keycode: Some(VirtualKeyCode::Up),
+                    ..
+                },
+                ..
+            } => {
+                // rotate camera around the x axis
+                let rotation = cgmath::Quaternion::from_axis_angle(
+                    self.active_camera.transform.right(),
+                    cgmath::Deg(-1.0),
+                );
+                self.active_camera.transform.position = rotation * self.active_camera.transform.position;
+            },
+            WindowEvent::KeyboardInput {
+                input:
+                KeyboardInput {
+                    state: ElementState::Pressed,
+                    virtual_keycode: Some(VirtualKeyCode::Down),
+                    ..
+                },
+                ..
+            } => {
+                // rotate camera around the x axis
+                let rotation = cgmath::Quaternion::from_axis_angle(
+                    self.active_camera.transform.right(),
+                    cgmath::Deg(1.0),
+                );
+                self.active_camera.transform.position = rotation * self.active_camera.transform.position;
             }
             WindowEvent::KeyboardInput {
                 input:
@@ -95,7 +127,10 @@ impl Scene {
                 },
                 ..
             } => {
-                self.meshes.first_mut().unwrap().transform.position.z += 0.1;
+                //let mesh = self.meshes.first_mut().unwrap();
+                //mesh.transform.position += mesh.transform.forward() * ANIMATION_SPEED;
+                let camera = &mut self.active_camera;
+                camera.transform.position -= camera.transform.forward() * ANIMATION_SPEED;
             }
             _ => {}
         }
@@ -103,7 +138,7 @@ impl Scene {
 
     pub fn update(&mut self, engine: &mut Engine) {
         for mesh in self.meshes.iter() {
-            let mvp_mat = self.basic_camera.get_projection_matrix() * self.basic_camera.get_view_matrix() * mesh.transform.compute_world_matrix();
+            let mvp_mat = self.active_camera.get_projection_matrix() * self.active_camera.get_view_matrix() * mesh.transform.compute_world_matrix();
             let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
             engine.queue.write_buffer(&mesh.material.uniform_buffer, 0, cast_slice(mvp_ref));
         }
