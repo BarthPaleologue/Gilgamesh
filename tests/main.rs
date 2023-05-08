@@ -1,4 +1,3 @@
-extern crate core;
 extern crate gilgamesh;
 
 use gilgamesh::{init_gilgamesh, start_gilgamesh};
