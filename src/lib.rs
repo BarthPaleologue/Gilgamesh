@@ -2,20 +2,22 @@ use gfx_hal::pso::PrimitiveAssemblerDesc::Mesh;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
+use crate::app::App;
 
-mod engine;
-mod scene;
-mod camera;
-mod mesh;
-mod procedural_plane;
-mod transform;
-mod vertex_data;
-mod material;
+pub mod engine;
+pub mod scene;
+pub mod camera;
+pub mod mesh;
+pub mod procedural_plane;
+pub mod transform;
+pub mod vertex_data;
+pub mod material;
+pub mod app;
 
 use crate::engine::Engine;
 use crate::scene::Scene;
 
-pub fn init_gilgamesh() -> (EventLoop<()>, Window, Engine, Scene) {
+pub fn init_gilgamesh() -> App {
     env_logger::init();
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new().build(&event_loop).unwrap();
@@ -26,11 +28,21 @@ pub fn init_gilgamesh() -> (EventLoop<()>, Window, Engine, Scene) {
 
     scene.execute_before_render = Box::new(move || {});
 
-    (event_loop, window, engine, scene)
+    App {
+        event_loop,
+        window,
+        engine,
+        scene,
+    }
 }
 
-pub fn start_gilgamesh(event_loop: EventLoop<()>, window: Window, mut engine: Engine, mut scene: Scene) {
+pub fn start_gilgamesh(mut app: App) {
     let start_time = std::time::Instant::now();
+
+    let event_loop = app.event_loop;
+    let window = app.window;
+    let mut engine = app.engine;
+    let mut scene = app.scene;
 
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
