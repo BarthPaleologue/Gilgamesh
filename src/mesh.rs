@@ -66,7 +66,7 @@ impl Mesh {
             index_buffer: index_buffer,
             colors,
             normals,
-            material: Rc::new(Material::new(engine)),
+            material: Rc::new(Material::new_default(engine)),
         }
     }
 

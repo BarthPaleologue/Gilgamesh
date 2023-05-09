@@ -140,7 +140,7 @@ impl Scene {
         for mesh in self.meshes.iter() {
             let mvp_mat = self.active_camera.get_projection_matrix() * self.active_camera.get_view_matrix() * mesh.transform.compute_world_matrix();
             let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
-            engine.queue.write_buffer(&mesh.material.uniform_buffer, 0, cast_slice(mvp_ref));
+            engine.queue.write_buffer(&mesh.material.vertex_uniform_buffer, 0, cast_slice(mvp_ref));
         }
 
         (self.execute_before_render)();

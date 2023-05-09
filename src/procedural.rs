@@ -1,8 +1,10 @@
+use std::rc::Rc;
 use crate::engine::Engine;
+use crate::material::Material;
 use crate::mesh::Mesh;
 
 impl Mesh {
-    pub fn new_procedural_terrain(size: f32, nb_subdivisions: u32, height_fn: &dyn Fn(f32, f32) -> f32, engine: &mut Engine) -> Mesh {
+    pub fn new_procedural_terrain(size: f32, nb_subdivisions: u32, height_fn: &dyn Fn(f32, f32) -> f32, max_height: f32, engine: &mut Engine) -> Mesh {
         let mut positions = vec!([0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize);
         let mut indices = vec!(0; (6 * (nb_subdivisions - 1) * (nb_subdivisions - 1)) as usize);
 
@@ -25,10 +27,13 @@ impl Mesh {
             }
         }
 
-        Mesh::from_vertex_data(indices, positions, None, engine)
+        let mut mesh = Mesh::from_vertex_data(indices, positions, None, engine);
+        mesh.material = Rc::from(Material::new_terrain(max_height, engine));
+
+        mesh
     }
 
     pub fn new_procedural_plane(size: f32, nb_subdivisions: u32, engine: &mut Engine) -> Mesh {
-        Mesh::new_procedural_terrain(size, nb_subdivisions, &|_, _| 0.0, engine)
+        Mesh::new_procedural_terrain(size, nb_subdivisions, &|_, _| 0.0, 1.0, engine)
     }
 }
