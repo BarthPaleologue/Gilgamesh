@@ -39,13 +39,19 @@ impl Mesh {
         Mesh::new_procedural_terrain(size, nb_subdivisions, &|_, _| 0.0, 1.0, engine)
     }
 
-    pub fn new_procedural_sphere(diameter: f32, nb_subdivisions: u32, engine: &mut Engine) -> Mesh {
+    pub fn new_procedural_sphere(diameter: f32, nb_subdivisions: u32, height_fn: &dyn Fn(f32, f32, f32) -> f32, engine: &mut Engine) -> Mesh {
         let sphere = IcoSphere::new(nb_subdivisions as usize, |_| ());
         let vertices_raw = sphere.raw_points();
         let mut vertices: Vec<[f32;3]> = Vec::with_capacity(vertices_raw.len());
 
         for vertex in vertices_raw {
-            vertices.push([vertex[0] * diameter / 4.0, vertex[1] * diameter / 4.0, vertex[2] * diameter / 4.0]);
+            let unit_vertex = [vertex[0], vertex[1], vertex[2]];
+            let height = height_fn(vertex[0], vertex[1], vertex[2]) as f32;
+            let original_vertex = [vertex[0] * diameter / 4.0, vertex[1] * diameter / 4.0, vertex[2] * diameter / 4.0];
+
+            let moved_vertex = [original_vertex[0] + unit_vertex[0] * height, original_vertex[1] + unit_vertex[1] * height, original_vertex[2] + unit_vertex[2] * height];
+
+            vertices.push([moved_vertex[0], moved_vertex[1], moved_vertex[2]]);
         }
 
         let indices = sphere.get_all_indices();
