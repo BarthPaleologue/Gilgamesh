@@ -87,20 +87,20 @@ pub fn create_normals(positions: &Vec<[f32; 3]>, indices: &Vec<u32>) -> Vec<[f32
         let i1 = indices[i * 3 + 1] as usize;
         let i2 = indices[i * 3 + 2] as usize;
 
-        let v1 = [
+        let edge1 = [
             positions[i1][0] - positions[i0][0],
             positions[i1][1] - positions[i0][1],
             positions[i1][2] - positions[i0][2],
         ];
-        let v2 = [
+        let edge2 = [
             positions[i2][0] - positions[i0][0],
             positions[i2][1] - positions[i0][1],
             positions[i2][2] - positions[i0][2],
         ];
         let normal = [
-            v1[1] * v2[2] - v1[2] * v2[1],
-            v1[2] * v2[0] - v1[0] * v2[2],
-            v1[0] * v2[1] - v1[1] * v2[0],
+            edge1[1] * edge2[2] - edge1[2] * edge2[1],
+            edge1[2] * edge2[0] - edge1[0] * edge2[2],
+            edge1[0] * edge2[1] - edge1[1] * edge2[0],
         ];
 
         normals[i0][0] += normal[0];
@@ -114,6 +114,14 @@ pub fn create_normals(positions: &Vec<[f32; 3]>, indices: &Vec<u32>) -> Vec<[f32
         normals[i2][0] += normal[0];
         normals[i2][1] += normal[1];
         normals[i2][2] += normal[2];
+    }
+
+    // Normalize normals
+    for normal in normals.iter_mut() {
+        let length = (normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]).sqrt();
+        normal[0] /= length;
+        normal[1] /= length;
+        normal[2] /= length;
     }
 
     normals

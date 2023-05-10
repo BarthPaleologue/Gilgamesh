@@ -29,7 +29,7 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let light_dir: vec3<f32> = normalize(vec3<f32>(0.5, 1.0, 1.0));
-    let normal01: vec3<f32> = normalize(in.vNormal); //* 0.5 + 0.5;
+    let normal01: vec3<f32> = in.vNormal;
 
     let ndl: f32 = max(dot(in.vNormal, light_dir), 0.02);
 

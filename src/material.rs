@@ -128,7 +128,7 @@ impl Material {
         });
 
         // store light and eye positions
-        let light_dir: &[f32; 3] = &[1.0, 0.5, 0.5];
+        let light_dir: &[f32; 3] = &[1.0, 1.0, 0.5];
         let camera_position: &[f32; 3] = &[0.0, 0.0, 0.0];
         engine.queue.write_buffer(&fragment_uniform_buffer, 0, cast_slice(light_dir));
         engine.queue.write_buffer(&fragment_uniform_buffer, 12, cast_slice(camera_position));

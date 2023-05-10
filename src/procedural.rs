@@ -1,4 +1,6 @@
 use std::rc::Rc;
+use hexasphere::shapes::IcoSphere;
+
 use crate::engine::Engine;
 use crate::material::Material;
 use crate::mesh::Mesh;
@@ -35,5 +37,19 @@ impl Mesh {
 
     pub fn new_procedural_plane(size: f32, nb_subdivisions: u32, engine: &mut Engine) -> Mesh {
         Mesh::new_procedural_terrain(size, nb_subdivisions, &|_, _| 0.0, 1.0, engine)
+    }
+
+    pub fn new_procedural_sphere(diameter: f32, nb_subdivisions: u32, engine: &mut Engine) -> Mesh {
+        let sphere = IcoSphere::new(nb_subdivisions as usize, |_| ());
+        let vertices_raw = sphere.raw_points();
+        let mut vertices: Vec<[f32;3]> = Vec::with_capacity(vertices_raw.len());
+
+        for vertex in vertices_raw {
+            vertices.push([vertex[0] * diameter / 4.0, vertex[1] * diameter / 4.0, vertex[2] * diameter / 4.0]);
+        }
+
+        let indices = sphere.get_all_indices();
+
+        Mesh::from_vertex_data(indices, vertices, None, engine)
     }
 }
