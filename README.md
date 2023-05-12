@@ -19,13 +19,14 @@ extern crate gilgamesh;
 use gilgamesh::{init_gilgamesh, start_gilgamesh};
 use gilgamesh::mesh::Mesh;
 
-#[test]
 fn main() {
     let mut app = init_gilgamesh();
 
-    let procedural_plane = Mesh::new_procedural_terrain(10.0, 64, &|x: f32, y: f32| x.sin() * y.sin(), &mut app.engine);
+    let sphere = Mesh::new_procedural_sphere(5.0, 32, &|x, y, z| {
+        f32::powi(f32::sin(60.0 * x * y * z), 2) / 2.0
+    }, 0.5, &mut app.engine);
 
-    app.scene.add_mesh(procedural_plane);
+    app.scene.add_mesh(sphere);
 
     start_gilgamesh(app);
 }
