@@ -13,6 +13,7 @@ pub const ANIMATION_SPEED: f32 = 1.0;
 pub struct Scene {
     pub active_camera: BasicCamera,
     pub meshes: HashMap<String, Mesh>,
+    pub on_key_pressed: Vec<Box<dyn FnMut(&Engine, &VirtualKeyCode)>>,
     pub on_before_render: Vec<Box<dyn FnMut(&Engine, &mut HashMap<String, Mesh>)>>,
 }
 
@@ -23,7 +24,8 @@ impl Scene {
 
         Scene {
             active_camera: free_camera.basic_camera,
-            meshes: std::collections::HashMap::new(),
+            meshes: HashMap::new(),
+            on_key_pressed: Vec::new(),
             on_before_render: Vec::new(),
         }
     }
@@ -38,7 +40,22 @@ impl Scene {
         }
     }
 
-    pub fn manage_event(&mut self, event: &WindowEvent) {
+    pub fn manage_event(&mut self, event: &WindowEvent, engine: &Engine) {
+        match event {
+            WindowEvent::KeyboardInput {
+                input:
+                KeyboardInput {
+                    state: ElementState::Pressed,
+                    virtual_keycode: Some(key),
+                    ..
+                },
+                ..
+            } => {
+                self.on_key_pressed.iter_mut().for_each(|f| f(engine, key));
+            }
+            _ => {}
+        }
+
         match event {
             WindowEvent::Resized(physical_size) => {
                 self.resize(*physical_size);

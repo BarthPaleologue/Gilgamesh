@@ -88,7 +88,7 @@ impl Engine {
                 window_id
             } if window_id == self.window.id() => {
                 self.manage_event(event);
-                scene.manage_event(event);
+                scene.manage_event(event, &self);
 
                 match event {
                     WindowEvent::CloseRequested | WindowEvent::KeyboardInput {
