@@ -2,8 +2,8 @@ use bytemuck::cast_slice;
 use cgmath::{Matrix4, SquareMatrix};
 use wgpu::{BindGroup, BindGroupLayout, Buffer, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
 use wgpu::util::{DeviceExt};
+use crate::app::App;
 
-use crate::engine::Engine;
 use crate::mesh::Vertex;
 
 pub struct Material {
@@ -16,7 +16,7 @@ pub struct Material {
 }
 
 impl Material {
-    pub fn new_default(engine: &mut Engine) -> Material {
+    pub fn new_default(engine: &mut App) -> Material {
         let shader = engine.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
@@ -105,7 +105,7 @@ impl Material {
         }
     }
 
-    pub fn new_2d_terrain(max_height: f32, engine: &mut Engine) -> Material {
+    pub fn new_2d_terrain(max_height: f32, engine: &mut App) -> Material {
         let shader = engine.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("./flat_terrain.wgsl").into()),
@@ -221,7 +221,7 @@ impl Material {
         }
     }
 
-    pub fn new_sphere_terrain(sphere_radius: f32, max_height: f32, engine: &mut Engine) -> Material {
+    pub fn new_sphere_terrain(sphere_radius: f32, max_height: f32, engine: &mut App) -> Material {
         let shader = engine.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("./sphere_terrain.wgsl").into()),

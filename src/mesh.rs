@@ -4,10 +4,10 @@ use std::rc::Rc;
 use bytemuck::{cast_slice, Pod, Zeroable};
 use wgpu::{Buffer, RenderPass};
 use wgpu::util::DeviceExt;
+use crate::app::App;
 
 use crate::transform::Transform;
 use crate::material::Material;
-use crate::engine::Engine;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
@@ -40,7 +40,7 @@ pub struct Mesh {
 }
 
 impl Mesh {
-    pub fn from_vertex_data(indices: Vec<u32>, positions: Vec<[f32; 3]>, normals: Option<Vec<[f32; 3]>>, engine: &mut Engine) -> Mesh {
+    pub fn from_vertex_data(indices: Vec<u32>, positions: Vec<[f32; 3]>, normals: Option<Vec<[f32; 3]>>, engine: &mut App) -> Mesh {
         let colors = vec![[0.6, 0.6, 0.6]; positions.len()];
         let normals = match normals {
             Some(v) => v,

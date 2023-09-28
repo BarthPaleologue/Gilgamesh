@@ -5,7 +5,7 @@ use cgmath::{EuclideanSpace, Matrix4, perspective, Point3, Rad, Vector3};
 mod transform;
 
 use transform::{Transform};
-use crate::engine::OPENGL_TO_WGPU_MATRIX;
+use crate::app::OPENGL_TO_WGPU_MATRIX;
 
 pub struct BasicCamera {
     pub transform: Transform,

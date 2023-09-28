@@ -3,7 +3,7 @@ use bytemuck::cast_slice;
 use cgmath::{InnerSpace, Rotation3};
 use winit::event::{ElementState, KeyboardInput, MouseScrollDelta, VirtualKeyCode, WindowEvent};
 use winit::window::Window;
-use crate::engine::Engine;
+use crate::app::App;
 use crate::camera::{BasicCamera, FreeCamera};
 use crate::mesh::{Mesh};
 use crate::camera::Transformable;
@@ -17,8 +17,8 @@ pub struct Scene {
 }
 
 impl Scene {
-    pub fn new(window: &Window) -> Scene {
-        let mut free_camera = FreeCamera::new(window.inner_size().width as f32 / window.inner_size().height as f32);
+    pub fn new(engine: &App) -> Scene {
+        let mut free_camera = FreeCamera::new(engine.window.inner_size().width as f32 / engine.window.inner_size().height as f32);
         free_camera.tf().set_position(3.0, 1.5, 3.0);
 
         Scene {
@@ -136,7 +136,7 @@ impl Scene {
         }
     }
 
-    pub fn update(&mut self, engine: &mut Engine) {
+    pub fn update(&mut self, engine: &mut App) {
         for mesh in self.meshes.iter() {
             let mvp_mat = self.active_camera.get_projection_matrix() * self.active_camera.get_view_matrix() * mesh.transform.compute_world_matrix();
             let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
@@ -146,7 +146,7 @@ impl Scene {
         (self.execute_before_render)();
     }
 
-    pub fn render(&mut self, engine: &mut Engine) -> Result<(), wgpu::SurfaceError> {
+    pub fn render(&mut self, engine: &mut App) -> Result<(), wgpu::SurfaceError> {
         //let output = self.init.surface.get_current_frame()?.output;
         let output = engine.surface.get_current_texture()?;
         let view = output
