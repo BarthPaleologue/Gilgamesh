@@ -11,7 +11,7 @@ use std::collections::HashMap;
 pub const ANIMATION_SPEED: f32 = 1.0;
 
 pub struct Scene {
-    pub active_camera: BasicCamera,
+    pub active_camera: Option<BasicCamera>,
     pub meshes: HashMap<String, Mesh>,
     pub on_key_pressed: Vec<Box<dyn FnMut(&Engine, &VirtualKeyCode)>>,
     pub on_before_render: Vec<Box<dyn FnMut(&Engine, &mut HashMap<String, Mesh>)>>,
@@ -19,15 +19,16 @@ pub struct Scene {
 
 impl Scene {
     pub fn new(engine: &Engine) -> Scene {
-        let mut free_camera = FreeCamera::new(engine.window.inner_size().width as f32 / engine.window.inner_size().height as f32);
-        free_camera.tf().set_position(3.0, 1.5, 3.0);
-
         Scene {
-            active_camera: free_camera.basic_camera,
+            active_camera: None,
             meshes: HashMap::new(),
             on_key_pressed: Vec::new(),
             on_before_render: Vec::new(),
         }
+    }
+
+    pub fn set_active_camera(&mut self, camera: BasicCamera) {
+        self.active_camera = Some(camera);
     }
 
     pub fn add_mesh(&mut self, mesh: Mesh) {
@@ -36,7 +37,7 @@ impl Scene {
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
-            self.active_camera.aspect_ratio = new_size.width as f32 / new_size.height as f32;
+            self.active_camera.as_mut().unwrap().aspect_ratio = new_size.width as f32 / new_size.height as f32;
         }
     }
 
@@ -67,8 +68,8 @@ impl Scene {
                 delta: MouseScrollDelta::LineDelta(_, y),
                 ..
             } => {
-                let out_dir = self.active_camera.transform.position.normalize();
-                self.active_camera.transform.position -= out_dir * *y * 0.1;
+                let out_dir = self.active_camera.as_mut().unwrap().transform.position.normalize();
+                self.active_camera.as_mut().unwrap().transform.position -= out_dir * *y * 0.1;
             }
             WindowEvent::KeyboardInput {
                 input:
@@ -84,7 +85,7 @@ impl Scene {
                     cgmath::Vector3::unit_y(),
                     cgmath::Deg(-1.0),
                 );
-                self.active_camera.transform.position = rotation * self.active_camera.transform.position;
+                self.active_camera.as_mut().unwrap().transform.position = rotation * self.active_camera.as_mut().unwrap().transform.position;
             }
             WindowEvent::KeyboardInput {
                 input:
@@ -100,7 +101,7 @@ impl Scene {
                     cgmath::Vector3::unit_y(),
                     cgmath::Deg(1.0),
                 );
-                self.active_camera.transform.position = rotation * self.active_camera.transform.position;
+                self.active_camera.as_mut().unwrap().transform.position = rotation * self.active_camera.as_mut().unwrap().transform.position;
             }
             WindowEvent::KeyboardInput {
                 input:
@@ -113,10 +114,10 @@ impl Scene {
             } => {
                 // rotate camera around the x axis
                 let rotation = cgmath::Quaternion::from_axis_angle(
-                    self.active_camera.transform.right(),
+                    self.active_camera.as_mut().unwrap().transform.right(),
                     cgmath::Deg(-1.0),
                 );
-                self.active_camera.transform.position = rotation * self.active_camera.transform.position;
+                self.active_camera.as_mut().unwrap().transform.position = rotation * self.active_camera.as_mut().unwrap().transform.position;
             }
             WindowEvent::KeyboardInput {
                 input:
@@ -129,10 +130,10 @@ impl Scene {
             } => {
                 // rotate camera around the x axis
                 let rotation = cgmath::Quaternion::from_axis_angle(
-                    self.active_camera.transform.right(),
+                    self.active_camera.as_mut().unwrap().transform.right(),
                     cgmath::Deg(1.0),
                 );
-                self.active_camera.transform.position = rotation * self.active_camera.transform.position;
+                self.active_camera.as_mut().unwrap().transform.position = rotation * self.active_camera.as_mut().unwrap().transform.position;
             }
             WindowEvent::KeyboardInput {
                 input:
@@ -145,7 +146,7 @@ impl Scene {
             } => {
                 //let mesh = self.meshes.first_mut().unwrap();
                 //mesh.transform.position += mesh.transform.forward() * ANIMATION_SPEED;
-                let camera = &mut self.active_camera;
+                let camera = &mut self.active_camera.as_mut().unwrap();
                 camera.transform.position -= camera.transform.forward() * ANIMATION_SPEED;
             }
             _ => {}
@@ -156,7 +157,7 @@ impl Scene {
         self.on_before_render.iter_mut().for_each(|f| f(engine, &mut self.meshes));
 
         for mesh in self.meshes.values_mut() {
-            let mvp_mat = self.active_camera.get_projection_matrix() * self.active_camera.get_view_matrix() * mesh.transform.compute_world_matrix();
+            let mvp_mat = self.active_camera.as_mut().unwrap().get_projection_matrix() * self.active_camera.as_mut().unwrap().get_view_matrix() * mesh.transform.compute_world_matrix();
             let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
             engine.queue.write_buffer(&mesh.material.vertex_uniform_buffer, 0, cast_slice(mvp_ref));
         }

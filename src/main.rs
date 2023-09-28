@@ -1,7 +1,8 @@
 extern crate gilgamesh;
 
 use cgmath::Rotation3;
-use winit::event::VirtualKeyCode;
+use winit::event::VirtualKeyCode::*;
+use gilgamesh::camera::{FreeCamera, Transformable};
 use gilgamesh::engine::Engine;
 use gilgamesh::mesh::Mesh;
 use gilgamesh::scene::Scene;
@@ -10,6 +11,11 @@ fn main() {
     let (mut engine, event_loop) = Engine::new("Gilgamesh", false);
 
     let mut scene = Scene::new(&engine);
+
+    let mut free_camera = FreeCamera::new(engine.window.inner_size().width as f32 / engine.window.inner_size().height as f32);
+    free_camera.tf().set_position(3.0, 1.5, 3.0);
+
+    scene.set_active_camera(free_camera.basic_camera);
 
     let sphere = Mesh::new_procedural_sphere("Sphere".into(), 5.0, 32, &|x, y, z| {
         f32::powi(f32::sin(60.0 * x * y * z), 2) * 0.5
@@ -24,10 +30,10 @@ fn main() {
 
     scene.on_key_pressed.push(Box::new(|engine, key| {
         match key {
-            &VirtualKeyCode::T => {
+            T => {
                 println!("T pressed at {}", engine.get_elapsed_time());
             }
-            &VirtualKeyCode::Left => {
+            Left => {
                 let rotation = cgmath::Quaternion::from_axis_angle(
                     cgmath::Vector3::unit_y(),
                     cgmath::Deg(-1.0),
