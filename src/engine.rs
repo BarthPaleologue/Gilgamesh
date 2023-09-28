@@ -21,8 +21,6 @@ pub struct Engine {
     pub queue: Queue,
     pub config: SurfaceConfiguration,
     pub size: PhysicalSize<u32>,
-
-    pub on_before_render: Vec<Box<dyn FnMut(&Window)>>,
 }
 
 
@@ -42,7 +40,6 @@ impl Engine {
             queue,
             config,
             size,
-            on_before_render: Vec::new(),
         };
 
         (app, event_loop)
@@ -92,10 +89,6 @@ impl Engine {
                 }
             }
             Event::RedrawRequested(_) => {
-                scene.update(&mut self);
-
-                self.on_before_render.iter_mut().for_each(|f| f(&self.window));
-
                 match scene.render(&mut self) {
                     Ok(_) => {}
                     Err(wgpu::SurfaceError::Lost) => {

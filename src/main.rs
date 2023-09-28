@@ -16,11 +16,11 @@ fn main() {
 
     scene.add_mesh(sphere);
 
-    engine.on_before_render.push(Box::new(|_| {
+    scene.on_before_render.push(Box::new(|_| {
         println!("Before render");
     }));
 
-    engine.on_before_render.push(Box::new(|_| {
+    scene.on_before_render.push(Box::new(|_| {
         println!("Also Before render");
     }));
 

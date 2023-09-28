@@ -13,7 +13,7 @@ pub const ANIMATION_SPEED: f32 = 1.0;
 pub struct Scene {
     pub active_camera: BasicCamera,
     pub meshes: Vec<Mesh>,
-    pub execute_before_render: Box<dyn FnMut()>,
+    pub on_before_render: Vec<Box<dyn FnMut(&Engine)>>,
 }
 
 impl Scene {
@@ -24,7 +24,7 @@ impl Scene {
         Scene {
             active_camera: free_camera.basic_camera,
             meshes: Vec::new(),
-            execute_before_render: Box::new(|| {}),
+            on_before_render: Vec::new(),
         }
     }
 
@@ -84,7 +84,7 @@ impl Scene {
                     cgmath::Deg(1.0),
                 );
                 self.active_camera.transform.position = rotation * self.active_camera.transform.position;
-            },
+            }
             WindowEvent::KeyboardInput {
                 input:
                 KeyboardInput {
@@ -100,7 +100,7 @@ impl Scene {
                     cgmath::Deg(-1.0),
                 );
                 self.active_camera.transform.position = rotation * self.active_camera.transform.position;
-            },
+            }
             WindowEvent::KeyboardInput {
                 input:
                 KeyboardInput {
@@ -135,17 +135,15 @@ impl Scene {
         }
     }
 
-    pub fn update(&mut self, engine: &mut Engine) {
+    pub fn render(&mut self, engine: &mut Engine) -> Result<(), wgpu::SurfaceError> {
+        self.on_before_render.iter_mut().for_each(|f| f(engine));
+
         for mesh in self.meshes.iter() {
             let mvp_mat = self.active_camera.get_projection_matrix() * self.active_camera.get_view_matrix() * mesh.transform.compute_world_matrix();
             let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
             engine.queue.write_buffer(&mesh.material.vertex_uniform_buffer, 0, cast_slice(mvp_ref));
         }
 
-        (self.execute_before_render)();
-    }
-
-    pub fn render(&mut self, engine: &mut Engine) -> Result<(), wgpu::SurfaceError> {
         //let output = self.init.surface.get_current_frame()?.output;
         let output = engine.surface.get_current_texture()?;
         let view = output
