@@ -68,7 +68,7 @@ impl Engine {
 
         let (surface, device, queue, config, size) = pollster::block_on(init_wgpu(&window));
 
-        let app = Engine {
+        let engine = Engine {
             window,
             surface,
             device,
@@ -81,7 +81,7 @@ impl Engine {
             on_window_resize: Vec::new(),
         };
 
-        (app, event_loop)
+        (engine, event_loop)
     }
 
     pub fn get_delta_time(&self) -> f32 {
