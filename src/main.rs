@@ -1,5 +1,6 @@
 extern crate gilgamesh;
 
+use std::rc::Rc;
 use cgmath::Rotation3;
 use winit::event::VirtualKeyCode::*;
 use gilgamesh::camera::{FreeCamera, Transformable};
@@ -22,10 +23,10 @@ fn main() {
     }, 0.5, &mut engine);
 
 
-    scene.add_mesh(sphere);
+    let sphere_idx = scene.add_mesh(sphere);
 
-    scene.on_before_render.push(Box::new(|engine, meshes| {
-        meshes.get_mut("Sphere").unwrap().transform.set_position(0.0, engine.get_elapsed_time().sin(), 0.0);
+    scene.on_before_render.push(Box::new(move |engine, meshes| {
+        meshes[sphere_idx].transform.set_position(0.0, engine.get_elapsed_time().sin(), 0.0);
     }));
 
     scene.on_key_pressed.push(Box::new(|engine, key| {

@@ -3,25 +3,23 @@ use bytemuck::cast_slice;
 use cgmath::{InnerSpace, Rotation3};
 use winit::event::{ElementState, KeyboardInput, MouseScrollDelta, VirtualKeyCode, WindowEvent};
 use crate::engine::Engine;
-use crate::camera::{BasicCamera, FreeCamera};
+use crate::camera::{BasicCamera};
 use crate::mesh::{Mesh};
-use crate::camera::Transformable;
-use std::collections::HashMap;
 
 pub const ANIMATION_SPEED: f32 = 1.0;
 
 pub struct Scene {
     pub active_camera: Option<BasicCamera>,
-    pub meshes: HashMap<String, Mesh>,
+    pub meshes: Vec<Mesh>,
     pub on_key_pressed: Vec<Box<dyn FnMut(&Engine, &VirtualKeyCode)>>,
-    pub on_before_render: Vec<Box<dyn FnMut(&Engine, &mut HashMap<String, Mesh>)>>,
+    pub on_before_render: Vec<Box<dyn FnMut(&Engine, &mut Vec<Mesh>)>>,
 }
 
 impl Scene {
     pub fn new(engine: &Engine) -> Scene {
         Scene {
             active_camera: None,
-            meshes: HashMap::new(),
+            meshes: Vec::new(),
             on_key_pressed: Vec::new(),
             on_before_render: Vec::new(),
         }
@@ -31,8 +29,9 @@ impl Scene {
         self.active_camera = Some(camera);
     }
 
-    pub fn add_mesh(&mut self, mesh: Mesh) {
-        self.meshes.insert(mesh.name.clone(), mesh);
+    pub fn add_mesh(&mut self, mesh: Mesh) -> usize {
+        self.meshes.push(mesh);
+        self.meshes.len() - 1
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
@@ -156,7 +155,7 @@ impl Scene {
     pub fn render(&mut self, engine: &mut Engine) -> Result<(), wgpu::SurfaceError> {
         self.on_before_render.iter_mut().for_each(|f| f(engine, &mut self.meshes));
 
-        for mesh in self.meshes.values_mut() {
+        for mesh in self.meshes.iter_mut() {
             let mvp_mat = self.active_camera.as_mut().unwrap().get_projection_matrix() * self.active_camera.as_mut().unwrap().get_view_matrix() * mesh.transform.compute_world_matrix();
             let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
             engine.queue.write_buffer(&mesh.material.vertex_uniform_buffer, 0, cast_slice(mvp_ref));
@@ -214,7 +213,7 @@ impl Scene {
                 }),
             });
 
-            for mesh in self.meshes.values_mut() {
+            for mesh in self.meshes.iter_mut() {
                 mesh.draw(&mut render_pass);
             }
         }
