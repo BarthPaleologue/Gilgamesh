@@ -22,7 +22,7 @@ pub struct Engine {
     pub config: SurfaceConfiguration,
     pub size: PhysicalSize<u32>,
 
-    pub on_before_render: Vec<Box<dyn 'static + FnMut(&Window)>>,
+    pub on_before_render: Vec<Box<dyn FnMut(&Window)>>,
 }
 
 
