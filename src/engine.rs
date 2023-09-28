@@ -1,3 +1,4 @@
+use std::default::Default;
 use std::time::SystemTime;
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
@@ -5,7 +6,7 @@ use cgmath::*;
 use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
 use winit::dpi::{PhysicalSize, Size};
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
-use winit::platform::unix::EventLoopExtUnix;
+use winit::platform::x11::EventLoopBuilderExtX11;
 use crate::scene::Scene;
 
 pub const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
@@ -31,9 +32,9 @@ pub struct Engine {
 
 
 impl Engine {
-    pub fn new(name: &str, width: u32, height: u32, any_thread: bool) -> (Self, EventLoop<()>) {
+    pub fn new(name: &str, width: u32, height: u32) -> (Self, EventLoop<()>) {
         env_logger::init();
-        let event_loop = if any_thread { EventLoop::new_any_thread() } else { EventLoop::new() };
+        let event_loop = EventLoop::new();
         let window = WindowBuilder::new()
             .with_inner_size(Size::Physical(PhysicalSize { width, height }))
             .build(&event_loop).unwrap();
@@ -135,9 +136,13 @@ impl Engine {
 
 pub async fn init_wgpu(window: &Window) -> (Surface, Device, Queue, SurfaceConfiguration, PhysicalSize<u32>) {
     let size = window.inner_size();
-    let instance = wgpu::Instance::new(wgpu::Backends::all());
-    //let instance = wgpu::Instance::new(wgpu::Backends::VULKAN);
-    let surface = unsafe { instance.create_surface(window) };
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        backends: wgpu::Backends::all(),
+        dx12_shader_compiler: Default::default()
+    });
+
+    let surface = unsafe { instance.create_surface(window) }.unwrap();
+
     let adapter = instance
         .request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::default(),
@@ -159,12 +164,23 @@ pub async fn init_wgpu(window: &Window) -> (Surface, Device, Queue, SurfaceConfi
         .await
         .unwrap();
 
+    let surface_caps = surface.get_capabilities(&adapter);
+    // Shader code in this tutorial assumes an sRGB surface texture. Using a different
+    // one will result all the colors coming out darker. If you want to support non
+    // sRGB surfaces, you'll need to account for that when drawing to the frame.
+    let surface_format = surface_caps.formats.iter()
+        .copied()
+        .find(|f| f.is_srgb())
+        .unwrap_or(surface_caps.formats[0]);
+
     let config = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-        format: *surface.get_supported_formats(&adapter).first().unwrap(),
+        format: surface_format,
         width: size.width,
         height: size.height,
         present_mode: wgpu::PresentMode::Fifo,
+        alpha_mode: surface_caps.alpha_modes[0],
+        view_formats: vec![],
     };
     surface.configure(&device, &config);
 

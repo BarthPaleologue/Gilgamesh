@@ -7,7 +7,7 @@ use gilgamesh::mesh::Mesh;
 use gilgamesh::scene::Scene;
 
 fn main() {
-    let (mut engine, event_loop) = Engine::new("Gilgamesh", 1000, 800, false);
+    let (mut engine, event_loop) = Engine::new("Gilgamesh", 1000, 800);
 
     let mut scene = Scene::new(&engine);
 

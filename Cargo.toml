@@ -8,10 +8,26 @@ license = "Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-wgpu = "0.13.1"
+cfg-if = "1"
+wgpu = "0.17.0"
 cgmath = "0.18.0"
 pollster = "0.3.0"
-winit = "0.26.1"
+winit = "0.28.6"
 bytemuck = { version = "1.4.1", features = ["derive"] }
 env_logger = "0.10.0"
 hexasphere = "8.1.0"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1.6"
+console_log = "1.0"
+wgpu = { version = "0.17", features = ["webgl"]}
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4.30"
+web-sys = { version = "0.3", features = [
+    "Document",
+    "Window",
+    "Element",
+]}
+
+[lib]
+crate-type = ["cdylib", "rlib"]

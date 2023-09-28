@@ -180,6 +180,7 @@ impl Scene {
             format: wgpu::TextureFormat::Depth24Plus,
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             label: None,
+            view_formats: &[],
         });
         let depth_view = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
 
