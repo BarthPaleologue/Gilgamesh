@@ -8,11 +8,13 @@ use crate::mesh::{Mesh};
 
 pub const ANIMATION_SPEED: f32 = 1.0;
 
+pub type SceneClosure = Box<dyn FnMut(&Engine, &mut Vec<Mesh>)>;
+
 pub struct Scene {
     pub active_camera: Option<BasicCamera>,
     pub meshes: Vec<Mesh>,
     pub on_key_pressed: Vec<Box<dyn FnMut(&Engine, &VirtualKeyCode)>>,
-    pub on_before_render: Vec<Box<dyn FnMut(&Engine, &mut Vec<Mesh>)>>,
+    pub on_before_render: Vec<SceneClosure>,
 }
 
 impl Scene {
@@ -35,7 +37,7 @@ impl Scene {
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
-        if new_size.width > 0 && new_size.height > 0 {
+        if new_size.height > 0 {
             self.active_camera.as_mut().unwrap().aspect_ratio = new_size.width as f32 / new_size.height as f32;
         }
     }

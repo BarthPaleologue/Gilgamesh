@@ -3,7 +3,7 @@ use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
 use cgmath::*;
 use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
-use winit::dpi::PhysicalSize;
+use winit::dpi::{PhysicalSize, Size};
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::platform::unix::EventLoopExtUnix;
 use crate::scene::Scene;
@@ -25,14 +25,18 @@ pub struct Engine {
     clock: SystemTime,
     elapsed_time: f32,
     delta_time: f32,
+
+    pub on_window_resize: Vec<Box<dyn FnMut(PhysicalSize<u32>)>>,
 }
 
 
 impl Engine {
-    pub fn new(name: &str, any_thread: bool) -> (Self, EventLoop<()>) {
+    pub fn new(name: &str, width: u32, height: u32, any_thread: bool) -> (Self, EventLoop<()>) {
         env_logger::init();
         let event_loop = if any_thread { EventLoop::new_any_thread() } else { EventLoop::new() };
-        let window = WindowBuilder::new().build(&event_loop).unwrap();
+        let window = WindowBuilder::new()
+            .with_inner_size(Size::Physical(PhysicalSize { width, height }))
+            .build(&event_loop).unwrap();
         window.set_title(name);
 
         let (surface, device, queue, config, size) = pollster::block_on(init_wgpu(&window));
@@ -47,6 +51,7 @@ impl Engine {
             clock: SystemTime::now(),
             elapsed_time: SystemTime::now().elapsed().unwrap().as_secs_f32(),
             delta_time: 0.0,
+            on_window_resize: Vec::new(),
         };
 
         (app, event_loop)
@@ -103,6 +108,7 @@ impl Engine {
                     _ => {}
                 }
             }
+
             Event::RedrawRequested(_) => {
                 let new_elapsed_time = self.clock.elapsed().unwrap().as_secs_f32();
                 self.delta_time = new_elapsed_time - self.elapsed_time;
@@ -118,6 +124,7 @@ impl Engine {
                     Err(e) => eprintln!("{}", e)
                 }
             }
+
             Event::MainEventsCleared => {
                 self.window.request_redraw();
             }
