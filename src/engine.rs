@@ -6,7 +6,6 @@ use cgmath::*;
 use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
 use winit::dpi::{PhysicalSize, Size};
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
-use winit::platform::x11::EventLoopBuilderExtX11;
 use crate::scene::Scene;
 
 pub const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
@@ -33,12 +32,39 @@ pub struct Engine {
 
 impl Engine {
     pub fn new(name: &str, width: u32, height: u32) -> (Self, EventLoop<()>) {
-        env_logger::init();
+        cfg_if::cfg_if! {
+            if #[cfg(target_arch = "wasm32")] {
+                std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+                console_log::init_with_level(log::Level::Warn).expect("Couldn't initialize logger");
+            } else {
+                env_logger::init();
+            }
+        }
+
         let event_loop = EventLoop::new();
         let window = WindowBuilder::new()
             .with_inner_size(Size::Physical(PhysicalSize { width, height }))
             .build(&event_loop).unwrap();
         window.set_title(name);
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            // Winit prevents sizing with CSS, so we have to set
+            // the size manually when on web.
+            use winit::dpi::PhysicalSize;
+            window.set_inner_size(PhysicalSize::new(450, 400));
+
+            use winit::platform::web::WindowExtWebSys;
+            web_sys::window()
+                .and_then(|win| win.document())
+                .and_then(|doc| {
+                    let dst = doc.get_element_by_id("wasm-example")?;
+                    let canvas = web_sys::Element::from(window.canvas());
+                    dst.append_child(&canvas).ok()?;
+                    Some(())
+                })
+                .expect("Couldn't append canvas to document body.");
+        }
 
         let (surface, device, queue, config, size) = pollster::block_on(init_wgpu(&window));
 
@@ -138,7 +164,7 @@ pub async fn init_wgpu(window: &Window) -> (Surface, Device, Queue, SurfaceConfi
     let size = window.inner_size();
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends: wgpu::Backends::all(),
-        dx12_shader_compiler: Default::default()
+        dx12_shader_compiler: Default::default(),
     });
 
     let surface = unsafe { instance.create_surface(window) }.unwrap();
