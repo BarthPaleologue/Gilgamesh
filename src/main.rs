@@ -16,7 +16,13 @@ fn main() {
 
     scene.add_mesh(sphere);
 
-    engine.start(scene, event_loop, move |window| {
-        println!("{:?}", window.inner_size());
-    });
+    engine.on_before_render.push(Box::new(|_| {
+        println!("Before render");
+    }));
+
+    engine.on_before_render.push(Box::new(|_| {
+        println!("Also Before render");
+    }));
+
+    engine.start(scene, event_loop);
 }

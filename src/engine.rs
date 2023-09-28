@@ -21,6 +21,8 @@ pub struct Engine {
     pub queue: Queue,
     pub config: SurfaceConfiguration,
     pub size: PhysicalSize<u32>,
+
+    pub on_before_render: Vec<Box<dyn 'static + FnMut(&Window)>>,
 }
 
 
@@ -40,6 +42,7 @@ impl Engine {
             queue,
             config,
             size,
+            on_before_render: Vec::new(),
         };
 
         (app, event_loop)
@@ -66,7 +69,7 @@ impl Engine {
         }
     }
 
-    pub fn start(mut self, mut scene: Scene, event_loop: EventLoop<()>, mut callback: impl FnMut(&Window) + 'static) {
+    pub fn start(mut self, mut scene: Scene, event_loop: EventLoop<()>) {
         event_loop.run(move |event, _, control_flow| match event {
             Event::WindowEvent {
                 ref event,
@@ -91,7 +94,7 @@ impl Engine {
             Event::RedrawRequested(_) => {
                 scene.update(&mut self);
 
-                callback(&self.window);
+                self.on_before_render.iter_mut().for_each(|f| f(&self.window));
 
                 match scene.render(&mut self) {
                     Ok(_) => {}
