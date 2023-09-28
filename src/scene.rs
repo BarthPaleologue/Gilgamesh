@@ -28,7 +28,7 @@ impl Scene {
         }
     }
 
-    pub fn add_mesh(&mut self, mut mesh: Mesh) {
+    pub fn add_mesh(&mut self, mesh: Mesh) {
         self.meshes.insert(mesh.name.clone(), mesh);
     }
 
