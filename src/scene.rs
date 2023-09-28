@@ -8,12 +8,12 @@ use crate::mesh::{Mesh};
 
 pub const ANIMATION_SPEED: f32 = 1.0;
 
-pub type SceneClosure = Box<dyn FnMut(&Engine, &mut Vec<Mesh>)>;
+pub type SceneClosure = Box<dyn FnMut(&Engine, &mut Option<BasicCamera>, &mut Vec<Mesh>)>;
 
 pub struct Scene {
     pub active_camera: Option<BasicCamera>,
     pub meshes: Vec<Mesh>,
-    pub on_key_pressed: Vec<Box<dyn FnMut(&Engine, &VirtualKeyCode)>>,
+    pub on_key_pressed: Vec<Box<dyn FnMut(&Engine, &mut Option<BasicCamera>, &VirtualKeyCode)>>,
     pub on_before_render: Vec<SceneClosure>,
 }
 
@@ -53,7 +53,7 @@ impl Scene {
                 },
                 ..
             } => {
-                self.on_key_pressed.iter_mut().for_each(|f| f(engine, key));
+                self.on_key_pressed.iter_mut().for_each(|f| f(engine, &mut self.active_camera, key));
             }
             _ => {}
         }
@@ -72,90 +72,12 @@ impl Scene {
                 let out_dir = self.active_camera.as_mut().unwrap().transform.position.normalize();
                 self.active_camera.as_mut().unwrap().transform.position -= out_dir * *y * 0.1;
             }
-            WindowEvent::KeyboardInput {
-                input:
-                KeyboardInput {
-                    state: ElementState::Pressed,
-                    virtual_keycode: Some(VirtualKeyCode::Left),
-                    ..
-                },
-                ..
-            } => {
-                // rotate camera around the y axis
-                let rotation = cgmath::Quaternion::from_axis_angle(
-                    cgmath::Vector3::unit_y(),
-                    cgmath::Deg(-1.0),
-                );
-                self.active_camera.as_mut().unwrap().transform.position = rotation * self.active_camera.as_mut().unwrap().transform.position;
-            }
-            WindowEvent::KeyboardInput {
-                input:
-                KeyboardInput {
-                    state: ElementState::Pressed,
-                    virtual_keycode: Some(VirtualKeyCode::Right),
-                    ..
-                },
-                ..
-            } => {
-                // rotate camera around the y axis
-                let rotation = cgmath::Quaternion::from_axis_angle(
-                    cgmath::Vector3::unit_y(),
-                    cgmath::Deg(1.0),
-                );
-                self.active_camera.as_mut().unwrap().transform.position = rotation * self.active_camera.as_mut().unwrap().transform.position;
-            }
-            WindowEvent::KeyboardInput {
-                input:
-                KeyboardInput {
-                    state: ElementState::Pressed,
-                    virtual_keycode: Some(VirtualKeyCode::Up),
-                    ..
-                },
-                ..
-            } => {
-                // rotate camera around the x axis
-                let rotation = cgmath::Quaternion::from_axis_angle(
-                    self.active_camera.as_mut().unwrap().transform.right(),
-                    cgmath::Deg(-1.0),
-                );
-                self.active_camera.as_mut().unwrap().transform.position = rotation * self.active_camera.as_mut().unwrap().transform.position;
-            }
-            WindowEvent::KeyboardInput {
-                input:
-                KeyboardInput {
-                    state: ElementState::Pressed,
-                    virtual_keycode: Some(VirtualKeyCode::Down),
-                    ..
-                },
-                ..
-            } => {
-                // rotate camera around the x axis
-                let rotation = cgmath::Quaternion::from_axis_angle(
-                    self.active_camera.as_mut().unwrap().transform.right(),
-                    cgmath::Deg(1.0),
-                );
-                self.active_camera.as_mut().unwrap().transform.position = rotation * self.active_camera.as_mut().unwrap().transform.position;
-            }
-            WindowEvent::KeyboardInput {
-                input:
-                KeyboardInput {
-                    state: ElementState::Pressed,
-                    virtual_keycode: Some(VirtualKeyCode::W),
-                    ..
-                },
-                ..
-            } => {
-                //let mesh = self.meshes.first_mut().unwrap();
-                //mesh.transform.position += mesh.transform.forward() * ANIMATION_SPEED;
-                let camera = &mut self.active_camera.as_mut().unwrap();
-                camera.transform.position -= camera.transform.forward() * ANIMATION_SPEED;
-            }
             _ => {}
         }
     }
 
     pub fn render(&mut self, engine: &mut Engine) -> Result<(), wgpu::SurfaceError> {
-        self.on_before_render.iter_mut().for_each(|f| f(engine, &mut self.meshes));
+        self.on_before_render.iter_mut().for_each(|f| f(engine, &mut self.active_camera, &mut self.meshes));
 
         for mesh in self.meshes.iter_mut() {
             let mvp_mat = self.active_camera.as_mut().unwrap().get_projection_matrix() * self.active_camera.as_mut().unwrap().get_view_matrix() * mesh.transform.compute_world_matrix();
