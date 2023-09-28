@@ -3,22 +3,22 @@ use cgmath::{EuclideanSpace, Matrix4, perspective, Point3, Rad, Vector3};
 
 
 use crate::transform::Transform;
-use crate::engine::OPENGL_TO_WGPU_MATRIX;
+use crate::engine::{Engine, OPENGL_TO_WGPU_MATRIX};
 
 pub struct BasicCamera {
     pub transform: Transform,
     pub aspect_ratio: f32,
     pub z_near: f32,
-    pub z_far: f32
+    pub z_far: f32,
 }
 
 impl BasicCamera {
-    pub fn new(aspect_ratio: f32) -> BasicCamera {
+    pub fn new(engine: &Engine) -> BasicCamera {
         BasicCamera {
             transform: Transform::new(),
-            aspect_ratio,
+            aspect_ratio: engine.window.inner_size().width as f32 / engine.window.inner_size().height as f32,
             z_near: 0.1,
-            z_far: 100.0
+            z_far: 100.0,
         }
     }
     pub fn get_view_matrix(&self) -> Matrix4<f32> {
@@ -34,9 +34,9 @@ pub struct FreeCamera {
 }
 
 impl FreeCamera {
-    pub fn new(aspect_ratio: f32) -> FreeCamera {
+    pub fn new(engine: &Engine) -> FreeCamera {
         FreeCamera {
-            basic_camera: BasicCamera::new(aspect_ratio)
+            basic_camera: BasicCamera::new(engine)
         }
     }
 }

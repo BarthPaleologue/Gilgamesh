@@ -13,7 +13,7 @@ fn main() {
 
     let mut scene = Scene::new(&engine);
 
-    let mut free_camera = FreeCamera::new(engine.window.inner_size().width as f32 / engine.window.inner_size().height as f32);
+    let mut free_camera = FreeCamera::new(&engine);
     free_camera.tf().set_position(3.0, 1.5, 3.0);
 
     scene.set_active_camera(free_camera.basic_camera);
