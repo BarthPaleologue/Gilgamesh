@@ -1,3 +1,4 @@
+use std::time::SystemTime;
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
 use cgmath::*;
@@ -21,6 +22,9 @@ pub struct Engine {
     pub queue: Queue,
     pub config: SurfaceConfiguration,
     pub size: PhysicalSize<u32>,
+    clock: SystemTime,
+    elapsed_time: f32,
+    delta_time: f32,
 }
 
 
@@ -40,9 +44,20 @@ impl Engine {
             queue,
             config,
             size,
+            clock: SystemTime::now(),
+            elapsed_time: SystemTime::now().elapsed().unwrap().as_secs_f32(),
+            delta_time: 0.0,
         };
 
         (app, event_loop)
+    }
+
+    pub fn get_delta_time(&self) -> f32 {
+        self.delta_time
+    }
+
+    pub fn get_elapsed_time(&self) -> f32 {
+        self.elapsed_time
     }
 
     pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
@@ -89,6 +104,10 @@ impl Engine {
                 }
             }
             Event::RedrawRequested(_) => {
+                let new_elapsed_time = self.clock.elapsed().unwrap().as_secs_f32();
+                self.delta_time = new_elapsed_time - self.elapsed_time;
+                self.elapsed_time = new_elapsed_time;
+
                 match scene.render(&mut self) {
                     Ok(_) => {}
                     Err(wgpu::SurfaceError::Lost) => {
