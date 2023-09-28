@@ -4,7 +4,7 @@ use std::rc::Rc;
 use bytemuck::{cast_slice, Pod, Zeroable};
 use wgpu::{Buffer, RenderPass};
 use wgpu::util::DeviceExt;
-use crate::app::App;
+use crate::engine::Engine;
 
 use crate::transform::Transform;
 use crate::material::Material;
@@ -40,7 +40,7 @@ pub struct Mesh {
 }
 
 impl Mesh {
-    pub fn from_vertex_data(indices: Vec<u32>, positions: Vec<[f32; 3]>, normals: Option<Vec<[f32; 3]>>, engine: &mut App) -> Mesh {
+    pub fn from_vertex_data(indices: Vec<u32>, positions: Vec<[f32; 3]>, normals: Option<Vec<[f32; 3]>>, engine: &mut Engine) -> Mesh {
         let colors = vec![[0.6, 0.6, 0.6]; positions.len()];
         let normals = match normals {
             Some(v) => v,
@@ -62,15 +62,15 @@ impl Mesh {
             transform: Transform::new(),
             positions,
             vertex_buffer,
-            indices: indices,
-            index_buffer: index_buffer,
+            indices,
+            index_buffer,
             colors,
             normals,
             material: Rc::new(Material::new_default(engine)),
         }
     }
 
-    pub fn draw<'a, 'b>(&'a self, render_pass: &'b mut RenderPass<'a>) -> () {
+    pub fn draw<'a>(&'a self, render_pass: &mut RenderPass<'a>) {
         self.material.bind(render_pass);
 
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
@@ -127,7 +127,7 @@ pub fn create_normals(positions: &Vec<[f32; 3]>, indices: &Vec<u32>) -> Vec<[f32
     normals
 }
 
-pub fn zip_vertex_data(positions: &Vec<[f32; 3]>, colors: &Vec<[f32; 3]>, normals: &Vec<[f32; 3]>) -> Vec<Vertex> {
+pub fn zip_vertex_data(positions: &[[f32; 3]], colors: &[[f32; 3]], normals: &[[f32; 3]]) -> Vec<Vertex> {
     let mut data: Vec<Vertex> = Vec::with_capacity(positions.len());
     for i in 0..positions.len() {
         data.push(Vertex {

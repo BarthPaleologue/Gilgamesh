@@ -2,8 +2,7 @@ use std::iter;
 use bytemuck::cast_slice;
 use cgmath::{InnerSpace, Rotation3};
 use winit::event::{ElementState, KeyboardInput, MouseScrollDelta, VirtualKeyCode, WindowEvent};
-use winit::window::Window;
-use crate::app::App;
+use crate::engine::Engine;
 use crate::camera::{BasicCamera, FreeCamera};
 use crate::mesh::{Mesh};
 use crate::camera::Transformable;
@@ -17,7 +16,7 @@ pub struct Scene {
 }
 
 impl Scene {
-    pub fn new(engine: &App) -> Scene {
+    pub fn new(engine: &Engine) -> Scene {
         let mut free_camera = FreeCamera::new(engine.window.inner_size().width as f32 / engine.window.inner_size().height as f32);
         free_camera.tf().set_position(3.0, 1.5, 3.0);
 
@@ -39,7 +38,7 @@ impl Scene {
         }
     }
 
-    pub fn manage_event(&mut self, event: &WindowEvent) -> () {
+    pub fn manage_event(&mut self, event: &WindowEvent) {
         match event {
             WindowEvent::Resized(physical_size) => {
                 self.resize(*physical_size);
@@ -136,7 +135,7 @@ impl Scene {
         }
     }
 
-    pub fn update(&mut self, engine: &mut App) {
+    pub fn update(&mut self, engine: &mut Engine) {
         for mesh in self.meshes.iter() {
             let mvp_mat = self.active_camera.get_projection_matrix() * self.active_camera.get_view_matrix() * mesh.transform.compute_world_matrix();
             let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
@@ -146,7 +145,7 @@ impl Scene {
         (self.execute_before_render)();
     }
 
-    pub fn render(&mut self, engine: &mut App) -> Result<(), wgpu::SurfaceError> {
+    pub fn render(&mut self, engine: &mut Engine) -> Result<(), wgpu::SurfaceError> {
         //let output = self.init.surface.get_current_frame()?.output;
         let output = engine.surface.get_current_texture()?;
         let view = output

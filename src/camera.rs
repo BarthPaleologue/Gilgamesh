@@ -1,11 +1,9 @@
 use std::f32::consts::PI;
 use cgmath::{EuclideanSpace, Matrix4, perspective, Point3, Rad, Vector3};
 
-#[path = "./transform.rs"]
-mod transform;
 
-use transform::{Transform};
-use crate::app::OPENGL_TO_WGPU_MATRIX;
+use crate::transform::Transform;
+use crate::engine::OPENGL_TO_WGPU_MATRIX;
 
 pub struct BasicCamera {
     pub transform: Transform,

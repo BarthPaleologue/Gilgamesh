@@ -1,6 +1,6 @@
 use std::rc::Rc;
 use hexasphere::shapes::IcoSphere;
-use crate::app::App;
+use crate::engine::Engine;
 
 use crate::material::Material;
 use crate::mesh::Mesh;
@@ -12,7 +12,7 @@ impl Mesh {
     /// The `max_height` parameter is used to scale the y coordinate of each vertex in the range [0, 1]
     /// `engine` is a mutable reference to the Gilgamesh engine.
     /// It returns a Mesh that can be moved with its transform and with a default terrain material.
-    pub fn new_procedural_terrain(size: f32, nb_subdivisions: u32, height_fn: &dyn Fn(f32, f32) -> f32, max_height: f32, engine: &mut App) -> Mesh {
+    pub fn new_procedural_terrain(size: f32, nb_subdivisions: u32, height_fn: &dyn Fn(f32, f32) -> f32, max_height: f32, engine: &mut Engine) -> Mesh {
         let mut positions = vec!([0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize);
         let mut indices = vec!(0; (6 * (nb_subdivisions - 1) * (nb_subdivisions - 1)) as usize);
 
@@ -46,7 +46,7 @@ impl Mesh {
     /// The `height_fn` takes x, y and z as parameters and is used to set the height of each vertex above the surface of the sphere.
     /// The `max_height` parameter is used to scale the height of each vertex in the range [0, 1]
     /// `engine` is a mutable reference to the Gilgamesh engine.
-    pub fn new_procedural_sphere(diameter: f32, nb_subdivisions: u32, height_fn: &dyn Fn(f32, f32, f32) -> f32, max_height: f32, engine: &mut App) -> Mesh {
+    pub fn new_procedural_sphere(diameter: f32, nb_subdivisions: u32, height_fn: &dyn Fn(f32, f32, f32) -> f32, max_height: f32, engine: &mut Engine) -> Mesh {
         let sphere = IcoSphere::new(nb_subdivisions as usize, |_| ());
         let vertices_raw = sphere.raw_points();
         let mut vertices: Vec<[f32; 3]> = Vec::with_capacity(vertices_raw.len());
@@ -54,7 +54,7 @@ impl Mesh {
         for vertex in vertices_raw {
             let unit_vertex = [vertex[0], vertex[1], vertex[2]];
 
-            let height = height_fn(vertex[0], vertex[1], vertex[2]) as f32;
+            let height = height_fn(vertex[0], vertex[1], vertex[2]);
             let original_vertex = [vertex[0] * diameter / 2.0, vertex[1] * diameter / 2.0, vertex[2] * diameter / 2.0];
 
             let moved_vertex = [original_vertex[0] + unit_vertex[0] * height, original_vertex[1] + unit_vertex[1] * height, original_vertex[2] + unit_vertex[2] * height];

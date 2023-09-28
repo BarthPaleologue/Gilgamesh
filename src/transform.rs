@@ -7,15 +7,22 @@ pub struct Transform {
     pub scaling: Point3<f32>,
 }
 
-impl Transform {
-    pub fn new() -> Transform {
+impl Default for Transform {
+    fn default() -> Self {
         Transform {
             position: Vector3::new(0.0, 0.0, 0.0),
             rotation: Point3::new(0.0, 0.0, 0.0),
             scaling: Point3::new(1.0, 1.0, 1.0),
         }
     }
-    pub fn set_position(&mut self, x: f32, y: f32, z: f32) -> () {
+}
+
+impl Transform {
+    pub fn new() -> Transform {
+        Transform::default()
+    }
+
+    pub fn set_position(&mut self, x: f32, y: f32, z: f32) {
         self.position.x = x;
         self.position.y = y;
         self.position.z = z;
