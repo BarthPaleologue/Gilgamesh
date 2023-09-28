@@ -66,7 +66,7 @@ impl Engine {
         }
     }
 
-    pub fn start(mut self, mut scene: Scene, event_loop: EventLoop<()>, mut callback: impl FnMut() + 'static) {
+    pub fn start(mut self, mut scene: Scene, event_loop: EventLoop<()>, mut callback: impl FnMut(&Window) + 'static) {
         event_loop.run(move |event, _, control_flow| match event {
             Event::WindowEvent {
                 ref event,
@@ -91,7 +91,7 @@ impl Engine {
             Event::RedrawRequested(_) => {
                 scene.update(&mut self);
 
-                callback();
+                callback(&self.window);
 
                 match scene.render(&mut self) {
                     Ok(_) => {}

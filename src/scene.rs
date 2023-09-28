@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::iter;
 use bytemuck::cast_slice;
 use cgmath::{InnerSpace, Rotation3};
@@ -27,9 +28,8 @@ impl Scene {
         }
     }
 
-    pub fn add_mesh(&mut self, mesh: Mesh) -> &mut Mesh {
+    pub fn add_mesh(&mut self, mut mesh: Mesh) {
         self.meshes.push(mesh);
-        self.meshes.last_mut().unwrap()
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
