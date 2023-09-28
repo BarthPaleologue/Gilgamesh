@@ -22,6 +22,7 @@ pub struct Engine {
     pub queue: Queue,
     pub config: SurfaceConfiguration,
     pub size: PhysicalSize<u32>,
+
     clock: SystemTime,
     elapsed_time: f32,
     delta_time: f32,

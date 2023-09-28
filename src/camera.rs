@@ -1,7 +1,6 @@
 use cgmath::{Deg, EuclideanSpace, Matrix4, perspective, Point3, Vector3};
 
-
-use crate::transform::Transform;
+use crate::transform::{Transform, Transformable};
 use crate::engine::{Engine, OPENGL_TO_WGPU_MATRIX};
 
 pub struct BasicCamera {
@@ -30,24 +29,8 @@ impl BasicCamera {
     }
 }
 
-pub struct FreeCamera {
-    pub basic_camera: BasicCamera,
-}
-
-impl FreeCamera {
-    pub fn new(engine: &Engine) -> FreeCamera {
-        FreeCamera {
-            basic_camera: BasicCamera::new(engine)
-        }
-    }
-}
-
-pub trait Transformable {
-    fn tf(&mut self) -> &mut Transform;
-}
-
-impl Transformable for FreeCamera {
-    fn tf(&mut self) -> &mut Transform {
-        &mut self.basic_camera.transform
+impl Transformable for BasicCamera {
+    fn transform(&mut self) -> &mut Transform {
+        &mut self.transform
     }
 }

@@ -1,10 +1,11 @@
 extern crate gilgamesh;
 
 use winit::event::VirtualKeyCode::*;
-use gilgamesh::camera::{FreeCamera, Transformable};
+use gilgamesh::camera::BasicCamera;
 use gilgamesh::engine::Engine;
 use gilgamesh::mesh::Mesh;
 use gilgamesh::scene::Scene;
+use gilgamesh::transform::Transformable;
 
 #[cfg_attr(target_arch="wasm32", wasm_bindgen(start))]
 pub fn run() {
@@ -12,10 +13,10 @@ pub fn run() {
 
     let mut scene = Scene::new(&engine);
 
-    let mut free_camera = FreeCamera::new(&engine);
-    free_camera.tf().set_position(3.0, 1.5, 3.0);
+    let mut camera = BasicCamera::new(&engine);
+    camera.transform.set_position(3.0, 1.5, 3.0);
 
-    scene.set_active_camera(free_camera.basic_camera);
+    scene.set_active_camera(camera);
 
     let sphere = Mesh::new_procedural_sphere("Sphere".into(), 5.0, 32, &|x, y, z| {
         f32::powi(f32::sin(60.0 * x * y * z), 2) * 0.5
