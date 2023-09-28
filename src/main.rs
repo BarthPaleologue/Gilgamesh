@@ -9,19 +9,17 @@ fn main() {
 
     let mut scene = Scene::new(&engine);
 
-    let mut sphere = Mesh::new_procedural_sphere(5.0, 32, &|x, y, z| {
+    let mut sphere = Mesh::new_procedural_sphere("Sphere".into(), 5.0, 32, &|x, y, z| {
         f32::powi(f32::sin(60.0 * x * y * z), 2) * 0.5
     }, 0.5, &mut engine);
 
 
     scene.add_mesh(sphere);
 
-    scene.on_before_render.push(Box::new(|_| {
-        println!("Before render");
-    }));
+    scene.on_before_render.push(Box::new(|_, meshes| {
+        println!("Before render {}", meshes.len());
 
-    scene.on_before_render.push(Box::new(|_| {
-        println!("Also Before render");
+        meshes.get_mut("Sphere").unwrap().transform.set_position(0.0, 2.0, 0.0);
     }));
 
     engine.start(scene, event_loop);

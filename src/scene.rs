@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use std::iter;
 use bytemuck::cast_slice;
 use cgmath::{InnerSpace, Rotation3};
@@ -7,13 +6,14 @@ use crate::engine::Engine;
 use crate::camera::{BasicCamera, FreeCamera};
 use crate::mesh::{Mesh};
 use crate::camera::Transformable;
+use std::collections::HashMap;
 
 pub const ANIMATION_SPEED: f32 = 1.0;
 
 pub struct Scene {
     pub active_camera: BasicCamera,
-    pub meshes: Vec<Mesh>,
-    pub on_before_render: Vec<Box<dyn FnMut(&Engine)>>,
+    pub meshes: HashMap<String, Mesh>,
+    pub on_before_render: Vec<Box<dyn FnMut(&Engine, &mut HashMap<String, Mesh>)>>,
 }
 
 impl Scene {
@@ -23,13 +23,13 @@ impl Scene {
 
         Scene {
             active_camera: free_camera.basic_camera,
-            meshes: Vec::new(),
+            meshes: std::collections::HashMap::new(),
             on_before_render: Vec::new(),
         }
     }
 
     pub fn add_mesh(&mut self, mut mesh: Mesh) {
-        self.meshes.push(mesh);
+        self.meshes.insert(mesh.name.clone(), mesh);
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
@@ -136,9 +136,9 @@ impl Scene {
     }
 
     pub fn render(&mut self, engine: &mut Engine) -> Result<(), wgpu::SurfaceError> {
-        self.on_before_render.iter_mut().for_each(|f| f(engine));
+        self.on_before_render.iter_mut().for_each(|f| f(engine, &mut self.meshes));
 
-        for mesh in self.meshes.iter() {
+        for mesh in self.meshes.values_mut() {
             let mvp_mat = self.active_camera.get_projection_matrix() * self.active_camera.get_view_matrix() * mesh.transform.compute_world_matrix();
             let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
             engine.queue.write_buffer(&mesh.material.vertex_uniform_buffer, 0, cast_slice(mvp_ref));
@@ -196,7 +196,7 @@ impl Scene {
                 }),
             });
 
-            for mesh in &self.meshes {
+            for mesh in self.meshes.values_mut() {
                 mesh.draw(&mut render_pass);
             }
         }

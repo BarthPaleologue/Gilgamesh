@@ -29,6 +29,7 @@ impl Vertex {
 }
 
 pub struct Mesh {
+    pub name: String,
     pub transform: Transform,
     pub positions: Vec<[f32; 3]>,
     pub colors: Vec<[f32; 3]>,
@@ -40,7 +41,7 @@ pub struct Mesh {
 }
 
 impl Mesh {
-    pub fn from_vertex_data(indices: Vec<u32>, positions: Vec<[f32; 3]>, normals: Option<Vec<[f32; 3]>>, engine: &mut Engine) -> Mesh {
+    pub fn from_vertex_data(name: String, indices: Vec<u32>, positions: Vec<[f32; 3]>, normals: Option<Vec<[f32; 3]>>, engine: &mut Engine) -> Mesh {
         let colors = vec![[0.6, 0.6, 0.6]; positions.len()];
         let normals = match normals {
             Some(v) => v,
@@ -59,6 +60,7 @@ impl Mesh {
         });
 
         Mesh {
+            name,
             transform: Transform::new(),
             positions,
             vertex_buffer,
