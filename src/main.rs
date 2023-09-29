@@ -24,12 +24,24 @@ pub fn run() {
     let sphere = Mesh::new_procedural_sphere("Sphere".into(), 5.0, 32, &|x, y, z| {
         f32::powi(f32::sin(60.0 * x * y * z), 2) * 0.5
     }, 0.5, &mut engine);
-
-
     let sphere_idx = scene.add_mesh(sphere);
 
+
+    let sphere2 = Mesh::new_procedural_sphere("Sphere2".into(), 1.0, 32, &|x, y, z| 0.0, 0.5, &mut engine);
+    let sphere2_idx = scene.add_mesh(sphere2);
+
+    let mut plane = Mesh::new_procedural_terrain("Plane".into(), 10.0, 10, &|x, z| 0.0, 1.0, &mut engine);
+    plane.transform.set_position(0.0, -5.0, 0.0);
+    let plane_idx = scene.add_mesh(plane);
+
     scene.on_before_render.push(Box::new(move |engine, active_camera, meshes, mouse| {
-        meshes[sphere_idx].transform.set_scaling(1.0, 1.0 + engine.get_elapsed_time().sin() / 2.0, 1.0);
+        //meshes[sphere_idx].transform.set_scaling(1.0, 1.0 + engine.get_elapsed_time().sin() / 2.0, 1.0);
+
+        meshes[sphere2_idx].transform.set_position(
+            7.0 * engine.get_elapsed_time().sin(),
+            0.0,
+            7.0 * engine.get_elapsed_time().cos(),
+        );
 
         //if mouse.left_button_pressed { println!("Mouse position: {:?}", mouse.position); };
     }));

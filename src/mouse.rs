@@ -37,6 +37,14 @@ impl Mouse {
         };
 
         self.delta = [new_position[0] - self.position[0], new_position[1] - self.position[1]];
+
+        if self.delta[0].abs() < 0.5 {
+            self.delta[0] = 0.0;
+        }
+        if self.delta[1].abs() < 0.5 {
+            self.delta[1] = 0.0;
+        }
+
         self.position = new_position;
 
         match event {

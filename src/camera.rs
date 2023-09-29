@@ -33,9 +33,9 @@ impl BasicCamera {
         OPENGL_TO_WGPU_MATRIX * perspective(Deg(self.fov), self.aspect_ratio, self.z_near, self.z_far)
     }
 
-    pub fn listen_to_control(&mut self, mouse: &Mouse) {
+    pub fn listen_to_control(&mut self, mouse: &Mouse, engine: &Engine) {
         if let Some(control) = &mut self.control {
-            let (position, rotation, scaling) = control.update(mouse);
+            let (position, rotation, scaling) = control.update(mouse, engine);
             self.transform.position = position;
             self.transform.rotation = rotation;
             self.transform.scaling = scaling;

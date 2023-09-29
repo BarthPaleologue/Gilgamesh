@@ -82,7 +82,7 @@ impl Scene {
 
     pub fn render(&mut self, engine: &mut Engine) -> Result<(), wgpu::SurfaceError> {
         if let Some(active_camera) = &mut self.active_camera {
-            active_camera.listen_to_control(&self.mouse);
+            active_camera.listen_to_control(&self.mouse, engine);
         }
 
         self.on_before_render.iter_mut().for_each(|f| f(engine, &mut self.active_camera, &mut self.meshes, &self.mouse));
