@@ -3,7 +3,6 @@ use std::time::SystemTime;
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
 use cgmath::*;
-use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
 use winit::dpi::{PhysicalSize, Size};
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use crate::scene::Scene;

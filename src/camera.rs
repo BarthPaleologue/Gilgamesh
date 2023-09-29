@@ -1,7 +1,9 @@
 use cgmath::{Deg, EuclideanSpace, Matrix4, perspective, Point3, Vector3};
+use crate::camera_control::CameraControl;
 
 use crate::transform::{Transform, Transformable};
 use crate::engine::{Engine, OPENGL_TO_WGPU_MATRIX};
+use crate::mouse::Mouse;
 
 pub struct BasicCamera {
     pub transform: Transform,
@@ -9,6 +11,8 @@ pub struct BasicCamera {
     pub fov: f32,
     pub z_near: f32,
     pub z_far: f32,
+
+    pub control: Option<Box<dyn CameraControl>>,
 }
 
 impl BasicCamera {
@@ -19,6 +23,7 @@ impl BasicCamera {
             fov: 80.0,
             z_near: 0.1,
             z_far: 100.0,
+            control: None,
         }
     }
     pub fn get_view_matrix(&self) -> Matrix4<f32> {
@@ -26,6 +31,12 @@ impl BasicCamera {
     }
     pub fn get_projection_matrix(&self) -> Matrix4<f32> {
         OPENGL_TO_WGPU_MATRIX * perspective(Deg(self.fov), self.aspect_ratio, self.z_near, self.z_far)
+    }
+
+    pub fn listen_to_control(&mut self, mouse: &Mouse) {
+        if let Some(control) = &mut self.control {
+            self.transform.position = control.update(mouse);
+        }
     }
 }
 

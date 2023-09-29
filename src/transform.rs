@@ -31,6 +31,13 @@ impl Transform {
         self.position.y = y;
         self.position.z = z;
     }
+
+    pub fn set_scaling(&mut self, x: f32, y: f32, z: f32) {
+        self.scaling.x = x;
+        self.scaling.y = y;
+        self.scaling.z = z;
+    }
+
     pub fn compute_world_matrix(&self) -> Matrix4<f32> {
         let position = Matrix4::from_translation(self.position);
         let rotation_x = Matrix4::from_angle_x(Rad(self.rotation.x));

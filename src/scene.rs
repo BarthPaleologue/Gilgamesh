@@ -1,6 +1,6 @@
 use std::iter;
 use bytemuck::cast_slice;
-use cgmath::{InnerSpace, Rotation3};
+use cgmath::{InnerSpace};
 use winit::event::{ElementState, KeyboardInput, MouseScrollDelta, VirtualKeyCode, WindowEvent};
 use crate::engine::Engine;
 use crate::camera::{BasicCamera};
@@ -15,7 +15,6 @@ pub struct Scene {
     pub active_camera: Option<BasicCamera>,
     pub meshes: Vec<Mesh>,
     pub mouse: Mouse,
-    pub on_mouse_moved: Vec<Box<dyn FnMut(&Engine, &mut Option<BasicCamera>, &winit::dpi::PhysicalPosition<f64>)>>,
     pub on_key_pressed: Vec<Box<dyn FnMut(&Engine, &mut Option<BasicCamera>, &VirtualKeyCode)>>,
     pub on_before_render: Vec<SceneClosure>,
 }
@@ -26,7 +25,6 @@ impl Scene {
             active_camera: None,
             meshes: Vec::new(),
             mouse: Mouse::new(),
-            on_mouse_moved: Vec::new(),
             on_key_pressed: Vec::new(),
             on_before_render: Vec::new(),
         }
@@ -83,6 +81,10 @@ impl Scene {
     }
 
     pub fn render(&mut self, engine: &mut Engine) -> Result<(), wgpu::SurfaceError> {
+        if let Some(active_camera) = &mut self.active_camera {
+            active_camera.listen_to_control(&self.mouse);
+        }
+
         self.on_before_render.iter_mut().for_each(|f| f(engine, &mut self.active_camera, &mut self.meshes, &self.mouse));
 
         for mesh in self.meshes.iter_mut() {

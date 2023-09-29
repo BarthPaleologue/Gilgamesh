@@ -3,6 +3,7 @@ extern crate gilgamesh;
 use cgmath::Rotation3;
 use winit::event::VirtualKeyCode::*;
 use gilgamesh::camera::BasicCamera;
+use gilgamesh::camera_control::OrbitControl;
 use gilgamesh::engine::Engine;
 use gilgamesh::mesh::Mesh;
 use gilgamesh::scene::Scene;
@@ -16,6 +17,7 @@ pub fn run() {
 
     let mut camera = BasicCamera::new(&engine);
     camera.transform.set_position(3.0, 1.5, 3.0);
+    camera.control = Some(Box::new(OrbitControl::default()));
 
     scene.set_active_camera(camera);
 
@@ -27,13 +29,9 @@ pub fn run() {
     let sphere_idx = scene.add_mesh(sphere);
 
     scene.on_before_render.push(Box::new(move |engine, active_camera, meshes, mouse| {
-        meshes[sphere_idx].transform.set_position(0.0, engine.get_elapsed_time().sin(), 0.0);
+        meshes[sphere_idx].transform.set_scaling(1.0, 1.0 + engine.get_elapsed_time().sin() / 2.0, 1.0);
 
-        if mouse.left_button_pressed { println!("Mouse position: {:?}", mouse.position); };
-    }));
-
-    scene.on_mouse_moved.push(Box::new(move |engine, active_camera, mouse_position| {
-        println!("Mouse moved to {:?}", mouse_position);
+        //if mouse.left_button_pressed { println!("Mouse position: {:?}", mouse.position); };
     }));
 
     scene.on_key_pressed.push(Box::new(|engine, active_camera, key| {
