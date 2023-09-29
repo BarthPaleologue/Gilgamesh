@@ -35,7 +35,10 @@ impl BasicCamera {
 
     pub fn listen_to_control(&mut self, mouse: &Mouse) {
         if let Some(control) = &mut self.control {
-            self.transform.position = control.update(mouse);
+            let (position, rotation, scaling) = control.update(mouse);
+            self.transform.position = position;
+            self.transform.rotation = rotation;
+            self.transform.scaling = scaling;
         }
     }
 }
