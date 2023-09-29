@@ -1,15 +1,12 @@
 extern crate gilgamesh;
 
-use cgmath::Rotation3;
 use winit::event::VirtualKeyCode::*;
 use gilgamesh::camera::BasicCamera;
 use gilgamesh::input::transform_control::OrbitControl;
 use gilgamesh::core::engine::Engine;
-use gilgamesh::geometry::mesh::Mesh;
 use gilgamesh::core::scene::Scene;
 use gilgamesh::geometry::primitive::PrimitiveMesh;
 use gilgamesh::geometry::procedural::ProceduralMesh;
-use gilgamesh::transform::Transformable;
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(start))]
 pub fn run() {
@@ -19,7 +16,7 @@ pub fn run() {
 
     let mut camera = BasicCamera::new(&engine);
     camera.transform.set_position(3.0, 1.5, 3.0);
-    camera.control = Some(Box::new(OrbitControl::default()));
+    camera.control = Some(Box::<OrbitControl>::default());
 
     scene.set_active_camera(camera);
 
@@ -48,34 +45,6 @@ pub fn run() {
         match key {
             T => {
                 println!("T pressed at {}", engine.get_elapsed_time());
-            }
-            Down => {
-                let rotation = cgmath::Quaternion::from_axis_angle(
-                    active_camera.as_mut().unwrap().transform.right(),
-                    cgmath::Deg(1.0),
-                );
-                active_camera.as_mut().unwrap().transform.position = rotation * active_camera.as_mut().unwrap().transform.position;
-            }
-            Right => {
-                let rotation = cgmath::Quaternion::from_axis_angle(
-                    cgmath::Vector3::unit_y(),
-                    cgmath::Deg(1.0),
-                );
-                active_camera.as_mut().unwrap().transform.position = rotation * active_camera.as_mut().unwrap().transform.position;
-            }
-            Up => {
-                let rotation = cgmath::Quaternion::from_axis_angle(
-                    active_camera.as_mut().unwrap().transform.right(),
-                    cgmath::Deg(-1.0),
-                );
-                active_camera.as_mut().unwrap().transform.position = rotation * active_camera.as_mut().unwrap().transform.position;
-            }
-            Left => {
-                let rotation = cgmath::Quaternion::from_axis_angle(
-                    cgmath::Vector3::unit_y(),
-                    cgmath::Deg(-1.0),
-                );
-                active_camera.as_mut().unwrap().transform.position = rotation * active_camera.as_mut().unwrap().transform.position;
             }
             _ => {}
         }

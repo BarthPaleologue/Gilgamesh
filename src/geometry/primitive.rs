@@ -10,7 +10,7 @@ impl PrimitiveMesh {
         let mut normals = vec!([0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize);
         let mut indices = vec!(0; (6 * (nb_subdivisions - 1) * (nb_subdivisions - 1)) as usize);
         let mut uvs = vec!([0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize);
-        let mut colors = vec!([1.0, 1.0, 1.0]; (nb_subdivisions * nb_subdivisions) as usize);
+        let colors = vec!([1.0, 1.0, 1.0]; (nb_subdivisions * nb_subdivisions) as usize);
 
         for x in 0..nb_subdivisions {
             let actual_x = (x as f32 / (nb_subdivisions as f32 - 1.0)) * size - size / 2.0;

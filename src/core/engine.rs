@@ -1,4 +1,3 @@
-use std::default::Default;
 use std::time::SystemTime;
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};

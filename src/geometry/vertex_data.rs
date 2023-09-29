@@ -1,21 +1,10 @@
+#[derive(Debug, Default)]
 pub struct VertexData {
     pub positions: Vec<[f32; 3]>,
     pub colors: Vec<[f32; 3]>,
     pub normals: Vec<[f32; 3]>,
     pub indices: Vec<u32>,
     pub uvs: Vec<[f32; 2]>,
-}
-
-impl Default for VertexData {
-    fn default() -> Self {
-        VertexData {
-            positions: Vec::new(),
-            colors: Vec::new(),
-            normals: Vec::new(),
-            indices: Vec::new(),
-            uvs: Vec::new(),
-        }
-    }
 }
 
 impl VertexData {
