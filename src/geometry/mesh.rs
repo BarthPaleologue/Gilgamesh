@@ -39,7 +39,7 @@ pub struct Mesh {
 }
 
 impl Mesh {
-    pub fn from_vertex_data(name: String, vertex_data: VertexData, engine: &mut Engine) -> Mesh {
+    pub fn from_vertex_data(name: &str, vertex_data: VertexData, engine: &mut Engine) -> Mesh {
         let colors = vec![[0.6, 0.6, 0.6]; vertex_data.positions.len()];
         let normals = vertex_data.normals;
         let positions = vertex_data.positions;
@@ -66,7 +66,7 @@ impl Mesh {
         };
 
         Mesh {
-            name,
+            name: name.to_string(),
             transform: Transform::new(),
             vertex_data,
             vertex_buffer,

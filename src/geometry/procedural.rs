@@ -15,7 +15,7 @@ impl ProceduralMesh {
     /// The `max_height` parameter is used to scale the y coordinate of each vertex in the range [0, 1]
     /// `engine` is a mutable reference to the Gilgamesh engine.
     /// It returns a Mesh that can be moved with its transform and with a default terrain material.
-    pub fn terrain(name: String, size: f32, nb_subdivisions: u32, height_fn: &dyn Fn(f32, f32) -> f32, max_height: f32, engine: &mut Engine) -> Mesh {
+    pub fn terrain(name: &str, size: f32, nb_subdivisions: u32, height_fn: &dyn Fn(f32, f32) -> f32, max_height: f32, engine: &mut Engine) -> Mesh {
         let mut positions = vec!([0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize);
         let mut indices = vec!(0; (6 * (nb_subdivisions - 1) * (nb_subdivisions - 1)) as usize);
 
@@ -60,7 +60,7 @@ impl ProceduralMesh {
     /// The `height_fn` takes x, y and z as parameters and is used to set the height of each vertex above the surface of the sphere.
     /// The `max_height` parameter is used to scale the height of each vertex in the range [0, 1]
     /// `engine` is a mutable reference to the Gilgamesh engine.
-    pub fn sphere(name: String, diameter: f32, nb_subdivisions: u32, height_fn: &dyn Fn(f32, f32, f32) -> f32, max_height: f32, engine: &mut Engine) -> Mesh {
+    pub fn sphere(name: &str, diameter: f32, nb_subdivisions: u32, height_fn: &dyn Fn(f32, f32, f32) -> f32, max_height: f32, engine: &mut Engine) -> Mesh {
         let sphere = IcoSphere::new(nb_subdivisions as usize, |_| ());
         let vertices_raw = sphere.raw_points();
         let mut vertices: Vec<[f32; 3]> = Vec::with_capacity(vertices_raw.len());

@@ -7,6 +7,7 @@ use gilgamesh::input::transform_control::OrbitControl;
 use gilgamesh::core::engine::Engine;
 use gilgamesh::geometry::mesh::Mesh;
 use gilgamesh::core::scene::Scene;
+use gilgamesh::geometry::primitive::PrimitiveMesh;
 use gilgamesh::geometry::procedural::ProceduralMesh;
 use gilgamesh::transform::Transformable;
 
@@ -22,29 +23,25 @@ pub fn run() {
 
     scene.set_active_camera(camera);
 
-    let sphere = ProceduralMesh::sphere("Sphere".into(), 5.0, 32, &|x, y, z| {
+    let sphere = ProceduralMesh::sphere("Sphere", 4.0, 64, &|x, y, z| {
         f32::powi(f32::sin(60.0 * x * y * z), 2) * 0.5
     }, 0.5, &mut engine);
     let sphere_idx = scene.add_mesh(sphere);
 
 
-    let sphere2 = ProceduralMesh::sphere("Sphere2".into(), 1.0, 32, &|x, y, z| 0.0, 0.5, &mut engine);
+    let sphere2 = ProceduralMesh::sphere("Sphere2", 1.0, 32, &|x, y, z| 0.0, 0.5, &mut engine);
     let sphere2_idx = scene.add_mesh(sphere2);
 
-    let mut plane = ProceduralMesh::terrain("Plane".into(), 10.0, 10, &|x, z| 0.0, 1.0, &mut engine);
+    let mut plane = PrimitiveMesh::plane("Plane", 10, 10.0, &mut engine);
     plane.transform.set_position(0.0, -5.0, 0.0);
     let plane_idx = scene.add_mesh(plane);
 
     scene.on_before_render.push(Box::new(move |engine, active_camera, meshes, mouse| {
-        //meshes[sphere_idx].transform.set_scaling(1.0, 1.0 + engine.get_elapsed_time().sin() / 2.0, 1.0);
-
         meshes[sphere2_idx].transform.set_position(
             7.0 * engine.get_elapsed_time().sin(),
             0.0,
             7.0 * engine.get_elapsed_time().cos(),
         );
-
-        //if mouse.left_button_pressed { println!("Mouse position: {:?}", mouse.position); };
     }));
 
     scene.on_key_pressed.push(Box::new(|engine, active_camera, key| {

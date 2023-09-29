@@ -1,8 +1,8 @@
 use winit::event::{ElementState, WindowEvent};
 
 pub struct Mouse {
-    pub position: [f32; 2],
-    pub delta: [f32; 2],
+    pub position: [f64; 2],
+    pub delta: [f64; 2],
     pub left_button_pressed: bool,
     pub right_button_pressed: bool,
     pub middle_button_pressed: bool,
@@ -31,17 +31,17 @@ impl Mouse {
                 position: pos,
                 ..
             } => {
-                [pos.x as f32, pos.y as f32]
+                [pos.x, pos.y]
             }
             _ => self.position,
         };
 
         self.delta = [new_position[0] - self.position[0], new_position[1] - self.position[1]];
 
-        if self.delta[0].abs() < 0.5 {
+        if self.delta[0].abs() < 0.8 {
             self.delta[0] = 0.0;
         }
-        if self.delta[1].abs() < 0.5 {
+        if self.delta[1].abs() < 0.8 {
             self.delta[1] = 0.0;
         }
 
