@@ -26,8 +26,10 @@ pub fn run() {
 
     let sphere_idx = scene.add_mesh(sphere);
 
-    scene.on_before_render.push(Box::new(move |engine, active_camera, meshes| {
+    scene.on_before_render.push(Box::new(move |engine, active_camera, meshes, mouse| {
         meshes[sphere_idx].transform.set_position(0.0, engine.get_elapsed_time().sin(), 0.0);
+
+        if mouse.left_button_pressed { println!("Mouse position: {:?}", mouse.position); };
     }));
 
     scene.on_mouse_moved.push(Box::new(move |engine, active_camera, mouse_position| {

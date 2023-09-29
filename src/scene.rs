@@ -5,14 +5,16 @@ use winit::event::{ElementState, KeyboardInput, MouseScrollDelta, VirtualKeyCode
 use crate::engine::Engine;
 use crate::camera::{BasicCamera};
 use crate::mesh::{Mesh};
+use crate::mouse::Mouse;
 
 pub const ANIMATION_SPEED: f32 = 1.0;
 
-pub type SceneClosure = Box<dyn FnMut(&Engine, &mut Option<BasicCamera>, &mut Vec<Mesh>)>;
+pub type SceneClosure = Box<dyn FnMut(&Engine, &mut Option<BasicCamera>, &mut Vec<Mesh>, &Mouse)>;
 
 pub struct Scene {
     pub active_camera: Option<BasicCamera>,
     pub meshes: Vec<Mesh>,
+    pub mouse: Mouse,
     pub on_mouse_moved: Vec<Box<dyn FnMut(&Engine, &mut Option<BasicCamera>, &winit::dpi::PhysicalPosition<f64>)>>,
     pub on_key_pressed: Vec<Box<dyn FnMut(&Engine, &mut Option<BasicCamera>, &VirtualKeyCode)>>,
     pub on_before_render: Vec<SceneClosure>,
@@ -23,6 +25,7 @@ impl Scene {
         Scene {
             active_camera: None,
             meshes: Vec::new(),
+            mouse: Mouse::new(),
             on_mouse_moved: Vec::new(),
             on_key_pressed: Vec::new(),
             on_before_render: Vec::new(),
@@ -45,6 +48,8 @@ impl Scene {
     }
 
     pub fn manage_event(&mut self, event: &WindowEvent, engine: &Engine) {
+        self.mouse.listen_to_event(event);
+
         match event {
             WindowEvent::KeyboardInput {
                 input: KeyboardInput {
@@ -55,19 +60,6 @@ impl Scene {
                 ..
             } => {
                 self.on_key_pressed.iter_mut().for_each(|f| f(engine, &mut self.active_camera, key));
-            }
-            WindowEvent::CursorMoved {
-                position: pos,
-                ..
-            } => {
-                self.on_mouse_moved.iter_mut().for_each(|f| f(engine, &mut self.active_camera, pos));
-            }
-            WindowEvent::MouseInput {
-                state: ElementState::Pressed,
-                button: winit::event::MouseButton::Left,
-                ..
-            } => {
-                println!("Left mouse button pressed");
             }
             _ => {}
         }
@@ -91,7 +83,7 @@ impl Scene {
     }
 
     pub fn render(&mut self, engine: &mut Engine) -> Result<(), wgpu::SurfaceError> {
-        self.on_before_render.iter_mut().for_each(|f| f(engine, &mut self.active_camera, &mut self.meshes));
+        self.on_before_render.iter_mut().for_each(|f| f(engine, &mut self.active_camera, &mut self.meshes, &self.mouse));
 
         for mesh in self.meshes.iter_mut() {
             let mvp_mat = self.active_camera.as_mut().unwrap().get_projection_matrix() * self.active_camera.as_mut().unwrap().get_view_matrix() * mesh.transform.compute_world_matrix();

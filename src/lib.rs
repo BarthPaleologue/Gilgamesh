@@ -1,4 +1,4 @@
-#[cfg(target_arch="wasm32")]
+#[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
 pub mod scene;
@@ -9,3 +9,4 @@ pub mod transform;
 pub mod material;
 pub mod engine;
 pub mod wgpu_context;
+pub mod mouse;
