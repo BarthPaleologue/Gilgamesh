@@ -13,6 +13,7 @@ pub type SceneClosure = Box<dyn FnMut(&Engine, &mut Option<BasicCamera>, &mut Ve
 pub struct Scene {
     pub active_camera: Option<BasicCamera>,
     pub meshes: Vec<Mesh>,
+    pub on_mouse_moved: Vec<Box<dyn FnMut(&Engine, &mut Option<BasicCamera>, &winit::dpi::PhysicalPosition<f64>)>>,
     pub on_key_pressed: Vec<Box<dyn FnMut(&Engine, &mut Option<BasicCamera>, &VirtualKeyCode)>>,
     pub on_before_render: Vec<SceneClosure>,
 }
@@ -22,6 +23,7 @@ impl Scene {
         Scene {
             active_camera: None,
             meshes: Vec::new(),
+            on_mouse_moved: Vec::new(),
             on_key_pressed: Vec::new(),
             on_before_render: Vec::new(),
         }
@@ -45,8 +47,7 @@ impl Scene {
     pub fn manage_event(&mut self, event: &WindowEvent, engine: &Engine) {
         match event {
             WindowEvent::KeyboardInput {
-                input:
-                KeyboardInput {
+                input: KeyboardInput {
                     state: ElementState::Pressed,
                     virtual_keycode: Some(key),
                     ..
@@ -54,6 +55,12 @@ impl Scene {
                 ..
             } => {
                 self.on_key_pressed.iter_mut().for_each(|f| f(engine, &mut self.active_camera, key));
+            }
+            WindowEvent::CursorMoved {
+                position: pos,
+                ..
+            } => {
+                self.on_mouse_moved.iter_mut().for_each(|f| f(engine, &mut self.active_camera, pos));
             }
             _ => {}
         }

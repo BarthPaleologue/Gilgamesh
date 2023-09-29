@@ -30,6 +30,10 @@ pub fn run() {
         meshes[sphere_idx].transform.set_position(0.0, engine.get_elapsed_time().sin(), 0.0);
     }));
 
+    scene.on_mouse_moved.push(Box::new(move |engine, active_camera, mouse_position| {
+        println!("Mouse moved to {:?}", mouse_position);
+    }));
+
     scene.on_key_pressed.push(Box::new(|engine, active_camera, key| {
         match key {
             T => {
