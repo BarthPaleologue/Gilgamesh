@@ -48,12 +48,12 @@ impl Mesh {
             None => create_normals(&positions, &indices)
         };
 
-        let vertex_buffer = engine.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        let vertex_buffer = engine.wgpu_context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
             contents: cast_slice(&zip_vertex_data(&positions, &colors, &normals)),
             usage: wgpu::BufferUsages::VERTEX,
         });
-        let index_buffer = engine.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        let index_buffer = engine.wgpu_context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Index Buffer"),
             contents: cast_slice(&indices),
             usage: wgpu::BufferUsages::INDEX,
@@ -68,7 +68,7 @@ impl Mesh {
             index_buffer,
             colors,
             normals,
-            material: Rc::new(Material::new_default(engine)),
+            material: Rc::new(Material::new_default(&mut engine.wgpu_context)),
         }
     }
 

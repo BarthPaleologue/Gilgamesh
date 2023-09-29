@@ -82,18 +82,18 @@ impl Scene {
         for mesh in self.meshes.iter_mut() {
             let mvp_mat = self.active_camera.as_mut().unwrap().get_projection_matrix() * self.active_camera.as_mut().unwrap().get_view_matrix() * mesh.transform.compute_world_matrix();
             let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
-            engine.queue.write_buffer(&mesh.material.vertex_uniform_buffer, 0, cast_slice(mvp_ref));
+            engine.wgpu_context.queue.write_buffer(&mesh.material.vertex_uniform_buffer, 0, cast_slice(mvp_ref));
         }
 
         //let output = self.init.surface.get_current_frame()?.output;
-        let output = engine.surface.get_current_texture()?;
+        let output = engine.wgpu_context.surface.get_current_texture()?;
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
-        let depth_texture = engine.device.create_texture(&wgpu::TextureDescriptor {
+        let depth_texture = engine.wgpu_context.device.create_texture(&wgpu::TextureDescriptor {
             size: wgpu::Extent3d {
-                width: engine.config.width,
-                height: engine.config.height,
+                width: engine.wgpu_context.config.width,
+                height: engine.wgpu_context.config.height,
                 depth_or_array_layers: 1,
             },
             mip_level_count: 1,
@@ -106,7 +106,7 @@ impl Scene {
         });
         let depth_view = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
 
-        let mut encoder = engine.device
+        let mut encoder = engine.wgpu_context.device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("Render Encoder"),
             });
@@ -143,7 +143,7 @@ impl Scene {
             }
         }
 
-        engine.queue.submit(iter::once(encoder.finish()));
+        engine.wgpu_context.queue.submit(iter::once(encoder.finish()));
         output.present();
 
         Ok(())
