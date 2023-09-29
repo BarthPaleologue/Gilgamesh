@@ -17,9 +17,10 @@ impl Mesh {
         let mut indices = vec!(0; (6 * (nb_subdivisions - 1) * (nb_subdivisions - 1)) as usize);
 
         for x in 0..nb_subdivisions {
+            let actual_x = (x as f32 / (nb_subdivisions as f32 - 1.0)) * size - size / 2.0;
+
             for y in 0..nb_subdivisions {
-                let actual_x = (x as f32 - (nb_subdivisions as f32 / 2.0)) * size / nb_subdivisions as f32;
-                let actual_y = (y as f32 - (nb_subdivisions as f32 / 2.0)) * size / nb_subdivisions as f32;
+                let actual_y = (y as f32 / (nb_subdivisions as f32 - 1.0)) * size - size / 2.0;
 
                 positions[(x * nb_subdivisions + y) as usize] = [actual_x, height_fn(actual_x, actual_y), actual_y];
 
