@@ -4,7 +4,8 @@ use std::rc::Rc;
 use bytemuck::{cast_slice, Pod, Zeroable};
 use wgpu::{Buffer, RenderPass};
 use wgpu::util::DeviceExt;
-use crate::engine::Engine;
+use crate::core::engine::Engine;
+use crate::geometry::vertex_data::VertexData;
 
 use crate::transform::Transform;
 use crate::material::Material;
@@ -31,22 +32,18 @@ impl Vertex {
 pub struct Mesh {
     pub name: String,
     pub transform: Transform,
-    pub positions: Vec<[f32; 3]>,
-    pub colors: Vec<[f32; 3]>,
-    pub indices: Vec<u32>,
-    pub normals: Vec<[f32; 3]>,
+    pub vertex_data: VertexData,
     pub index_buffer: Buffer,
     pub vertex_buffer: Buffer,
     pub material: Rc<Material>,
 }
 
 impl Mesh {
-    pub fn from_vertex_data(name: String, indices: Vec<u32>, positions: Vec<[f32; 3]>, normals: Option<Vec<[f32; 3]>>, engine: &mut Engine) -> Mesh {
-        let colors = vec![[0.6, 0.6, 0.6]; positions.len()];
-        let normals = match normals {
-            Some(v) => v,
-            None => create_normals(&positions, &indices)
-        };
+    pub fn from_vertex_data(name: String, vertex_data: VertexData, engine: &mut Engine) -> Mesh {
+        let colors = vec![[0.6, 0.6, 0.6]; vertex_data.positions.len()];
+        let normals = vertex_data.normals;
+        let positions = vertex_data.positions;
+        let indices = vertex_data.indices;
 
         let vertex_buffer = engine.wgpu_context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
@@ -59,15 +56,21 @@ impl Mesh {
             usage: wgpu::BufferUsages::INDEX,
         });
 
+        let nb_vertices = positions.len();
+        let vertex_data = VertexData {
+            positions,
+            colors,
+            normals,
+            indices,
+            uvs: vec![[0.0, 0.0]; nb_vertices],
+        };
+
         Mesh {
             name,
             transform: Transform::new(),
-            positions,
+            vertex_data,
             vertex_buffer,
-            indices,
             index_buffer,
-            colors,
-            normals,
             material: Rc::new(Material::new_default(&mut engine.wgpu_context)),
         }
     }
@@ -77,56 +80,8 @@ impl Mesh {
 
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-        render_pass.draw_indexed(0..self.indices.len() as u32, 0, 0..1);
+        render_pass.draw_indexed(0..self.vertex_data.indices.len() as u32, 0, 0..1);
     }
-}
-
-pub fn create_normals(positions: &Vec<[f32; 3]>, indices: &Vec<u32>) -> Vec<[f32; 3]> {
-    let mut normals = vec![[0.0, 0.0, 0.0]; positions.len()];
-
-    for i in 0..indices.len() / 3 {
-        let i0 = indices[i * 3 + 0] as usize;
-        let i1 = indices[i * 3 + 1] as usize;
-        let i2 = indices[i * 3 + 2] as usize;
-
-        let edge1 = [
-            positions[i1][0] - positions[i0][0],
-            positions[i1][1] - positions[i0][1],
-            positions[i1][2] - positions[i0][2],
-        ];
-        let edge2 = [
-            positions[i2][0] - positions[i0][0],
-            positions[i2][1] - positions[i0][1],
-            positions[i2][2] - positions[i0][2],
-        ];
-        let normal = [
-            edge1[1] * edge2[2] - edge1[2] * edge2[1],
-            edge1[2] * edge2[0] - edge1[0] * edge2[2],
-            edge1[0] * edge2[1] - edge1[1] * edge2[0],
-        ];
-
-        normals[i0][0] += normal[0];
-        normals[i0][1] += normal[1];
-        normals[i0][2] += normal[2];
-
-        normals[i1][0] += normal[0];
-        normals[i1][1] += normal[1];
-        normals[i1][2] += normal[2];
-
-        normals[i2][0] += normal[0];
-        normals[i2][1] += normal[1];
-        normals[i2][2] += normal[2];
-    }
-
-    // Normalize normals
-    for normal in normals.iter_mut() {
-        let length = (normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]).sqrt();
-        normal[0] /= length;
-        normal[1] /= length;
-        normal[2] /= length;
-    }
-
-    normals
 }
 
 pub fn zip_vertex_data(positions: &[[f32; 3]], colors: &[[f32; 3]], normals: &[[f32; 3]]) -> Vec<Vertex> {

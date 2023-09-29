@@ -2,10 +2,10 @@ use std::iter;
 use bytemuck::cast_slice;
 use cgmath::{InnerSpace};
 use winit::event::{ElementState, KeyboardInput, MouseScrollDelta, VirtualKeyCode, WindowEvent};
-use crate::engine::Engine;
+use crate::core::engine::Engine;
 use crate::camera::{BasicCamera};
-use crate::mesh::{Mesh};
-use crate::mouse::Mouse;
+use crate::geometry::mesh::{Mesh};
+use crate::input::mouse::Mouse;
 
 pub const ANIMATION_SPEED: f32 = 1.0;
 

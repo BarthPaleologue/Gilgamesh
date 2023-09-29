@@ -1,8 +1,8 @@
 use cgmath::{Point3, Vector3};
-use crate::engine::Engine;
-use crate::mouse::Mouse;
+use crate::core::engine::Engine;
+use crate::input::mouse::Mouse;
 
-pub trait TransformControl {
+pub trait TransformMouseController {
     fn update(&mut self, mouse: &Mouse, engine: &Engine) -> (Vector3<f32>, Point3<f32>, Point3<f32>);
 }
 
@@ -24,7 +24,7 @@ impl Default for OrbitControl {
     }
 }
 
-impl TransformControl for OrbitControl {
+impl TransformMouseController for OrbitControl {
     fn update(&mut self, mouse: &Mouse, engine: &Engine) -> (Vector3<f32>, Point3<f32>, Point3<f32>) {
         if mouse.left_button_pressed {
             self.phi += mouse.delta[0] * engine.get_delta_time();

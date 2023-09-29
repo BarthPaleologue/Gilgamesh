@@ -2,10 +2,10 @@ use bytemuck::cast_slice;
 use cgmath::{Matrix4, SquareMatrix};
 use wgpu::{BindGroup, BindGroupLayout, Buffer, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
 use wgpu::util::{DeviceExt};
-use crate::engine::Engine;
+use crate::core::engine::Engine;
 
-use crate::mesh::Vertex;
-use crate::wgpu_context::WGPUContext;
+use crate::geometry::mesh::Vertex;
+use crate::core::wgpu_context::WGPUContext;
 
 pub struct Material {
     pub shader_module: ShaderModule,
@@ -20,7 +20,7 @@ impl Material {
     pub fn new_default(wgpu_context: &mut WGPUContext) -> Material {
         let shader = wgpu_context.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(include_str!("shader/shader.wgsl").into()),
         });
 
         let mvp: Matrix4<f32> = Matrix4::identity();
@@ -109,7 +109,7 @@ impl Material {
     pub fn new_2d_terrain(max_height: f32, engine: &mut Engine) -> Material {
         let shader = engine.wgpu_context.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("./flat_terrain.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(include_str!("shader/flat_terrain.wgsl").into()),
         });
 
         let mvp: Matrix4<f32> = Matrix4::identity();
@@ -225,7 +225,7 @@ impl Material {
     pub fn new_sphere_terrain(sphere_radius: f32, max_height: f32, engine: &mut Engine) -> Material {
         let shader = engine.wgpu_context.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("./sphere_terrain.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(include_str!("shader/sphere_terrain.wgsl").into()),
         });
 
         let mvp: Matrix4<f32> = Matrix4::identity();

@@ -5,8 +5,8 @@ use winit::window::{Window, WindowBuilder};
 use cgmath::*;
 use winit::dpi::{PhysicalSize, Size};
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
-use crate::scene::Scene;
-use crate::wgpu_context::WGPUContext;
+use crate::core::scene::Scene;
+use crate::core::wgpu_context::WGPUContext;
 
 pub const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
     1.0, 0.0, 0.0, 0.0,

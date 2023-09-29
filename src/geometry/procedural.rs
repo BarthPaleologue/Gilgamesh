@@ -1,18 +1,21 @@
 use std::rc::Rc;
 use hexasphere::shapes::IcoSphere;
-use crate::engine::Engine;
+use crate::core::engine::Engine;
 
 use crate::material::Material;
-use crate::mesh::Mesh;
+use crate::geometry::mesh::Mesh;
+use crate::geometry::vertex_data::VertexData;
 
-impl Mesh {
+pub struct ProceduralMesh {}
+
+impl ProceduralMesh {
     /// Creates a new procedural 2D terrain.
     /// It is made of a subdivided plane, with a given `size` and number of subdivisions (`nb_subdivisions`)
     /// The `height_fn` takes x and z as parameters and is used to set the y coordinate of each vertex.
     /// The `max_height` parameter is used to scale the y coordinate of each vertex in the range [0, 1]
     /// `engine` is a mutable reference to the Gilgamesh engine.
     /// It returns a Mesh that can be moved with its transform and with a default terrain material.
-    pub fn new_procedural_terrain(name: String, size: f32, nb_subdivisions: u32, height_fn: &dyn Fn(f32, f32) -> f32, max_height: f32, engine: &mut Engine) -> Mesh {
+    pub fn terrain(name: String, size: f32, nb_subdivisions: u32, height_fn: &dyn Fn(f32, f32) -> f32, max_height: f32, engine: &mut Engine) -> Mesh {
         let mut positions = vec!([0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize);
         let mut indices = vec!(0; (6 * (nb_subdivisions - 1) * (nb_subdivisions - 1)) as usize);
 
@@ -36,7 +39,17 @@ impl Mesh {
             }
         }
 
-        let mut mesh = Mesh::from_vertex_data(name, indices, positions, None, engine);
+        let nb_vertices = positions.len();
+        let mut vertex_data = VertexData {
+            positions,
+            colors: vec![[0.6, 0.6, 0.6]; nb_vertices],
+            normals: vec![[0.0, 0.0, 0.0]; nb_vertices],
+            indices,
+            uvs: vec![[0.0, 0.0]; nb_vertices],
+        };
+        vertex_data.create_normals();
+
+        let mut mesh = Mesh::from_vertex_data(name, vertex_data, engine);
         mesh.material = Rc::from(Material::new_2d_terrain(max_height, engine));
 
         mesh
@@ -47,7 +60,7 @@ impl Mesh {
     /// The `height_fn` takes x, y and z as parameters and is used to set the height of each vertex above the surface of the sphere.
     /// The `max_height` parameter is used to scale the height of each vertex in the range [0, 1]
     /// `engine` is a mutable reference to the Gilgamesh engine.
-    pub fn new_procedural_sphere(name: String, diameter: f32, nb_subdivisions: u32, height_fn: &dyn Fn(f32, f32, f32) -> f32, max_height: f32, engine: &mut Engine) -> Mesh {
+    pub fn sphere(name: String, diameter: f32, nb_subdivisions: u32, height_fn: &dyn Fn(f32, f32, f32) -> f32, max_height: f32, engine: &mut Engine) -> Mesh {
         let sphere = IcoSphere::new(nb_subdivisions as usize, |_| ());
         let vertices_raw = sphere.raw_points();
         let mut vertices: Vec<[f32; 3]> = Vec::with_capacity(vertices_raw.len());
@@ -65,7 +78,17 @@ impl Mesh {
 
         let indices = sphere.get_all_indices();
 
-        let mut mesh = Mesh::from_vertex_data(name, indices, vertices, None, engine);
+        let nb_vertices = vertices.len();
+        let mut vertex_data = VertexData {
+            positions: vertices,
+            colors: vec![[0.6, 0.6, 0.6]; nb_vertices],
+            normals: vec![[0.0, 0.0, 0.0]; nb_vertices],
+            indices,
+            uvs: vec![[0.0, 0.0]; nb_vertices],
+        };
+        vertex_data.create_normals();
+
+        let mut mesh = Mesh::from_vertex_data(name, vertex_data, engine);
         mesh.material = Rc::from(Material::new_sphere_terrain(diameter / 2.0, max_height, engine));
 
         mesh

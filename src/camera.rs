@@ -1,9 +1,9 @@
 use cgmath::{Deg, EuclideanSpace, Matrix4, perspective, Point3, Vector3};
-use crate::transform_control::TransformControl;
+use crate::input::transform_control::TransformMouseController;
 
 use crate::transform::{Transform, Transformable};
-use crate::engine::{Engine, OPENGL_TO_WGPU_MATRIX};
-use crate::mouse::Mouse;
+use crate::core::engine::{Engine, OPENGL_TO_WGPU_MATRIX};
+use crate::input::mouse::Mouse;
 
 pub struct BasicCamera {
     pub transform: Transform,
@@ -12,7 +12,7 @@ pub struct BasicCamera {
     pub z_near: f32,
     pub z_far: f32,
 
-    pub control: Option<Box<dyn TransformControl>>,
+    pub control: Option<Box<dyn TransformMouseController>>,
 }
 
 impl BasicCamera {

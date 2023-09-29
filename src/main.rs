@@ -3,10 +3,11 @@ extern crate gilgamesh;
 use cgmath::Rotation3;
 use winit::event::VirtualKeyCode::*;
 use gilgamesh::camera::BasicCamera;
-use gilgamesh::transform_control::OrbitControl;
-use gilgamesh::engine::Engine;
-use gilgamesh::mesh::Mesh;
-use gilgamesh::scene::Scene;
+use gilgamesh::input::transform_control::OrbitControl;
+use gilgamesh::core::engine::Engine;
+use gilgamesh::geometry::mesh::Mesh;
+use gilgamesh::core::scene::Scene;
+use gilgamesh::geometry::procedural::ProceduralMesh;
 use gilgamesh::transform::Transformable;
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(start))]
@@ -21,16 +22,16 @@ pub fn run() {
 
     scene.set_active_camera(camera);
 
-    let sphere = Mesh::new_procedural_sphere("Sphere".into(), 5.0, 32, &|x, y, z| {
+    let sphere = ProceduralMesh::sphere("Sphere".into(), 5.0, 32, &|x, y, z| {
         f32::powi(f32::sin(60.0 * x * y * z), 2) * 0.5
     }, 0.5, &mut engine);
     let sphere_idx = scene.add_mesh(sphere);
 
 
-    let sphere2 = Mesh::new_procedural_sphere("Sphere2".into(), 1.0, 32, &|x, y, z| 0.0, 0.5, &mut engine);
+    let sphere2 = ProceduralMesh::sphere("Sphere2".into(), 1.0, 32, &|x, y, z| 0.0, 0.5, &mut engine);
     let sphere2_idx = scene.add_mesh(sphere2);
 
-    let mut plane = Mesh::new_procedural_terrain("Plane".into(), 10.0, 10, &|x, z| 0.0, 1.0, &mut engine);
+    let mut plane = ProceduralMesh::terrain("Plane".into(), 10.0, 10, &|x, z| 0.0, 1.0, &mut engine);
     plane.transform.set_position(0.0, -5.0, 0.0);
     let plane_idx = scene.add_mesh(plane);
 
