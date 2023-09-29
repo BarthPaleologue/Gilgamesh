@@ -62,6 +62,13 @@ impl Scene {
             } => {
                 self.on_mouse_moved.iter_mut().for_each(|f| f(engine, &mut self.active_camera, pos));
             }
+            WindowEvent::MouseInput {
+                state: ElementState::Pressed,
+                button: winit::event::MouseButton::Left,
+                ..
+            } => {
+                println!("Left mouse button pressed");
+            }
             _ => {}
         }
 
