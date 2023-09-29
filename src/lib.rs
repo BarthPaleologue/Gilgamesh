@@ -10,4 +10,4 @@ pub mod material;
 pub mod engine;
 pub mod wgpu_context;
 pub mod mouse;
-pub mod camera_control;
+pub mod transform_control;

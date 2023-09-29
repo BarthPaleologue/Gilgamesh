@@ -1,7 +1,7 @@
 use cgmath::{Point3, Vector3};
 use crate::mouse::Mouse;
 
-pub trait CameraControl {
+pub trait TransformControl {
     fn update(&mut self, mouse: &Mouse) -> (Vector3<f32>, Point3<f32>, Point3<f32>);
 }
 
@@ -23,7 +23,7 @@ impl Default for OrbitControl {
     }
 }
 
-impl CameraControl for OrbitControl {
+impl TransformControl for OrbitControl {
     fn update(&mut self, mouse: &Mouse) -> (Vector3<f32>, Point3<f32>, Point3<f32>) {
         if mouse.left_button_pressed {
             self.phi += mouse.delta[0] * 0.01;

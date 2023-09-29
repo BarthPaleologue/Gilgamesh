@@ -1,5 +1,5 @@
 use cgmath::{Deg, EuclideanSpace, Matrix4, perspective, Point3, Vector3};
-use crate::camera_control::CameraControl;
+use crate::transform_control::TransformControl;
 
 use crate::transform::{Transform, Transformable};
 use crate::engine::{Engine, OPENGL_TO_WGPU_MATRIX};
@@ -12,7 +12,7 @@ pub struct BasicCamera {
     pub z_near: f32,
     pub z_far: f32,
 
-    pub control: Option<Box<dyn CameraControl>>,
+    pub control: Option<Box<dyn TransformControl>>,
 }
 
 impl BasicCamera {

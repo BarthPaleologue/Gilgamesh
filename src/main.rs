@@ -3,7 +3,7 @@ extern crate gilgamesh;
 use cgmath::Rotation3;
 use winit::event::VirtualKeyCode::*;
 use gilgamesh::camera::BasicCamera;
-use gilgamesh::camera_control::OrbitControl;
+use gilgamesh::transform_control::OrbitControl;
 use gilgamesh::engine::Engine;
 use gilgamesh::mesh::Mesh;
 use gilgamesh::scene::Scene;
