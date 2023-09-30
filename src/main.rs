@@ -31,10 +31,8 @@ pub fn run() {
 
     let cube = PrimitiveMesh::cube("Cube", &mut engine);
 
-    let sphere_transform = scene.meshes[sphere_idx].transform_rc();
     cube.transform_mut().position = Vector3::new(8.0, 0.0, 0.0);
-    cube.transform_mut().parent = Some(sphere_transform);
-
+    cube.transform_mut().parent = Some(scene.meshes[sphere_idx].transform_rc());
     let cube_idx = scene.add_mesh(cube);
 
     let plane = PrimitiveMesh::plane("Plane", 10, 10.0, &mut engine);
@@ -60,11 +58,11 @@ pub fn run() {
             0.0,
         );
 
-        /*meshes[cube_idx].transform.borrow_mut().set_position(
-            6.0 * engine.get_elapsed_time().cos(),
+        meshes[cube_idx].transform_mut().set_position(
+            6.0 + f32::cos(10.0 * engine.get_elapsed_time()),
             0.0,
-            6.0 * engine.get_elapsed_time().sin(),
-        );*/
+            0.0,
+        );
     }));
 
     scene.on_key_pressed.push(Box::new(|engine, active_camera, key| {
