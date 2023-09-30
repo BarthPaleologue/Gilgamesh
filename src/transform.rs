@@ -1,4 +1,4 @@
-use std::cell::{RefCell};
+use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
 use cgmath::{InnerSpace, Matrix4, Point3, Rad, SquareMatrix, Vector3, Vector4};
 
@@ -12,7 +12,9 @@ pub struct Transform {
 }
 
 pub trait Transformable {
-    fn transform(&mut self) -> Rc<RefCell<Transform>>;
+    fn transform(&self) -> Ref<Transform>;
+    fn transform_mut(&self) -> RefMut<Transform>;
+    fn transform_rc(&self) -> Rc<RefCell<Transform>>;
 }
 
 impl Default for Transform {

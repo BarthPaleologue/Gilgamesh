@@ -8,6 +8,7 @@ use gilgamesh::core::engine::Engine;
 use gilgamesh::core::scene::Scene;
 use gilgamesh::geometry::primitive::PrimitiveMesh;
 use gilgamesh::geometry::procedural::ProceduralMesh;
+use gilgamesh::transform::Transformable;
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(start))]
 pub fn run() {
@@ -16,7 +17,6 @@ pub fn run() {
     let mut scene = Scene::new(&engine);
 
     let mut camera = BasicCamera::new(&engine);
-    camera.transform.borrow_mut().set_position(3.0, 1.5, 3.0);
     camera.control = Some(Box::<OrbitControl>::default());
 
     scene.set_active_camera(camera);
@@ -29,16 +29,16 @@ pub fn run() {
     let sphere2 = PrimitiveMesh::sphere("Sphere2", 32, &mut engine);
     let sphere2_idx = scene.add_mesh(sphere2);
 
-    let mut cube = PrimitiveMesh::cube("Cube", &mut engine);
+    let cube = PrimitiveMesh::cube("Cube", &mut engine);
 
-    let sphere_transform = scene.meshes[sphere_idx].transform.clone();
-    cube.transform.borrow_mut().position = Vector3::new(8.0, 0.0, 0.0);
-    cube.transform.borrow_mut().parent = Some(sphere_transform);
+    let sphere_transform = scene.meshes[sphere_idx].transform_rc();
+    cube.transform_mut().position = Vector3::new(8.0, 0.0, 0.0);
+    cube.transform_mut().parent = Some(sphere_transform);
 
     let cube_idx = scene.add_mesh(cube);
 
-    let mut plane = PrimitiveMesh::plane("Plane", 10, 10.0, &mut engine);
-    plane.transform.borrow_mut().set_position(0.0, -5.0, 0.0);
+    let plane = PrimitiveMesh::plane("Plane", 10, 10.0, &mut engine);
+    plane.transform_mut().set_position(0.0, -5.0, 0.0);
     let plane_idx = scene.add_mesh(plane);
 
     scene.on_before_render.push(Box::new(move |engine, active_camera, meshes, mouse| {
@@ -48,13 +48,13 @@ pub fn run() {
             7.0 * engine.get_elapsed_time().cos(),
         );*/
 
-        meshes[sphere2_idx].transform.borrow_mut().set_position(
+        meshes[sphere2_idx].transform_mut().set_position(
             7.0,
             0.0,
             0.0,
         );
 
-        meshes[sphere_idx].transform.borrow_mut().set_rotation(
+        meshes[sphere_idx].transform_mut().set_rotation(
             0.0,
             engine.get_elapsed_time(),
             0.0,

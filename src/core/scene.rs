@@ -6,6 +6,7 @@ use crate::core::engine::Engine;
 use crate::camera::{BasicCamera};
 use crate::geometry::mesh::{Mesh};
 use crate::input::mouse::Mouse;
+use crate::transform::Transformable;
 
 pub const ANIMATION_SPEED: f32 = 1.0;
 
@@ -73,8 +74,8 @@ impl Scene {
                 delta: MouseScrollDelta::LineDelta(_, y),
                 ..
             } => {
-                let out_dir = self.active_camera.as_mut().unwrap().transform.borrow().position.normalize();
-                self.active_camera.as_mut().unwrap().transform.borrow_mut().position -= out_dir * *y * 0.1;
+                let out_dir = self.active_camera.as_mut().unwrap().transform().position.normalize();
+                self.active_camera.as_mut().unwrap().transform_mut().position -= out_dir * *y * 0.1;
             }
             _ => {}
         }
@@ -88,7 +89,7 @@ impl Scene {
         self.on_before_render.iter_mut().for_each(|f| f(engine, &mut self.active_camera, &mut self.meshes, &self.mouse));
 
         for mesh in self.meshes.iter_mut() {
-            let mvp_mat = self.active_camera.as_mut().unwrap().get_projection_matrix() * self.active_camera.as_mut().unwrap().get_view_matrix() * mesh.transform.borrow().compute_world_matrix();
+            let mvp_mat = self.active_camera.as_mut().unwrap().get_projection_matrix() * self.active_camera.as_mut().unwrap().get_view_matrix() * mesh.transform().compute_world_matrix();
             let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
             engine.wgpu_context.queue.write_buffer(&mesh.material.vertex_uniform_buffer, 0, cast_slice(mvp_ref));
         }

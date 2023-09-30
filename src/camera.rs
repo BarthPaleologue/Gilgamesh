@@ -1,4 +1,4 @@
-use std::cell::{RefCell};
+use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
 use cgmath::{Deg, EuclideanSpace, Matrix4, perspective, Point3, Vector3};
 use crate::input::transform_control::TransformMouseController;
@@ -8,7 +8,7 @@ use crate::core::engine::{Engine, OPENGL_TO_WGPU_MATRIX};
 use crate::input::mouse::Mouse;
 
 pub struct BasicCamera {
-    pub transform: Rc<RefCell<Transform>>,
+    transform: Rc<RefCell<Transform>>,
     pub aspect_ratio: f32,
     pub fov: f32,
     pub z_near: f32,
@@ -46,7 +46,14 @@ impl BasicCamera {
 }
 
 impl Transformable for BasicCamera {
-    fn transform(&mut self) -> Rc<RefCell<Transform>> {
+    fn transform(&self) -> Ref<Transform> {
+        self.transform.borrow()
+    }
+    fn transform_mut(&self) -> RefMut<Transform> {
+        self.transform.borrow_mut()
+    }
+
+    fn transform_rc(&self) -> Rc<RefCell<Transform>> {
         self.transform.clone()
     }
 }

@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell, RefMut};
 use std::mem;
 use std::rc::Rc;
 
@@ -32,18 +32,25 @@ impl Vertex {
 
 pub struct Mesh {
     pub name: String,
-    pub transform: Rc<RefCell<Transform>>,
+    transform: Rc<RefCell<Transform>>,
     pub vertex_data: VertexData,
     pub index_buffer: Buffer,
     pub vertex_buffer: Buffer,
     pub material: Rc<Material>,
 }
 
-/*impl Transformable for Mesh {
-    fn transform(&mut self) -> Rc<RefCell<Transform>> {
+impl Transformable for Mesh {
+    fn transform(&self) -> Ref<Transform> {
+        self.transform.borrow()
+    }
+    fn transform_mut(&self) -> RefMut<Transform> {
+        self.transform.borrow_mut()
+    }
+
+    fn transform_rc(&self) -> Rc<RefCell<Transform>> {
         self.transform.clone()
     }
-}*/
+}
 
 impl Mesh {
     pub fn from_vertex_data(name: &str, vertex_data: VertexData, engine: &mut Engine) -> Mesh {
