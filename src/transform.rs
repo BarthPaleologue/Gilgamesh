@@ -1,14 +1,18 @@
-use cgmath::{InnerSpace, Matrix4, Point3, Rad, Vector3, Vector4};
+use std::cell::{RefCell};
+use std::rc::Rc;
+use cgmath::{InnerSpace, Matrix4, Point3, Rad, SquareMatrix, Vector3, Vector4};
 
 #[derive(Debug)]
 pub struct Transform {
     pub position: Vector3<f32>,
     pub rotation: Point3<f32>,
     pub scaling: Point3<f32>,
+
+    pub parent: Option<Rc<RefCell<Transform>>>,
 }
 
 pub trait Transformable {
-    fn transform(&mut self) -> &mut Transform;
+    fn transform(&mut self) -> Rc<RefCell<Transform>>;
 }
 
 impl Default for Transform {
@@ -17,6 +21,8 @@ impl Default for Transform {
             position: Vector3::new(0.0, 0.0, 0.0),
             rotation: Point3::new(0.0, 0.0, 0.0),
             scaling: Point3::new(1.0, 1.0, 1.0),
+
+            parent: None,
         }
     }
 }
@@ -38,14 +44,29 @@ impl Transform {
         self.scaling.z = z;
     }
 
+    pub fn set_rotation(&mut self, x: f32, y: f32, z: f32) {
+        self.rotation.x = x;
+        self.rotation.y = y;
+        self.rotation.z = z;
+    }
+
     pub fn compute_world_matrix(&self) -> Matrix4<f32> {
+        let mut world_matrix = Matrix4::identity();
+
         let position = Matrix4::from_translation(self.position);
         let rotation_x = Matrix4::from_angle_x(Rad(self.rotation.x));
         let rotation_y = Matrix4::from_angle_y(Rad(self.rotation.y));
         let rotation_z = Matrix4::from_angle_z(Rad(self.rotation.z));
         let scaling = Matrix4::from_nonuniform_scale(self.scaling.x, self.scaling.y, self.scaling.z);
 
-        position * scaling * rotation_z * rotation_y * rotation_x
+        world_matrix = world_matrix * position * rotation_z * rotation_y * rotation_x * scaling;
+
+        if let Some(parent) = &self.parent {
+            let parent_world_matrix = parent.borrow().compute_world_matrix();
+            world_matrix = parent_world_matrix * world_matrix;
+        }
+
+        world_matrix
     }
 
     pub fn local_direction_to_world(&self, local_direction: Vector3<f32>) -> Vector3<f32> {

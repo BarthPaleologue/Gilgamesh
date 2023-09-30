@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::mem;
 use std::rc::Rc;
 
@@ -7,7 +8,7 @@ use wgpu::util::DeviceExt;
 use crate::core::engine::Engine;
 use crate::geometry::vertex_data::VertexData;
 
-use crate::transform::Transform;
+use crate::transform::{Transform, Transformable};
 use crate::material::Material;
 
 #[repr(C)]
@@ -31,12 +32,18 @@ impl Vertex {
 
 pub struct Mesh {
     pub name: String,
-    pub transform: Transform,
+    pub transform: Rc<RefCell<Transform>>,
     pub vertex_data: VertexData,
     pub index_buffer: Buffer,
     pub vertex_buffer: Buffer,
     pub material: Rc<Material>,
 }
+
+/*impl Transformable for Mesh {
+    fn transform(&mut self) -> Rc<RefCell<Transform>> {
+        self.transform.clone()
+    }
+}*/
 
 impl Mesh {
     pub fn from_vertex_data(name: &str, vertex_data: VertexData, engine: &mut Engine) -> Mesh {
@@ -67,7 +74,7 @@ impl Mesh {
 
         Mesh {
             name: name.to_string(),
-            transform: Transform::new(),
+            transform: Rc::new(RefCell::new(Transform::new())),
             vertex_data,
             vertex_buffer,
             index_buffer,
