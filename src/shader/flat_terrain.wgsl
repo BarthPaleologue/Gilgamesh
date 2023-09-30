@@ -8,7 +8,8 @@ struct Uniforms {
 struct VertexInput {
     @location(0) pos: vec4<f32>,
     @location(1) color: vec4<f32>,
-    @location(2) normal: vec4<f32>
+    @location(2) normal: vec4<f32>,
+    @location(3) uv: vec2<f32>
 };
 
 struct VertexOutput {

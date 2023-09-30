@@ -1,7 +1,9 @@
+use bytemuck::{Pod, Zeroable};
 use crate::camera::camera::Camera;
 use crate::transform::Transformable;
 
-#[derive(Default)]
+#[repr(C)]
+#[derive(Default, Debug, Copy, Clone, Pod, Zeroable)]
 pub struct CameraUniforms {
     view_proj: [[f32; 4]; 4],
     position: [f32; 3],

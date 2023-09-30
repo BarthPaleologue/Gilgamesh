@@ -1,8 +1,8 @@
-use bytemuck::cast_slice;
+use bytemuck::{cast_slice};
 use cgmath::{Matrix4, SquareMatrix};
 use wgpu::{BindGroup, BindGroupLayout, Buffer, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
 use wgpu::util::{DeviceExt};
-use crate::core::engine::Engine;
+use crate::camera::uniforms::CameraUniforms;
 
 use crate::geometry::mesh::Vertex;
 use crate::core::wgpu_context::WGPUContext;
@@ -19,6 +19,15 @@ pub struct Material {
 
 impl Material {
     pub fn new(shader: ShaderModule, vertex_uniform_buffer: Buffer, fragment_uniform_buffer: Buffer, wgpu_context: &mut WGPUContext) -> Material {
+        let camera_uniforms = CameraUniforms::default();
+        let camera_buffer = wgpu_context.device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Camera Buffer"),
+                contents: cast_slice(&[camera_uniforms]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            }
+        );
+
         let uniform_bind_group_layout = wgpu_context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
@@ -38,6 +47,15 @@ impl Material {
                     min_binding_size: None,
                 },
                 count: None,
+            }, wgpu::BindGroupLayoutEntry {
+                binding: 2,
+                visibility: wgpu::ShaderStages::all(),
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
             }],
             label: Some("Uniform Bind Group Layout"),
         });
@@ -50,6 +68,9 @@ impl Material {
             }, wgpu::BindGroupEntry {
                 binding: 1,
                 resource: fragment_uniform_buffer.as_entire_binding(),
+            }, wgpu::BindGroupEntry {
+                binding: 2,
+                resource: camera_buffer.as_entire_binding(),
             }],
             label: Some("Uniform Bind Group"),
         });
@@ -159,6 +180,26 @@ impl Material {
         wgpu_context.queue.write_buffer(&fragment_uniform_buffer, 12, cast_slice(camera_position));
         wgpu_context.queue.write_buffer(&fragment_uniform_buffer, 28, cast_slice(&max_height.to_ne_bytes()));
 
+        /*#[repr(C)]
+        #[derive(Debug, Copy, Clone, Pod, Zeroable)]
+        struct FragUniforms {
+            light_dir: [f32; 3],
+            camera_position: [f32; 3],
+            max_height: f32,
+        }
+        let frag_uniforms = FragUniforms {
+            light_dir: [1.0, 1.0, 0.5],
+            camera_position: [0.0, 0.0, 0.0],
+            max_height,
+        };*/
+
+        // create fragment uniform buffer. here we set eye_position = camera_position and light_position = eye_position
+        /*let fragment_uniform_buffer = wgpu_context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Fragment Uniform Buffer"),
+            contents: cast_slice(&[frag_uniforms]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });*/
+
         Material::new(shader, vertex_uniform_buffer, fragment_uniform_buffer, wgpu_context)
     }
 
@@ -176,6 +217,22 @@ impl Material {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
+        // store light and eye positions
+        /*#[repr(C)]
+        #[derive(Debug, Copy, Clone, Pod, Zeroable)]
+        struct FragUniforms {
+            light_dir: [f32; 3],
+            camera_position: [f32; 3],
+            max_height: f32,
+            sphere_radius: f32
+        }
+        let frag_uniforms = FragUniforms {
+            light_dir: [1.0, 1.0, 0.5],
+            camera_position: [0.0, 0.0, 0.0],
+            max_height,
+            sphere_radius,
+        };*/
+
         // create fragment uniform buffer. here we set eye_position = camera_position and light_position = eye_position
         let fragment_uniform_buffer = wgpu_context.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Fragment Uniform Buffer"),
@@ -184,13 +241,19 @@ impl Material {
             mapped_at_creation: false,
         });
 
-        // store light and eye positions
         let light_dir: &[f32; 3] = &[1.0, 1.0, 0.5];
         let camera_position: &[f32; 3] = &[0.0, 0.0, 0.0];
         wgpu_context.queue.write_buffer(&fragment_uniform_buffer, 0, cast_slice(light_dir));
         wgpu_context.queue.write_buffer(&fragment_uniform_buffer, 12, cast_slice(camera_position));
         wgpu_context.queue.write_buffer(&fragment_uniform_buffer, 28, cast_slice(&max_height.to_ne_bytes()));
         wgpu_context.queue.write_buffer(&fragment_uniform_buffer, 32, cast_slice(&sphere_radius.to_ne_bytes()));
+
+        // create fragment uniform buffer. here we set eye_position = camera_position and light_position = eye_position
+        /*let fragment_uniform_buffer = wgpu_context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Fragment Uniform Buffer"),
+            contents: cast_slice(&[]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });*/
 
         Material::new(shader, vertex_uniform_buffer, fragment_uniform_buffer, wgpu_context)
     }

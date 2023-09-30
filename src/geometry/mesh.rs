@@ -17,10 +17,11 @@ pub struct Vertex {
     pub position: [f32; 4],
     pub color: [f32; 4],
     pub normal: [f32; 4],
+    pub uv: [f32; 2]
 }
 
 impl Vertex {
-    const ATTRIBUTES: [wgpu::VertexAttribute; 3] = wgpu::vertex_attr_array![0=>Float32x4, 1=>Float32x4, 2=>Float32x4];
+    const ATTRIBUTES: [wgpu::VertexAttribute; 4] = wgpu::vertex_attr_array![0=>Float32x4, 1=>Float32x4, 2=>Float32x4, 3=>Float32x2];
     pub(crate) fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         wgpu::VertexBufferLayout {
             array_stride: mem::size_of::<Vertex>() as wgpu::BufferAddress,
@@ -57,10 +58,11 @@ impl Mesh {
         let normals = vertex_data.normals;
         let positions = vertex_data.positions;
         let indices = vertex_data.indices;
+        let uvs = vertex_data.uvs;
 
         let vertex_buffer = engine.wgpu_context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
-            contents: cast_slice(&zip_vertex_data(&positions, &colors, &normals)),
+            contents: cast_slice(&zip_vertex_data(&positions, &colors, &normals, &uvs)),
             usage: wgpu::BufferUsages::VERTEX,
         });
         let index_buffer = engine.wgpu_context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -97,13 +99,14 @@ impl Mesh {
     }
 }
 
-pub fn zip_vertex_data(positions: &[[f32; 3]], colors: &[[f32; 3]], normals: &[[f32; 3]]) -> Vec<Vertex> {
+pub fn zip_vertex_data(positions: &[[f32; 3]], colors: &[[f32; 3]], normals: &[[f32; 3]], uvs: &[[f32; 2]]) -> Vec<Vertex> {
     let mut data: Vec<Vertex> = Vec::with_capacity(positions.len());
     for i in 0..positions.len() {
         data.push(Vertex {
             position: [positions[i][0], positions[i][1], positions[i][2], 1.0],
             color: [colors[i][0], colors[i][1], colors[i][2], 1.0],
             normal: [normals[i][0], normals[i][1], normals[i][2], 1.0],
+            uv: [uvs[i][0], uvs[i][1]]
         });
     }
     data.to_vec()
