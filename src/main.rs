@@ -26,7 +26,7 @@ pub fn run() {
     let sphere_idx = scene.add_mesh(sphere);
 
 
-    let sphere2 = ProceduralMesh::sphere("Sphere2", 1.0, 32, &|x, y, z| 0.0, 0.5, &mut engine);
+    let sphere2 = PrimitiveMesh::sphere("Sphere2", 32, &mut engine);
     let sphere2_idx = scene.add_mesh(sphere2);
 
     let cube = PrimitiveMesh::cube("Cube", &mut engine);
@@ -37,10 +37,16 @@ pub fn run() {
     let plane_idx = scene.add_mesh(plane);
 
     scene.on_before_render.push(Box::new(move |engine, active_camera, meshes, mouse| {
-        meshes[sphere2_idx].transform.set_position(
+        /*meshes[sphere2_idx].transform.set_position(
             7.0 * engine.get_elapsed_time().sin(),
             0.0,
             7.0 * engine.get_elapsed_time().cos(),
+        );*/
+
+        meshes[sphere2_idx].transform.set_position(
+            7.0,
+            0.0,
+            0.0,
         );
 
         meshes[cube_idx].transform.set_position(

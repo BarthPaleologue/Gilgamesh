@@ -107,4 +107,80 @@ impl PrimitiveMesh {
 
         Mesh::from_vertex_data(name, vertex_data, engine)
     }
+
+    pub fn sphere(name: &str, resolution: u32, engine: &mut Engine) -> Mesh {
+        let mut positions = Vec::new();
+        let mut normals = Vec::new();
+        let mut uvs = Vec::new();
+        let mut indices = Vec::new();
+        let mut colors = Vec::new();
+
+        let pi = std::f32::consts::PI;
+
+        let sector_step = 2.0 * pi / (resolution as f32 - 1.0);
+        let stack_step = pi / (resolution as f32 - 1.0);
+
+        for i in 0..resolution {
+            let stack_angle = pi / 2.0 - i as f32 * stack_step;        // starting from pi/2 to -pi/2
+            let xy = stack_angle.cos();             // r * cos(u)
+            let z = stack_angle.sin();              // r * sin(u)
+
+            // add (sectorCount+1) positions per stack
+            // the first and last positions have same position and normal, but different tex coords
+            for j in 0..resolution {
+                let sector_angle = j as f32 * sector_step;           // starting from 0 to 2pi
+
+                // vertex position
+                let x = xy * sector_angle.cos();             // r * cos(u) * cos(v)
+                let y = xy * sector_angle.sin();             // r * cos(u) * sin(v)
+                positions.push([x, z, y]);
+
+                // normalized vertex normal
+                let nx = x;
+                let ny = z;
+                let nz = y;
+                normals.push([nx, ny, nz]);
+
+                // vertex tex coord between [0, 1]
+                let s = j as f32 / (resolution as f32 - 1.0);
+                let t = i as f32 / (resolution as f32 - 1.0);
+                uvs.push([1.0 - s, t]);
+
+                colors.push([1.0, 1.0, 1.0]);
+            }
+        }
+
+        // indices
+        //  k1--k1+1
+        //  |  / |
+        //  | /  |
+        //  k2--k2+1
+        for i in 0..resolution - 1 {
+            let k1 = i * resolution;     // beginning of current stack
+            let k2 = k1 + resolution;    // beginning of next stack
+
+            for j in 0..resolution - 1 {
+                // 2 triangles per sector excluding first and last stacks
+                // k1 => k2 => k1+1
+                indices.push(k1 + j);
+                indices.push(k1 + j + 1);
+                indices.push(k2 + j);
+
+                // k1+1 => k2 => k2+1
+                indices.push(k1 + j + 1);
+                indices.push(k2 + j + 1);
+                indices.push(k2 + j);
+            }
+        }
+
+        let vertex_data = VertexData {
+            positions,
+            normals,
+            uvs,
+            indices,
+            colors,
+        };
+
+        Mesh::from_vertex_data(name, vertex_data, engine)
+    }
 }
