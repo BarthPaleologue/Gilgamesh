@@ -2,7 +2,7 @@ extern crate gilgamesh;
 
 use cgmath::Vector3;
 use winit::event::VirtualKeyCode::*;
-use gilgamesh::camera::BasicCamera;
+use gilgamesh::camera::camera::Camera;
 use gilgamesh::input::transform_control::OrbitControl;
 use gilgamesh::core::engine::Engine;
 use gilgamesh::core::scene::Scene;
@@ -16,7 +16,7 @@ pub fn run() {
 
     let mut scene = Scene::new(&engine);
 
-    let mut camera = BasicCamera::new(&engine);
+    let mut camera = Camera::new(&engine);
     camera.control = Some(Box::<OrbitControl>::default());
 
     scene.set_active_camera(camera);

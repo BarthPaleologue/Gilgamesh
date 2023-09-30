@@ -3,20 +3,20 @@ use bytemuck::cast_slice;
 use cgmath::{InnerSpace};
 use winit::event::{ElementState, KeyboardInput, MouseScrollDelta, VirtualKeyCode, WindowEvent};
 use crate::core::engine::Engine;
-use crate::camera::{BasicCamera};
+use crate::camera::camera::{Camera};
 use crate::geometry::mesh::{Mesh};
 use crate::input::mouse::Mouse;
 use crate::transform::Transformable;
 
 pub const ANIMATION_SPEED: f32 = 1.0;
 
-pub type SceneClosure = Box<dyn FnMut(&Engine, &mut Option<BasicCamera>, &mut Vec<Mesh>, &Mouse)>;
+pub type SceneClosure = Box<dyn FnMut(&Engine, &mut Option<Camera>, &mut Vec<Mesh>, &Mouse)>;
 
 pub struct Scene {
-    pub active_camera: Option<BasicCamera>,
+    pub active_camera: Option<Camera>,
     pub meshes: Vec<Mesh>,
     pub mouse: Mouse,
-    pub on_key_pressed: Vec<Box<dyn FnMut(&Engine, &mut Option<BasicCamera>, &VirtualKeyCode)>>,
+    pub on_key_pressed: Vec<Box<dyn FnMut(&Engine, &mut Option<Camera>, &VirtualKeyCode)>>,
     pub on_before_render: Vec<SceneClosure>,
 }
 
@@ -31,7 +31,7 @@ impl Scene {
         }
     }
 
-    pub fn set_active_camera(&mut self, camera: BasicCamera) {
+    pub fn set_active_camera(&mut self, camera: Camera) {
         self.active_camera = Some(camera);
     }
 
@@ -89,7 +89,7 @@ impl Scene {
         self.on_before_render.iter_mut().for_each(|f| f(engine, &mut self.active_camera, &mut self.meshes, &self.mouse));
 
         for mesh in self.meshes.iter_mut() {
-            let mvp_mat = self.active_camera.as_mut().unwrap().get_projection_matrix() * self.active_camera.as_mut().unwrap().get_view_matrix() * mesh.transform().compute_world_matrix();
+            let mvp_mat = self.active_camera.as_mut().unwrap().projection_matrix() * self.active_camera.as_mut().unwrap().view_matrix() * mesh.transform().compute_world_matrix();
             let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
             engine.wgpu_context.queue.write_buffer(&mesh.material.vertex_uniform_buffer, 0, cast_slice(mvp_ref));
         }
