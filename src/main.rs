@@ -29,6 +29,9 @@ pub fn run() {
     let sphere2 = ProceduralMesh::sphere("Sphere2", 1.0, 32, &|x, y, z| 0.0, 0.5, &mut engine);
     let sphere2_idx = scene.add_mesh(sphere2);
 
+    let cube = PrimitiveMesh::cube("Cube", &mut engine);
+    let cube_idx = scene.add_mesh(cube);
+
     let mut plane = PrimitiveMesh::plane("Plane", 10, 10.0, &mut engine);
     plane.transform.set_position(0.0, -5.0, 0.0);
     let plane_idx = scene.add_mesh(plane);
@@ -38,6 +41,12 @@ pub fn run() {
             7.0 * engine.get_elapsed_time().sin(),
             0.0,
             7.0 * engine.get_elapsed_time().cos(),
+        );
+
+        meshes[cube_idx].transform.set_position(
+            6.0 * engine.get_elapsed_time().cos(),
+            0.0,
+            6.0 * engine.get_elapsed_time().sin(),
         );
     }));
 
