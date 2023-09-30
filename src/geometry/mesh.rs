@@ -46,7 +46,6 @@ impl Transformable for Mesh {
     fn transform_mut(&self) -> RefMut<Transform> {
         self.transform.borrow_mut()
     }
-
     fn transform_rc(&self) -> Rc<RefCell<Transform>> {
         self.transform.clone()
     }
@@ -89,7 +88,7 @@ impl Mesh {
         }
     }
 
-    pub fn draw<'a>(&'a self, render_pass: &mut RenderPass<'a>) {
+    pub fn render<'a>(&'a self, render_pass: &mut RenderPass<'a>) {
         self.material.bind(render_pass);
 
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));

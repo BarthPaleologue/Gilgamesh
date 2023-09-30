@@ -148,7 +148,7 @@ impl Scene {
             });
 
             for mesh in self.meshes.iter_mut() {
-                mesh.draw(&mut render_pass);
+                mesh.render(&mut render_pass);
             }
         }
 
