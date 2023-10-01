@@ -7,3 +7,4 @@ pub mod material;
 pub mod geometry;
 pub mod core;
 pub mod input;
+pub mod lights;
