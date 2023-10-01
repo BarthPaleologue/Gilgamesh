@@ -5,14 +5,14 @@ use crate::transform::Transformable;
 #[repr(C)]
 #[derive(Default, Debug, Copy, Clone, Pod, Zeroable)]
 pub struct CameraUniforms {
-    view_proj: [[f32; 4]; 4],
+    proj_view: [[f32; 4]; 4],
     position: [f32; 3],
     _padding: u32,
 }
 
 impl CameraUniforms {
     pub fn update(&mut self, camera: &Camera) {
-        self.view_proj = camera.view_projection_matrix().into();
+        self.proj_view = camera.proj_view().into();
         self.position = camera.transform().position.into();
     }
 }

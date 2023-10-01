@@ -1,6 +1,6 @@
 use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
-use cgmath::{InnerSpace, Matrix4, Point3, Rad, SquareMatrix, Vector3, Vector4};
+use cgmath::{InnerSpace, Matrix, Matrix4, Point3, Rad, SquareMatrix, Vector3, Vector4};
 
 #[derive(Debug)]
 pub struct Transform {
@@ -9,6 +9,24 @@ pub struct Transform {
     pub scaling: Point3<f32>,
 
     pub parent: Option<Rc<RefCell<Transform>>>,
+}
+
+#[repr(C)]
+#[derive(Default, Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct TransformUniforms {
+    pub position: [f32; 3],
+    // Due to uniforms requiring 16 byte (4 float) spacing, we need to use a padding field here
+    _padding1: u32,
+    pub world_matrix: [[f32; 4]; 4],
+    pub normal_matrix: [[f32; 4]; 4],
+}
+
+impl TransformUniforms {
+    pub fn update(&mut self, transform: &Transform) {
+        self.position = transform.position.into();
+        self.world_matrix = transform.compute_world_matrix().into();
+        self.normal_matrix = transform.compute_normal_matrix().into();
+    }
 }
 
 pub trait Transformable {
@@ -69,6 +87,12 @@ impl Transform {
         }
 
         world_matrix
+    }
+
+    pub fn compute_normal_matrix(&self) -> Matrix4<f32> {
+        let world_matrix = self.compute_world_matrix();
+        let normal_matrix = world_matrix.invert().unwrap().transpose();
+        normal_matrix
     }
 
     pub fn local_direction_to_world(&self, local_direction: Vector3<f32>) -> Vector3<f32> {

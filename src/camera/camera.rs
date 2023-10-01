@@ -34,8 +34,8 @@ impl Camera {
     pub fn projection_matrix(&self) -> Matrix4<f32> {
         OPENGL_TO_WGPU_MATRIX * perspective(Deg(self.fov), self.aspect_ratio, self.z_near, self.z_far)
     }
-    pub fn view_projection_matrix(&self) -> Matrix4<f32> {
-        self.view_matrix() * self.projection_matrix()
+    pub fn proj_view(&self) -> Matrix4<f32> {
+        self.projection_matrix() * self.view_matrix()
     }
 
     pub fn listen_to_control(&mut self, mouse: &Mouse, engine: &Engine) {

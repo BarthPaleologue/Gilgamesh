@@ -1,5 +1,6 @@
 use std::cell::{Ref, RefCell, RefMut};
 use std::mem;
+use std::ops::Deref;
 use std::rc::Rc;
 
 use bytemuck::{cast_slice, Pod, Zeroable};
@@ -9,6 +10,7 @@ use crate::camera::camera::Camera;
 use crate::core::engine::Engine;
 use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::vertex_data::VertexData;
+use crate::lights::directional_light::DirectionalLight;
 
 use crate::transform::{Transform, Transformable};
 use crate::material::Material;
@@ -93,12 +95,9 @@ impl Mesh {
     }
 
     /// you may be asking wtf is going on with the lifetimes here, and I don't know either. Dark magic.
-    pub fn render<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, active_camera: &Camera, wgpu_context: &mut WGPUContext) {
-        let mvp_mat = active_camera.projection_matrix() * active_camera.view_matrix() * self.transform().compute_world_matrix();
-        let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
-        wgpu_context.queue.write_buffer(&self.material.vertex_uniform_buffer, 0, cast_slice(mvp_ref));
-
-        self.material.bind(render_pass, active_camera, wgpu_context);
+    pub fn render<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, active_camera: &Camera, directional_light: &DirectionalLight, wgpu_context: &mut WGPUContext) {
+        let transform = self.transform_rc();
+        self.material.bind(render_pass, transform.borrow(), active_camera, directional_light, wgpu_context);
 
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);

@@ -138,9 +138,9 @@ impl PrimitiveMesh {
 
                 // normalized vertex normal
                 let nx = x;
-                let ny = z;
-                let nz = y;
-                normals.push([nx, ny, nz]);
+                let ny = y;
+                let nz = z;
+                normals.push([nx, nz, ny]);
 
                 // vertex tex coord between [0, 1]
                 let s = j as f32 / (resolution as f32 - 1.0);

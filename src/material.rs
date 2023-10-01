@@ -1,3 +1,5 @@
+use std::cell::Ref;
+use std::ops::Deref;
 use bytemuck::{cast_slice};
 use cgmath::{Matrix4, SquareMatrix};
 use wgpu::{BindGroup, BindGroupLayout, Buffer, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
@@ -7,14 +9,20 @@ use crate::camera::uniforms::CameraUniforms;
 
 use crate::geometry::mesh::Vertex;
 use crate::core::wgpu_context::WGPUContext;
+use crate::lights::directional_light::{DirectionalLight, DirectionalLightUniform};
+use crate::transform::{Transform, TransformUniforms};
 
 pub struct Material {
     pub shader_module: ShaderModule,
 
-    pub vertex_uniform_buffer: Buffer,
+    pub transform_uniforms: TransformUniforms,
+    pub transform_uniforms_buffer: Buffer,
 
     pub camera_uniforms: CameraUniforms,
     pub camera_uniforms_buffer: Buffer,
+
+    pub light_uniforms: DirectionalLightUniform,
+    pub light_uniforms_buffer: Buffer,
 
     pub uniform_bind_group_layout: BindGroupLayout,
     pub uniform_bind_group: BindGroup,
@@ -30,19 +38,29 @@ impl Material {
             source: wgpu::ShaderSource::Wgsl(include_str!("shader/default.wgsl").into()),
         });
 
-        let mvp: Matrix4<f32> = Matrix4::identity();
-        let mvp_ref: &[f32; 16] = mvp.as_ref();
-        let vertex_uniform_buffer = wgpu_context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Uniform Buffer"),
-            contents: cast_slice(mvp_ref),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
+        let transform_uniforms = TransformUniforms::default();
+        let transform_uniforms_buffer = wgpu_context.device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Transform Buffer"),
+                contents: cast_slice(&[transform_uniforms]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            }
+        );
 
         let camera_uniforms = CameraUniforms::default();
         let camera_uniforms_buffer = wgpu_context.device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Camera Buffer"),
                 contents: cast_slice(&[camera_uniforms]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            }
+        );
+
+        let light_uniforms = DirectionalLightUniform::default();
+        let light_uniforms_buffer = wgpu_context.device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Light Buffer"),
+                contents: cast_slice(&[light_uniforms]),
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             }
         );
@@ -66,6 +84,15 @@ impl Material {
                     min_binding_size: None,
                 },
                 count: None,
+            }, wgpu::BindGroupLayoutEntry {
+                binding: 2,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
             }],
             label: Some("Uniform Bind Group Layout"),
         });
@@ -74,10 +101,13 @@ impl Material {
             layout: &uniform_bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                resource: vertex_uniform_buffer.as_entire_binding(),
-            },wgpu::BindGroupEntry {
+                resource: transform_uniforms_buffer.as_entire_binding(),
+            }, wgpu::BindGroupEntry {
                 binding: 1,
                 resource: camera_uniforms_buffer.as_entire_binding(),
+            }, wgpu::BindGroupEntry {
+                binding: 2,
+                resource: light_uniforms_buffer.as_entire_binding(),
             }],
             label: Some("Uniform Bind Group"),
         });
@@ -126,10 +156,15 @@ impl Material {
 
         Material {
             shader_module: shader,
-            vertex_uniform_buffer,
+
+            transform_uniforms,
+            transform_uniforms_buffer,
 
             camera_uniforms,
             camera_uniforms_buffer,
+
+            light_uniforms,
+            light_uniforms_buffer,
 
             uniform_bind_group_layout,
             uniform_bind_group,
@@ -142,9 +177,15 @@ impl Material {
         Material::new(wgpu_context)
     }
 
-    pub fn bind<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, active_camera: &Camera, wgpu_context: &mut WGPUContext) {
+    pub fn bind<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, transform: Ref<Transform>, active_camera: &Camera, directional_light: &DirectionalLight, wgpu_context: &mut WGPUContext) {
+        self.transform_uniforms.update(transform.deref());
+        wgpu_context.queue.write_buffer(&self.transform_uniforms_buffer, 0, cast_slice(&[self.transform_uniforms]));
+
         self.camera_uniforms.update(active_camera);
         wgpu_context.queue.write_buffer(&self.camera_uniforms_buffer, 0, cast_slice(&[self.camera_uniforms]));
+
+        self.light_uniforms.update(directional_light);
+        wgpu_context.queue.write_buffer(&self.light_uniforms_buffer, 0, cast_slice(&[self.light_uniforms]));
 
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);

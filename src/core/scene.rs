@@ -6,6 +6,7 @@ use crate::core::engine::Engine;
 use crate::camera::camera::{Camera};
 use crate::geometry::mesh::{Mesh};
 use crate::input::mouse::Mouse;
+use crate::lights::directional_light::DirectionalLight;
 use crate::transform::Transformable;
 
 pub const ANIMATION_SPEED: f32 = 1.0;
@@ -15,6 +16,7 @@ pub type SceneClosure = Box<dyn FnMut(&Engine, &mut Option<Camera>, &mut Vec<Mes
 pub struct Scene {
     pub active_camera: Option<Camera>,
     pub meshes: Vec<Mesh>,
+    pub directional_light: DirectionalLight,
     pub mouse: Mouse,
     pub on_key_pressed: Vec<Box<dyn FnMut(&Engine, &mut Option<Camera>, &VirtualKeyCode)>>,
     pub on_before_render: Vec<SceneClosure>,
@@ -25,6 +27,7 @@ impl Scene {
         Scene {
             active_camera: None,
             meshes: Vec::new(),
+            directional_light: DirectionalLight::default(),
             mouse: Mouse::new(),
             on_key_pressed: Vec::new(),
             on_before_render: Vec::new(),
@@ -141,7 +144,7 @@ impl Scene {
             });
 
             for mesh in self.meshes.iter_mut() {
-                mesh.render(&mut render_pass, &self.active_camera.as_ref().unwrap(), &mut engine.wgpu_context);
+                mesh.render(&mut render_pass, &self.active_camera.as_ref().unwrap(), &self.directional_light, &mut engine.wgpu_context);
             }
         }
 
