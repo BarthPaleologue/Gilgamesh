@@ -1,13 +1,11 @@
 extern crate gilgamesh;
 
-use cgmath::Vector3;
 use winit::event::VirtualKeyCode::*;
 use gilgamesh::camera::camera::Camera;
 use gilgamesh::input::transform_control::OrbitControl;
 use gilgamesh::core::engine::Engine;
 use gilgamesh::core::scene::Scene;
 use gilgamesh::geometry::primitive::PrimitiveMesh;
-use gilgamesh::geometry::procedural::ProceduralMesh;
 use gilgamesh::transform::Transformable;
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(start))]
@@ -21,44 +19,26 @@ pub fn run() {
 
     scene.set_active_camera(camera);
 
-    let sphere = ProceduralMesh::sphere("Sphere", 4.0, 64, &|x, y, z| {
-        f32::powi(f32::sin(60.0 * x * y * z), 2) * 0.5
-    }, 0.5, &mut engine);
-    let sphere_idx = scene.add_mesh(sphere);
+    let cube1 = PrimitiveMesh::cube("Cube1", &mut engine);
+    let cube1_idx = scene.add_mesh(cube1);
 
-    let sphere2 = PrimitiveMesh::sphere("Sphere2", 32, &mut engine);
-    let sphere2_idx = scene.add_mesh(sphere2);
+    let sphere1 = PrimitiveMesh::sphere("Cube", 32, &mut engine);
 
-    let cube = PrimitiveMesh::cube("Cube", &mut engine);
-
-    cube.transform_mut().position = Vector3::new(8.0, 0.0, 0.0);
-    cube.transform_mut().parent = Some(scene.meshes[sphere_idx].transform_rc());
-    let cube_idx = scene.add_mesh(cube);
+    sphere1.transform_mut().parent = Some(scene.meshes[cube1_idx].transform_rc());
+    let sphere1_idx = scene.add_mesh(sphere1);
 
     let plane = PrimitiveMesh::plane("Plane", 10, 10.0, &mut engine);
     plane.transform_mut().set_position(0.0, -5.0, 0.0);
     let plane_idx = scene.add_mesh(plane);
 
     scene.on_before_render.push(Box::new(move |engine, active_camera, meshes, mouse| {
-        /*meshes[sphere2_idx].transform.set_position(
-            7.0 * engine.get_elapsed_time().sin(),
-            0.0,
-            7.0 * engine.get_elapsed_time().cos(),
-        );*/
-
-        meshes[sphere2_idx].transform_mut().set_position(
-            7.0,
-            0.0,
-            0.0,
-        );
-
-        meshes[sphere_idx].transform_mut().set_rotation(
+        meshes[cube1_idx].transform_mut().set_rotation(
             0.0,
             engine.get_elapsed_time(),
             0.0,
         );
 
-        meshes[cube_idx].transform_mut().set_position(
+        meshes[sphere1_idx].transform_mut().set_position(
             6.0 + f32::cos(10.0 * engine.get_elapsed_time()),
             0.0,
             0.0,

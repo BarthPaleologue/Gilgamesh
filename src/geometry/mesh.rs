@@ -16,14 +16,14 @@ use crate::material::Material;
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
 pub struct Vertex {
-    pub position: [f32; 4],
-    pub color: [f32; 4],
-    pub normal: [f32; 4],
+    pub position: [f32; 3],
+    pub color: [f32; 3],
+    pub normal: [f32; 3],
     pub uv: [f32; 2],
 }
 
 impl Vertex {
-    const ATTRIBUTES: [wgpu::VertexAttribute; 4] = wgpu::vertex_attr_array![0=>Float32x4, 1=>Float32x4, 2=>Float32x4, 3=>Float32x2];
+    const ATTRIBUTES: [wgpu::VertexAttribute; 4] = wgpu::vertex_attr_array![0=>Float32x3, 1=>Float32x3, 2=>Float32x3, 3=>Float32x2];
     pub(crate) fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         wgpu::VertexBufferLayout {
             array_stride: mem::size_of::<Vertex>() as wgpu::BufferAddress,
@@ -110,9 +110,9 @@ pub fn zip_vertex_data(positions: &[[f32; 3]], colors: &[[f32; 3]], normals: &[[
     let mut data: Vec<Vertex> = Vec::with_capacity(positions.len());
     for i in 0..positions.len() {
         data.push(Vertex {
-            position: [positions[i][0], positions[i][1], positions[i][2], 1.0],
-            color: [colors[i][0], colors[i][1], colors[i][2], 1.0],
-            normal: [normals[i][0], normals[i][1], normals[i][2], 1.0],
+            position: [positions[i][0], positions[i][1], positions[i][2]],
+            color: [colors[i][0], colors[i][1], colors[i][2]],
+            normal: [normals[i][0], normals[i][1], normals[i][2]],
             uv: [uvs[i][0], uvs[i][1]],
         });
     }
