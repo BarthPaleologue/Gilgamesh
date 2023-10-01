@@ -88,13 +88,6 @@ impl Scene {
 
         self.on_before_render.iter_mut().for_each(|f| f(engine, &mut self.active_camera, &mut self.meshes, &self.mouse));
 
-        for mesh in self.meshes.iter_mut() {
-            let mvp_mat = self.active_camera.as_mut().unwrap().projection_matrix() * self.active_camera.as_mut().unwrap().view_matrix() * mesh.transform().compute_world_matrix();
-            let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
-            engine.wgpu_context.queue.write_buffer(&mesh.material.vertex_uniform_buffer, 0, cast_slice(mvp_ref));
-        }
-
-        //let output = self.init.surface.get_current_frame()?.output;
         let output = engine.wgpu_context.surface.get_current_texture()?;
         let view = output
             .texture
@@ -148,7 +141,7 @@ impl Scene {
             });
 
             for mesh in self.meshes.iter_mut() {
-                mesh.render(&mut render_pass);
+                mesh.render(&mut render_pass, &self.active_camera.as_ref().unwrap(), &mut engine.wgpu_context);
             }
         }
 

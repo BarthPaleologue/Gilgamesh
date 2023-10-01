@@ -5,7 +5,9 @@ use std::rc::Rc;
 use bytemuck::{cast_slice, Pod, Zeroable};
 use wgpu::{Buffer, RenderPass};
 use wgpu::util::DeviceExt;
+use crate::camera::camera::Camera;
 use crate::core::engine::Engine;
+use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::vertex_data::VertexData;
 
 use crate::transform::{Transform, Transformable};
@@ -90,7 +92,11 @@ impl Mesh {
         }
     }
 
-    pub fn render<'a>(&'a self, render_pass: &mut RenderPass<'a>) {
+    pub fn render<'a>(&'a self, render_pass: &mut RenderPass<'a>, active_camera: &Camera, wgpu_context: &mut WGPUContext) {
+        let mvp_mat = active_camera.projection_matrix() * active_camera.view_matrix() * self.transform().compute_world_matrix();
+        let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
+        wgpu_context.queue.write_buffer(&self.material.vertex_uniform_buffer, 0, cast_slice(mvp_ref));
+
         self.material.bind(render_pass);
 
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
