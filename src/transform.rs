@@ -91,8 +91,7 @@ impl Transform {
 
     pub fn compute_normal_matrix(&self) -> Matrix4<f32> {
         let world_matrix = self.compute_world_matrix();
-        let normal_matrix = world_matrix.invert().unwrap().transpose();
-        normal_matrix
+        world_matrix.invert().unwrap().transpose()
     }
 
     pub fn local_direction_to_world(&self, local_direction: Vector3<f32>) -> Vector3<f32> {

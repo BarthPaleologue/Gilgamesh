@@ -143,7 +143,7 @@ impl Scene {
             });
 
             for mesh in self.meshes.iter_mut() {
-                mesh.render(&mut render_pass, &self.active_camera.as_ref().unwrap(), &self.directional_light, &mut engine.wgpu_context);
+                mesh.render(&mut render_pass, self.active_camera.as_ref().unwrap(), &self.directional_light, &mut engine.wgpu_context);
             }
         }
 
