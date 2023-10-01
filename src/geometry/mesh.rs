@@ -1,6 +1,5 @@
 use std::cell::{Ref, RefCell, RefMut};
 use std::mem;
-use std::ops::Deref;
 use std::rc::Rc;
 
 use bytemuck::{cast_slice, Pod, Zeroable};

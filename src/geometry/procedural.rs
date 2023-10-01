@@ -1,4 +1,3 @@
-use std::rc::Rc;
 use hexasphere::shapes::IcoSphere;
 use crate::core::engine::Engine;
 

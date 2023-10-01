@@ -1,7 +1,6 @@
 use std::cell::Ref;
 use std::ops::Deref;
 use bytemuck::{cast_slice};
-use cgmath::{Matrix4, SquareMatrix};
 use wgpu::{BindGroup, BindGroupLayout, Buffer, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
 use wgpu::util::{DeviceExt};
 use crate::camera::camera::Camera;
