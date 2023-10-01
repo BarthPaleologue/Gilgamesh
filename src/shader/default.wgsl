@@ -52,9 +52,11 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let normal01: vec3<f32> = in.vNormal * 0.5 + 0.5;
-    let color: vec3<f32> = normal01;
+
+    let diffuse: vec3<f32> = normal01;
 
     let ndl = max(0.0, dot(in.vNormalW, directionalLight.direction));
+    let color = diffuse * ndl * directionalLight.color;
 
-    return vec4(color * ndl, 1.0);
+    return vec4(color, 1.0);
 }
