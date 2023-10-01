@@ -2,6 +2,7 @@ use bytemuck::{cast_slice};
 use cgmath::{Matrix4, SquareMatrix};
 use wgpu::{BindGroup, BindGroupLayout, Buffer, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
 use wgpu::util::{DeviceExt};
+use crate::camera::camera::Camera;
 use crate::camera::uniforms::CameraUniforms;
 
 use crate::geometry::mesh::Vertex;
@@ -9,10 +10,16 @@ use crate::core::wgpu_context::WGPUContext;
 
 pub struct Material {
     pub shader_module: ShaderModule,
+
     pub vertex_uniform_buffer: Buffer,
     pub fragment_uniform_buffer: Buffer,
+
+    pub camera_uniforms: CameraUniforms,
+    pub camera_uniforms_buffer: Buffer,
+
     pub uniform_bind_group_layout: BindGroupLayout,
     pub uniform_bind_group: BindGroup,
+
     pub pipeline_layout: PipelineLayout,
     pub pipeline: RenderPipeline,
 }
@@ -20,7 +27,7 @@ pub struct Material {
 impl Material {
     pub fn new(shader: ShaderModule, vertex_uniform_buffer: Buffer, fragment_uniform_buffer: Buffer, wgpu_context: &mut WGPUContext) -> Material {
         let camera_uniforms = CameraUniforms::default();
-        let camera_buffer = wgpu_context.device.create_buffer_init(
+        let camera_uniforms_buffer = wgpu_context.device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Camera Buffer"),
                 contents: cast_slice(&[camera_uniforms]),
@@ -70,7 +77,7 @@ impl Material {
                 resource: fragment_uniform_buffer.as_entire_binding(),
             }, wgpu::BindGroupEntry {
                 binding: 2,
-                resource: camera_buffer.as_entire_binding(),
+                resource: camera_uniforms_buffer.as_entire_binding(),
             }],
             label: Some("Uniform Bind Group"),
         });
@@ -121,8 +128,13 @@ impl Material {
             shader_module: shader,
             vertex_uniform_buffer,
             fragment_uniform_buffer,
+
+            camera_uniforms,
+            camera_uniforms_buffer,
+
             uniform_bind_group_layout,
             uniform_bind_group,
+
             pipeline_layout,
             pipeline,
         }
@@ -258,7 +270,10 @@ impl Material {
         Material::new(shader, vertex_uniform_buffer, fragment_uniform_buffer, wgpu_context)
     }
 
-    pub fn bind<'a>(&'a self, render_pass: &mut RenderPass<'a>) {
+    pub fn bind<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, active_camera: &Camera, wgpu_context: &mut WGPUContext) {
+        self.camera_uniforms.update(active_camera);
+        wgpu_context.queue.write_buffer(&self.camera_uniforms_buffer, 0, cast_slice(&[self.camera_uniforms]));
+
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
     }

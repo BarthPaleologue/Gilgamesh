@@ -19,7 +19,7 @@ pub struct Vertex {
     pub position: [f32; 4],
     pub color: [f32; 4],
     pub normal: [f32; 4],
-    pub uv: [f32; 2]
+    pub uv: [f32; 2],
 }
 
 impl Vertex {
@@ -39,7 +39,7 @@ pub struct Mesh {
     pub vertex_data: VertexData,
     pub index_buffer: Buffer,
     pub vertex_buffer: Buffer,
-    pub material: Rc<Material>,
+    pub material: Material,
 }
 
 impl Transformable for Mesh {
@@ -88,16 +88,17 @@ impl Mesh {
             vertex_data,
             vertex_buffer,
             index_buffer,
-            material: Rc::new(Material::new_default(&mut engine.wgpu_context)),
+            material: Material::new_default(&mut engine.wgpu_context),
         }
     }
 
-    pub fn render<'a>(&'a self, render_pass: &mut RenderPass<'a>, active_camera: &Camera, wgpu_context: &mut WGPUContext) {
+    /// you may be asking wtf is going on with the lifetimes here, and I don't know either. Dark magic.
+    pub fn render<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, active_camera: &Camera, wgpu_context: &mut WGPUContext) {
         let mvp_mat = active_camera.projection_matrix() * active_camera.view_matrix() * self.transform().compute_world_matrix();
         let mvp_ref: &[f32; 16] = mvp_mat.as_ref();
         wgpu_context.queue.write_buffer(&self.material.vertex_uniform_buffer, 0, cast_slice(mvp_ref));
 
-        self.material.bind(render_pass);
+        self.material.bind(render_pass, active_camera, wgpu_context);
 
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
@@ -112,7 +113,7 @@ pub fn zip_vertex_data(positions: &[[f32; 3]], colors: &[[f32; 3]], normals: &[[
             position: [positions[i][0], positions[i][1], positions[i][2], 1.0],
             color: [colors[i][0], colors[i][1], colors[i][2], 1.0],
             normal: [normals[i][0], normals[i][1], normals[i][2], 1.0],
-            uv: [uvs[i][0], uvs[i][1]]
+            uv: [uvs[i][0], uvs[i][1]],
         });
     }
     data.to_vec()

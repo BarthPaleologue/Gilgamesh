@@ -50,7 +50,7 @@ impl ProceduralMesh {
         vertex_data.create_normals();
 
         let mut mesh = Mesh::from_vertex_data(name, vertex_data, engine);
-        mesh.material = Rc::from(Material::new_2d_terrain(max_height, &mut engine.wgpu_context));
+        mesh.material = Material::new_2d_terrain(max_height, &mut engine.wgpu_context);
 
         mesh
     }
@@ -89,7 +89,7 @@ impl ProceduralMesh {
         vertex_data.create_normals();
 
         let mut mesh = Mesh::from_vertex_data(name, vertex_data, engine);
-        mesh.material = Rc::from(Material::new_sphere_terrain(diameter / 2.0, max_height, &mut engine.wgpu_context));
+        mesh.material = Material::new_sphere_terrain(diameter / 2.0, max_height, &mut engine.wgpu_context);
 
         mesh
     }
