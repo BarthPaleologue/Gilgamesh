@@ -13,10 +13,10 @@ pub struct DirectionalLightUniform {
     color: [f32; 3],
     // Due to uniforms requiring 16 byte (4 float) spacing, we need to use a padding field here
     _padding: u32,
-    intensity: f32,
     direction: [f32; 3],
     // Due to uniforms requiring 16 byte (4 float) spacing, we need to use a padding field here
     _padding2: u32,
+    intensity: f32,
 }
 
 impl DirectionalLightUniform {

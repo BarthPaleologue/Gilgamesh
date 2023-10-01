@@ -17,8 +17,8 @@ var<uniform> camera: CameraUniforms;
 
 struct DirectionalLightUniforms {
     color: vec3<f32>,
-    intensity: f32,
-    direction: vec3<f32>
+    direction: vec3<f32>,
+    intensity: f32
 }
 @group(0) @binding(2)
 var<uniform> directionalLight: DirectionalLightUniforms;
@@ -55,7 +55,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     let diffuse: vec3<f32> = normal01;
 
-    let ndl = max(0.0, dot(in.vNormalW, directionalLight.direction));
+    let ndl = max(0.0, dot(in.vNormalW, -directionalLight.direction));
     let color = diffuse * ndl * directionalLight.color;
 
     return vec4(color, 1.0);
