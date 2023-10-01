@@ -6,8 +6,8 @@ use crate::transform::Transformable;
 #[derive(Default, Debug, Copy, Clone, Pod, Zeroable)]
 pub struct CameraUniforms {
     view_proj: [[f32; 4]; 4],
-    _padding: u32,
     position: [f32; 3],
+    _padding: u32,
 }
 
 impl CameraUniforms {

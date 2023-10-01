@@ -7,7 +7,7 @@ struct CameraUniforms {
     view_proj: mat4x4<f32>,
     position: vec3<f32>
 }
-@group(1) @binding(0)
+@group(0) @binding(1)
 var<uniform> camera: CameraUniforms;
 
 struct VertexInput {
@@ -26,7 +26,6 @@ struct VertexOutput {
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
     var output: VertexOutput;
-    let v: mat4x4<f32> = camera.view_proj;
     output.position = MVP * vec4<f32>(in.position, 1.0);
     output.vColor = in.color;
     output.vNormal = in.normal;

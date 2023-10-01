@@ -15,7 +15,6 @@ pub struct Material {
 
     pub camera_uniforms: CameraUniforms,
     pub camera_uniforms_buffer: Buffer,
-    pub camera_bind_group: BindGroup,
 
     pub uniform_bind_group_layout: BindGroupLayout,
     pub uniform_bind_group: BindGroup,
@@ -47,36 +46,20 @@ impl Material {
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             }
         );
-        let camera_bind_group_layout = wgpu_context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::all(),
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }
-            ],
-            label: Some("camera_bind_group_layout"),
-        });
-        let camera_bind_group = wgpu_context.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &camera_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: camera_uniforms_buffer.as_entire_binding(),
-                }
-            ],
-            label: Some("camera_bind_group"),
-        });
 
         let uniform_bind_group_layout = wgpu_context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
                 visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }, wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                visibility: wgpu::ShaderStages::all(),
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
                     has_dynamic_offset: false,
@@ -92,16 +75,16 @@ impl Material {
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
                 resource: vertex_uniform_buffer.as_entire_binding(),
+            },wgpu::BindGroupEntry {
+                binding: 1,
+                resource: camera_uniforms_buffer.as_entire_binding(),
             }],
             label: Some("Uniform Bind Group"),
         });
 
         let pipeline_layout = wgpu_context.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[
-                &uniform_bind_group_layout,
-                &camera_bind_group_layout,
-            ],
+            bind_group_layouts: &[&uniform_bind_group_layout],
             push_constant_ranges: &[],
         });
 
@@ -147,7 +130,6 @@ impl Material {
 
             camera_uniforms,
             camera_uniforms_buffer,
-            camera_bind_group,
 
             uniform_bind_group_layout,
             uniform_bind_group,
@@ -166,6 +148,5 @@ impl Material {
 
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
-        render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
     }
 }

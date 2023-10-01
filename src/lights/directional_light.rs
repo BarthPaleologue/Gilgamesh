@@ -1,9 +1,30 @@
+use bytemuck::{Pod, Zeroable};
 use crate::lights::light::Light;
 
 pub struct DirectionalLight {
     color: [f32; 3],
     intensity: f32,
     direction: [f32; 3],
+}
+
+#[repr(C)]
+#[derive(Default, Debug, Copy, Clone, Pod, Zeroable)]
+pub struct DirectionalLightUniform {
+    color: [f32; 3],
+    // Due to uniforms requiring 16 byte (4 float) spacing, we need to use a padding field here
+    _padding: u32,
+    intensity: f32,
+    direction: [f32; 3],
+    // Due to uniforms requiring 16 byte (4 float) spacing, we need to use a padding field here
+    _padding2: u32,
+}
+
+impl DirectionalLightUniform {
+    pub fn update(&mut self, light: &DirectionalLight) {
+        self.color = light.color;
+        self.intensity = light.intensity;
+        self.direction = light.direction;
+    }
 }
 
 impl Default for DirectionalLight {
