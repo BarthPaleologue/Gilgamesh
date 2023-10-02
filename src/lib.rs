@@ -12,3 +12,4 @@ pub mod input;
 pub mod lights;
 pub mod settings;
 pub mod materials;
+pub mod animation;
