@@ -39,7 +39,7 @@ pub fn run() {
         );
 
         meshes[sphere1_idx].transform_mut().set_position(
-            6.0 + f32::cos(10.0 * engine.get_elapsed_time()),
+            6.0 + f32::cos(2.0 * engine.get_elapsed_time()),
             0.0,
             0.0,
         );
