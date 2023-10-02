@@ -6,7 +6,9 @@ use gilgamesh::input::transform_control::OrbitControl;
 use gilgamesh::core::engine::Engine;
 use gilgamesh::core::scene::Scene;
 use gilgamesh::geometry::primitive::PrimitiveMesh;
-use gilgamesh::transform::Transformable;
+use gilgamesh::lights::light::Light;
+use gilgamesh::lights::point_light::PointLight;
+use gilgamesh::transform::{Transform, Transformable};
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(start))]
 pub fn run() {
@@ -18,6 +20,12 @@ pub fn run() {
     camera.control = Some(Box::<OrbitControl>::default());
 
     scene.set_active_camera(camera);
+
+    scene.directional_light.set_color(0.0, 0.0, 0.0);
+
+    let mut point_light = PointLight::default();
+    point_light.transform_mut().set_position(0.0, 5000.0, 0.0);
+    scene.add_point_light(point_light);
 
     let cube1 = PrimitiveMesh::cube("Cube1", &mut engine);
     let cube1_idx = scene.add_mesh(cube1);

@@ -10,6 +10,7 @@ use crate::core::engine::Engine;
 use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::vertex_data::VertexData;
 use crate::lights::directional_light::DirectionalLight;
+use crate::lights::point_light::PointLight;
 
 use crate::transform::{Transform, Transformable};
 use crate::material::Material;
@@ -94,9 +95,9 @@ impl Mesh {
     }
 
     /// you may be asking wtf is going on with the lifetimes here, and I don't know either. Dark magic.
-    pub fn render<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, active_camera: &Camera, directional_light: &DirectionalLight, wgpu_context: &mut WGPUContext) {
+    pub fn render<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, active_camera: &Camera, directional_light: &DirectionalLight, point_lights: &[PointLight], wgpu_context: &mut WGPUContext) {
         let transform = self.transform_rc();
-        self.material.bind(render_pass, transform.borrow(), active_camera, directional_light, wgpu_context);
+        self.material.bind(render_pass, transform.borrow(), active_camera, point_lights, directional_light, wgpu_context);
 
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);

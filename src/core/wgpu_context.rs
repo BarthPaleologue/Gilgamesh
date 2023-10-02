@@ -31,7 +31,7 @@ impl WGPUContext {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: None,
-                    features: wgpu::Features::POLYGON_MODE_LINE,
+                    features: wgpu::Features::POLYGON_MODE_LINE | wgpu::Features::BUFFER_BINDING_ARRAY,
                     limits: wgpu::Limits::default(),
                 },
                 None, // Trace path

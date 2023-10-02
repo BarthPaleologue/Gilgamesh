@@ -1,4 +1,5 @@
 use std::cell::Ref;
+use std::num::NonZeroU32;
 use std::ops::Deref;
 use bytemuck::{cast_slice};
 use wgpu::{BindGroup, BindGroupLayout, Buffer, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
@@ -9,6 +10,7 @@ use crate::camera::uniforms::CameraUniforms;
 use crate::geometry::mesh::Vertex;
 use crate::core::wgpu_context::WGPUContext;
 use crate::lights::directional_light::{DirectionalLight, DirectionalLightUniform};
+use crate::lights::point_light::{PointLight, PointLightUniforms};
 use crate::transform::{Transform, TransformUniforms};
 
 pub struct Material {
@@ -22,6 +24,9 @@ pub struct Material {
 
     pub light_uniforms: DirectionalLightUniform,
     pub light_uniforms_buffer: Buffer,
+
+    pub point_light_uniforms: [PointLightUniforms; 1],
+    pub point_light_buffer: Buffer,
 
     pub uniform_bind_group_layout: BindGroupLayout,
     pub uniform_bind_group: BindGroup,
@@ -64,6 +69,15 @@ impl Material {
             }
         );
 
+        let point_light_uniforms = [PointLightUniforms::default(); 1];
+        let point_light_storage_buffer = wgpu_context.device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Point Light Storage Buffer"),
+                contents: cast_slice(&[point_light_uniforms]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            }
+        );
+
         let uniform_bind_group_layout = wgpu_context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
@@ -92,6 +106,15 @@ impl Material {
                     min_binding_size: None,
                 },
                 count: None,
+            }, wgpu::BindGroupLayoutEntry {
+                binding: 3,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: NonZeroU32::new(1),
             }],
             label: Some("Uniform Bind Group Layout"),
         });
@@ -107,6 +130,9 @@ impl Material {
             }, wgpu::BindGroupEntry {
                 binding: 2,
                 resource: light_uniforms_buffer.as_entire_binding(),
+            }, wgpu::BindGroupEntry {
+                binding: 3,
+                resource: point_light_storage_buffer.as_entire_binding(),
             }],
             label: Some("Uniform Bind Group"),
         });
@@ -165,6 +191,9 @@ impl Material {
             light_uniforms,
             light_uniforms_buffer,
 
+            point_light_uniforms,
+            point_light_buffer: point_light_storage_buffer,
+
             uniform_bind_group_layout,
             uniform_bind_group,
 
@@ -176,7 +205,7 @@ impl Material {
         Material::new(wgpu_context)
     }
 
-    pub fn bind<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, transform: Ref<Transform>, active_camera: &Camera, directional_light: &DirectionalLight, wgpu_context: &mut WGPUContext) {
+    pub fn bind<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, transform: Ref<Transform>, active_camera: &Camera, point_lights: &[PointLight], directional_light: &DirectionalLight, wgpu_context: &mut WGPUContext) {
         self.transform_uniforms.update(transform.deref());
         wgpu_context.queue.write_buffer(&self.transform_uniforms_buffer, 0, cast_slice(&[self.transform_uniforms]));
 
@@ -185,6 +214,11 @@ impl Material {
 
         self.light_uniforms.update(directional_light);
         wgpu_context.queue.write_buffer(&self.light_uniforms_buffer, 0, cast_slice(&[self.light_uniforms]));
+
+        for i in 0..point_lights.len() {
+            self.point_light_uniforms[i].update(&point_lights[i]);
+        }
+        wgpu_context.queue.write_buffer(&self.point_light_buffer, 0, cast_slice(&[self.point_light_uniforms]));
 
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);

@@ -9,6 +9,8 @@ pub struct PointLight {
     transform: Rc<RefCell<Transform>>,
 }
 
+#[repr(C)]
+#[derive(Default, Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct PointLightUniforms {
     color: [f32; 3],
     // Due to uniforms requiring 16 byte (4 float) spacing, we need to use a padding field here
@@ -27,11 +29,13 @@ impl PointLightUniforms {
     }
 }
 
+/*#[repr(C)]
+#[derive(Default, Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct PointLightStorage {
     count: u32,
     _padding: [u32; 3],
     lights: Vec<PointLightUniforms>,
-}
+}*/
 
 impl Default for PointLight {
     fn default() -> Self {
