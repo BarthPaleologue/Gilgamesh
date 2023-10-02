@@ -155,7 +155,7 @@ impl MaterialPipeline {
         MaterialPipeline::new("../shader/default.wgsl", uniforms, wgpu_context)
     }
 
-    pub fn bind<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, transform: Ref<Transform>, active_camera: &Camera, point_lights: &[PointLight], directional_light: &DirectionalLight, wgpu_context: &mut WGPUContext) {
+    pub fn bind<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, transform: Ref<Transform>, active_camera: &Camera, wgpu_context: &mut WGPUContext) {
         self.transform_uniforms.update(transform.deref());
         wgpu_context.queue.write_buffer(&self.transform_uniforms_buffer, 0, cast_slice(&[self.transform_uniforms]));
 

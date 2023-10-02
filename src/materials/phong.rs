@@ -1,5 +1,4 @@
 use std::cell::Ref;
-use std::ops::Deref;
 use bytemuck::cast_slice;
 use wgpu::RenderPass;
 use crate::camera::camera::Camera;
@@ -89,9 +88,6 @@ impl PhongMaterial {
     }
 
     pub fn bind<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, transform: Ref<Transform>, active_camera: &Camera, point_lights: &[PointLight], directional_light: &DirectionalLight, wgpu_context: &mut WGPUContext) {
-        //self.transform_uniforms.update(transform.deref());
-        //wgpu_context.queue.write_buffer(&self.transform_uniforms_buffer, 0, cast_slice(&[self.transform_uniforms]));
-
         self.camera_uniforms.update(active_camera);
         wgpu_context.queue.write_buffer(&self.camera_uniforms_buffer, 0, cast_slice(&[self.camera_uniforms]));
 
@@ -104,10 +100,6 @@ impl PhongMaterial {
         wgpu_context.queue.write_buffer(&self.point_light_buffer, 0, cast_slice(&[self.point_light_uniforms]));
         wgpu_context.queue.write_buffer(&self.nb_point_lights_buffer, 0, cast_slice(&[point_lights.len() as u32]));
 
-        self.material_pipeline.bind(render_pass, transform, active_camera, point_lights, directional_light, wgpu_context);
-
-        /*render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, &self.transform_bind_group, &[]);
-        render_pass.set_bind_group(1, &self.uniform_bind_group, &[]);*/
+        self.material_pipeline.bind(render_pass, transform, active_camera, wgpu_context);
     }
 }
