@@ -20,6 +20,7 @@ pub struct Material {
 
     pub transform_uniforms: TransformUniforms,
     pub transform_uniforms_buffer: Buffer,
+    pub transform_bind_group: BindGroup,
 
     pub camera_uniforms: CameraUniforms,
     pub camera_uniforms_buffer: Buffer,
@@ -31,7 +32,6 @@ pub struct Material {
     pub point_light_buffer: Buffer,
     pub nb_point_lights_buffer: Buffer,
 
-    pub uniform_bind_group_layout: BindGroupLayout,
     pub uniform_bind_group: BindGroup,
 
     pub pipeline_layout: PipelineLayout,
@@ -91,7 +91,9 @@ impl Material {
             }
         );
 
-        let uniform_bind_group_layout = wgpu_context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        // the bare minimum to make a material
+        let transform_bind_group_layout = wgpu_context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Transform Bind Group Layout"),
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
                 visibility: wgpu::ShaderStages::VERTEX,
@@ -101,9 +103,31 @@ impl Material {
                     min_binding_size: None,
                 },
                 count: None,
+            }],
+        });
+
+        let transform_bind_group = wgpu_context.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &transform_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: transform_uniforms_buffer.as_entire_binding(),
+            }],
+            label: Some("Transform Bind Group"),
+        });
+
+        let uniform_bind_group_layout = wgpu_context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::all(),
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
             }, wgpu::BindGroupLayoutEntry {
                 binding: 1,
-                visibility: wgpu::ShaderStages::all(),
+                visibility: wgpu::ShaderStages::FRAGMENT,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
                     has_dynamic_offset: false,
@@ -118,18 +142,9 @@ impl Material {
                     has_dynamic_offset: false,
                     min_binding_size: None,
                 },
-                count: None,
-            }, wgpu::BindGroupLayoutEntry {
-                binding: 3,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
                 count: NonZeroU32::new(MAX_POINT_LIGHTS as u32),
             }, wgpu::BindGroupLayoutEntry {
-                binding: 4,
+                binding: 3,
                 visibility: wgpu::ShaderStages::FRAGMENT,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
@@ -145,18 +160,15 @@ impl Material {
             layout: &uniform_bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                resource: transform_uniforms_buffer.as_entire_binding(),
-            }, wgpu::BindGroupEntry {
-                binding: 1,
                 resource: camera_uniforms_buffer.as_entire_binding(),
             }, wgpu::BindGroupEntry {
-                binding: 2,
+                binding: 1,
                 resource: light_uniforms_buffer.as_entire_binding(),
             }, wgpu::BindGroupEntry {
-                binding: 3,
+                binding: 2,
                 resource: point_light_storage_buffer.as_entire_binding(),
             }, wgpu::BindGroupEntry {
-                binding: 4,
+                binding: 3,
                 resource: nb_point_lights_buffer.as_entire_binding(),
             }],
             label: Some("Uniform Bind Group"),
@@ -164,7 +176,10 @@ impl Material {
 
         let pipeline_layout = wgpu_context.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[&uniform_bind_group_layout],
+            bind_group_layouts: &[
+                &transform_bind_group_layout,
+                &uniform_bind_group_layout
+            ],
             push_constant_ranges: &[],
         });
 
@@ -209,6 +224,7 @@ impl Material {
 
             transform_uniforms,
             transform_uniforms_buffer,
+            transform_bind_group,
 
             camera_uniforms,
             camera_uniforms_buffer,
@@ -220,7 +236,6 @@ impl Material {
             point_light_buffer: point_light_storage_buffer,
             nb_point_lights_buffer,
 
-            uniform_bind_group_layout,
             uniform_bind_group,
 
             pipeline_layout,
@@ -248,6 +263,7 @@ impl Material {
         wgpu_context.queue.write_buffer(&self.nb_point_lights_buffer, 0, cast_slice(&[point_lights.len() as u32]));
 
         render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
+        render_pass.set_bind_group(0, &self.transform_bind_group, &[]);
+        render_pass.set_bind_group(1, &self.uniform_bind_group, &[]);
     }
 }
