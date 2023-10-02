@@ -14,6 +14,7 @@ use crate::lights::point_light::PointLight;
 
 use crate::transform::{Transform, Transformable};
 use crate::materials::material_pipeline::MaterialPipeline;
+use crate::materials::phong::PhongMaterial;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
@@ -41,7 +42,7 @@ pub struct Mesh {
     pub vertex_data: VertexData,
     pub index_buffer: Buffer,
     pub vertex_buffer: Buffer,
-    pub material: MaterialPipeline,
+    pub material: PhongMaterial,
 }
 
 impl Transformable for Mesh {
@@ -90,14 +91,14 @@ impl Mesh {
             vertex_data,
             vertex_buffer,
             index_buffer,
-            material: MaterialPipeline::new_default(&mut engine.wgpu_context),
+            material: PhongMaterial::new(&mut engine.wgpu_context),
         }
     }
 
     /// you may be asking wtf is going on with the lifetimes here, and I don't know either. Dark magic.
     pub fn render<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, active_camera: &Camera, directional_light: &DirectionalLight, point_lights: &[PointLight], wgpu_context: &mut WGPUContext) {
         let transform = self.transform_rc();
-        self.material.bind(render_pass, transform.borrow(), active_camera, point_lights, directional_light, wgpu_context);
+        self.material.material_pipeline.bind(render_pass, transform.borrow(), active_camera, point_lights, directional_light, wgpu_context);
 
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);

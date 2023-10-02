@@ -3,7 +3,7 @@ use std::num::NonZeroU32;
 use std::ops::Deref;
 use bytemuck::{cast_slice};
 use load_file::load_str;
-use wgpu::{BindGroup, Buffer, BufferAddress, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
+use wgpu::{BindGroup, BindingResource, Buffer, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
 use crate::camera::camera::Camera;
 use crate::camera::uniforms::CameraUniforms;
 
@@ -211,7 +211,7 @@ impl MaterialPipeline {
             pipeline,
         }
     }
-    pub fn new_default(wgpu_context: &mut WGPUContext) -> MaterialPipeline {
+    pub fn new_default(uniforms: &[BindingResource], wgpu_context: &mut WGPUContext) -> MaterialPipeline {
         //let uniforms = Vec::new();
         MaterialPipeline::new("../shader/default.wgsl", wgpu_context)
     }

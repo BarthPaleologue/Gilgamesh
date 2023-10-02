@@ -3,9 +3,13 @@ use std::ops::Deref;
 use bytemuck::cast_slice;
 use wgpu::RenderPass;
 use crate::camera::camera::Camera;
+use crate::camera::uniforms::CameraUniforms;
 use crate::core::wgpu_context::WGPUContext;
-use crate::lights::point_light::PointLight;
+use crate::lights::directional_light::DirectionalLightUniform;
+use crate::lights::point_light::{PointLight, PointLightUniforms};
 use crate::materials::material_pipeline::MaterialPipeline;
+use crate::materials::utils::{create_array_buffer, create_buffer};
+use crate::settings::MAX_POINT_LIGHTS;
 use crate::transform::Transform;
 
 #[repr(C)]
@@ -34,18 +38,53 @@ impl Default for PhongUniforms {
 
 pub struct PhongMaterial {
     pub phong_uniforms: PhongUniforms,
-    material_pipeline: MaterialPipeline,
+    pub material_pipeline: MaterialPipeline,
 
-    //point_lights_uniform_buffer: wgpu::Buffer,
-    //nb_point_lights_buffer: wgpu::Buffer,
+    pub camera_uniforms: CameraUniforms,
+    pub camera_uniforms_buffer: wgpu::Buffer,
+
+    pub light_uniforms: DirectionalLightUniform,
+    pub light_uniforms_buffer: wgpu::Buffer,
+
+    pub point_light_uniforms: [PointLightUniforms; MAX_POINT_LIGHTS],
+    pub point_light_storage_buffer: wgpu::Buffer,
+    pub nb_point_lights_buffer: wgpu::Buffer,
 }
 
 impl PhongMaterial {
-    fn new(wgpu_context: &mut WGPUContext) -> Self {
-        let material_pipeline = MaterialPipeline::new_default(wgpu_context);
+    pub fn new(wgpu_context: &mut WGPUContext) -> Self {
+        let camera_uniforms = CameraUniforms::default();
+        let camera_uniforms_buffer = create_buffer::<CameraUniforms>("Camera Buffer", wgpu_context);
+
+        let light_uniforms = DirectionalLightUniform::default();
+        let light_uniforms_buffer = create_buffer::<DirectionalLightUniform>("DirectionalLight Buffer", wgpu_context);
+
+        let point_light_uniforms = [PointLightUniforms::default(); MAX_POINT_LIGHTS];
+        let point_light_storage_buffer = create_array_buffer::<PointLightUniforms>("PointLights Array Buffer", MAX_POINT_LIGHTS, wgpu_context);
+
+        let nb_point_lights_buffer = create_buffer::<u32>("Number of Point Lights Buffer", wgpu_context);
+
+        let material_pipeline = MaterialPipeline::new_default(&vec![
+            camera_uniforms_buffer.as_entire_binding(),
+            light_uniforms_buffer.as_entire_binding(),
+            point_light_storage_buffer.as_entire_binding(),
+            nb_point_lights_buffer.as_entire_binding(),
+        ], wgpu_context);
+
         PhongMaterial {
             phong_uniforms: PhongUniforms::default(),
             material_pipeline,
+
+            camera_uniforms,
+            camera_uniforms_buffer,
+
+            light_uniforms,
+            light_uniforms_buffer,
+
+            point_light_uniforms,
+            point_light_storage_buffer,
+
+            nb_point_lights_buffer,
         }
     }
 
