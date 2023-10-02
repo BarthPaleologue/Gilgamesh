@@ -27,6 +27,12 @@ impl PointLightUniforms {
     }
 }
 
+pub struct PointLightStorage {
+    count: u32,
+    _padding: [u32; 3],
+    lights: Vec<PointLightUniforms>,
+}
+
 impl Default for PointLight {
     fn default() -> Self {
         PointLight {

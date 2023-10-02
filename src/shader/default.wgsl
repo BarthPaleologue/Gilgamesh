@@ -39,6 +39,12 @@ const point_lights = array<PointLightUniforms, nb_point_lights>(PointLightUnifor
     1.0
 ));
 
+struct PointLightStorage {
+  count: u32,
+  lights: array<PointLightUniforms>,
+}
+@group(0) @binding(3) var<storage> lights : PointLightStorage;
+
 struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) color: vec3<f32>,
