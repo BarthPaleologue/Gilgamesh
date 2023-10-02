@@ -11,6 +11,7 @@ use crate::geometry::mesh::Vertex;
 use crate::core::wgpu_context::WGPUContext;
 use crate::lights::directional_light::{DirectionalLight, DirectionalLightUniform};
 use crate::lights::point_light::{PointLight, PointLightUniforms};
+use crate::materials::utils::create_buffer;
 use crate::settings::MAX_POINT_LIGHTS;
 use crate::transform::{Transform, TransformUniforms};
 
@@ -80,24 +81,10 @@ impl MaterialPipeline {
         });
 
         let camera_uniforms = CameraUniforms::default();
-        let camera_uniforms_buffer = wgpu_context.device.create_buffer(
-            &wgpu::BufferDescriptor {
-                label: Some("Camera Buffer"),
-                size: std::mem::size_of::<CameraUniforms>() as BufferAddress,
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                mapped_at_creation: false,
-            }
-        );
+        let camera_uniforms_buffer = create_buffer::<CameraUniforms>("Camera Buffer", wgpu_context);
 
         let light_uniforms = DirectionalLightUniform::default();
-        let light_uniforms_buffer = wgpu_context.device.create_buffer(
-            &wgpu::BufferDescriptor {
-                label: Some("Light Buffer"),
-                size: std::mem::size_of::<DirectionalLightUniform>() as BufferAddress,
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                mapped_at_creation: false,
-            }
-        );
+        let light_uniforms_buffer = create_buffer::<DirectionalLightUniform>("DirectionalLight Buffer", wgpu_context);
 
         let point_light_uniforms = [PointLightUniforms::default(); MAX_POINT_LIGHTS];
         let point_light_storage_buffer = wgpu_context.device.create_buffer(
