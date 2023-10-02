@@ -40,8 +40,8 @@ pub fn run() {
     let sphere1_idx = scene.add_mesh(sphere1);
 
     let sphere2 = PrimitiveMesh::sphere("Sphere2", 32, &mut engine);
-    sphere2.transform_mut().set_position(0.0, 0.0, -5.0);
-    sphere2.transform_mut().set_scaling(0.2, 0.2, 0.2);
+    sphere2.transform_mut().set_position(0.0, 0.0, -8.0);
+    sphere2.transform_mut().set_scaling(0.7, 0.7, 0.7);
     scene.add_mesh(sphere2);
 
     let plane = PrimitiveMesh::plane("Plane", 10, 10.0, &mut engine);

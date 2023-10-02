@@ -79,7 +79,7 @@ impl Transform {
         let rotation_z = Matrix4::from_angle_z(Rad(self.rotation.z));
         let scaling = Matrix4::from_nonuniform_scale(self.scaling.x, self.scaling.y, self.scaling.z);
 
-        world_matrix = world_matrix * position * rotation_z * rotation_y * rotation_x * scaling;
+        world_matrix = world_matrix * position * scaling * rotation_z * rotation_y * rotation_x;
 
         if let Some(parent) = &self.parent {
             let parent_world_matrix = parent.borrow().compute_world_matrix();
