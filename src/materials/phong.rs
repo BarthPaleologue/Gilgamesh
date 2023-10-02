@@ -61,7 +61,7 @@ impl PhongMaterial {
         let phong_uniforms = PhongUniforms::default();
         let phong_uniforms_buffer = create_buffer::<PhongUniforms>("Phong Buffer", wgpu_context);
 
-        let material_pipeline = MaterialPipeline::new("../shader/default.wgsl", &vec![
+        let material_pipeline = MaterialPipeline::new("../shader/phong.wgsl", &vec![
             &light_uniforms_buffer,
             &point_light_buffer,
             &nb_point_lights_buffer,
