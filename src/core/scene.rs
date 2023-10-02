@@ -8,6 +8,7 @@ use crate::input::mouse::Mouse;
 use crate::lights::directional_light::DirectionalLight;
 use crate::lights::point_light::PointLight;
 use crate::transform::Transformable;
+use crate::settings::MAX_POINT_LIGHTS;
 
 pub const ANIMATION_SPEED: f32 = 1.0;
 
@@ -47,6 +48,9 @@ impl Scene {
 
     pub fn add_point_light(&mut self, point_light: PointLight) -> usize {
         self.point_lights.push(point_light);
+        if self.point_lights.len() > MAX_POINT_LIGHTS {
+            panic!("You are adding the {}th point light. The maximum number of point lights is {}.", self.point_lights.len(), MAX_POINT_LIGHTS);
+        }
         self.point_lights.len() - 1
     }
 

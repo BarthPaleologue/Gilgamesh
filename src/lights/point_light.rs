@@ -29,14 +29,6 @@ impl PointLightUniforms {
     }
 }
 
-/*#[repr(C)]
-#[derive(Default, Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct PointLightStorage {
-    count: u32,
-    _padding: [u32; 3],
-    lights: Vec<PointLightUniforms>,
-}*/
-
 impl Default for PointLight {
     fn default() -> Self {
         PointLight {

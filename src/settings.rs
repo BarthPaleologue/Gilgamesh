@@ -1,0 +1,1 @@
+pub const MAX_POINT_LIGHTS: usize = 1;

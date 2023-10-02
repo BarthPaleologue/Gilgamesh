@@ -11,6 +11,7 @@ use crate::geometry::mesh::Vertex;
 use crate::core::wgpu_context::WGPUContext;
 use crate::lights::directional_light::{DirectionalLight, DirectionalLightUniform};
 use crate::lights::point_light::{PointLight, PointLightUniforms};
+use crate::settings::MAX_POINT_LIGHTS;
 use crate::transform::{Transform, TransformUniforms};
 
 pub struct Material {
@@ -25,7 +26,7 @@ pub struct Material {
     pub light_uniforms: DirectionalLightUniform,
     pub light_uniforms_buffer: Buffer,
 
-    pub point_light_uniforms: [PointLightUniforms; 1],
+    pub point_light_uniforms: [PointLightUniforms; MAX_POINT_LIGHTS],
     pub point_light_buffer: Buffer,
 
     pub uniform_bind_group_layout: BindGroupLayout,
@@ -69,7 +70,7 @@ impl Material {
             }
         );
 
-        let point_light_uniforms = [PointLightUniforms::default(); 1];
+        let point_light_uniforms = [PointLightUniforms::default(); MAX_POINT_LIGHTS];
         let point_light_storage_buffer = wgpu_context.device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Point Light Storage Buffer"),
@@ -114,7 +115,7 @@ impl Material {
                     has_dynamic_offset: false,
                     min_binding_size: None,
                 },
-                count: NonZeroU32::new(1),
+                count: NonZeroU32::new(MAX_POINT_LIGHTS as u32),
             }],
             label: Some("Uniform Bind Group Layout"),
         });
