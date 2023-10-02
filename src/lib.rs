@@ -1,6 +1,9 @@
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
+#[macro_use]
+extern crate load_file;
+
 pub mod camera;
 pub mod transform;
 pub mod geometry;

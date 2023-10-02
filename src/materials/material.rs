@@ -2,6 +2,7 @@ use std::cell::Ref;
 use std::num::NonZeroU32;
 use std::ops::Deref;
 use bytemuck::{cast_slice};
+use load_file::load_str;
 use wgpu::{BindGroup, BindGroupLayout, Buffer, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
 use wgpu::util::{DeviceExt};
 use crate::camera::camera::Camera;
@@ -38,10 +39,12 @@ pub struct Material {
 }
 
 impl Material {
-    pub fn new(wgpu_context: &mut WGPUContext) -> Material {
+    pub fn new(shader_file: &str, wgpu_context: &mut WGPUContext) -> Material {
+        // load shader from file at runtime
+        let shader_string = load_str!(shader_file);
         let shader = wgpu_context.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../shader/default.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(shader_string.into()),
         });
 
         let transform_uniforms = TransformUniforms::default();
@@ -225,7 +228,7 @@ impl Material {
         }
     }
     pub fn new_default(wgpu_context: &mut WGPUContext) -> Material {
-        Material::new(wgpu_context)
+        Material::new("../shader/default.wgsl", wgpu_context)
     }
 
     pub fn bind<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, transform: Ref<Transform>, active_camera: &Camera, point_lights: &[PointLight], directional_light: &DirectionalLight, wgpu_context: &mut WGPUContext) {
