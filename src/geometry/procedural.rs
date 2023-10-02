@@ -1,7 +1,7 @@
 use hexasphere::shapes::IcoSphere;
 use crate::core::engine::Engine;
 
-use crate::materials::material::Material;
+use crate::materials::material_pipeline::MaterialPipeline;
 use crate::geometry::mesh::Mesh;
 use crate::geometry::vertex_data::VertexData;
 
@@ -49,7 +49,7 @@ impl ProceduralMesh {
         vertex_data.create_normals();
 
         let mut mesh = Mesh::from_vertex_data(name, vertex_data, engine);
-        mesh.material = Material::new_default(&mut engine.wgpu_context);
+        mesh.material = MaterialPipeline::new_default(&mut engine.wgpu_context);
 
         mesh
     }
@@ -88,7 +88,7 @@ impl ProceduralMesh {
         vertex_data.create_normals();
 
         let mut mesh = Mesh::from_vertex_data(name, vertex_data, engine);
-        mesh.material = Material::new_default(&mut engine.wgpu_context);
+        mesh.material = MaterialPipeline::new_default(&mut engine.wgpu_context);
 
         mesh
     }

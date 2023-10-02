@@ -13,7 +13,7 @@ use crate::lights::directional_light::DirectionalLight;
 use crate::lights::point_light::PointLight;
 
 use crate::transform::{Transform, Transformable};
-use crate::materials::material::Material;
+use crate::materials::material_pipeline::MaterialPipeline;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
@@ -41,7 +41,7 @@ pub struct Mesh {
     pub vertex_data: VertexData,
     pub index_buffer: Buffer,
     pub vertex_buffer: Buffer,
-    pub material: Material,
+    pub material: MaterialPipeline,
 }
 
 impl Transformable for Mesh {
@@ -90,7 +90,7 @@ impl Mesh {
             vertex_data,
             vertex_buffer,
             index_buffer,
-            material: Material::new_default(&mut engine.wgpu_context),
+            material: MaterialPipeline::new_default(&mut engine.wgpu_context),
         }
     }
 

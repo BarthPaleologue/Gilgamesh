@@ -14,7 +14,7 @@ use crate::lights::point_light::{PointLight, PointLightUniforms};
 use crate::settings::MAX_POINT_LIGHTS;
 use crate::transform::{Transform, TransformUniforms};
 
-pub struct Material {
+pub struct MaterialPipeline {
     pub shader_module: ShaderModule,
 
     pub transform_uniforms: TransformUniforms,
@@ -37,8 +37,8 @@ pub struct Material {
     pub pipeline: RenderPipeline,
 }
 
-impl Material {
-    pub fn new(shader_file: &str, wgpu_context: &mut WGPUContext) -> Material {
+impl MaterialPipeline {
+    pub fn new(shader_file: &str, wgpu_context: &mut WGPUContext) -> MaterialPipeline {
         // load shader from file at runtime
         let shader_string = load_str!(shader_file);
         let shader = wgpu_context.device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -222,7 +222,7 @@ impl Material {
             multiview: None,
         });
 
-        Material {
+        MaterialPipeline {
             shader_module: shader,
 
             transform_uniforms,
@@ -245,9 +245,9 @@ impl Material {
             pipeline,
         }
     }
-    pub fn new_default(wgpu_context: &mut WGPUContext) -> Material {
+    pub fn new_default(wgpu_context: &mut WGPUContext) -> MaterialPipeline {
         //let uniforms = Vec::new();
-        Material::new("../shader/default.wgsl", wgpu_context)
+        MaterialPipeline::new("../shader/default.wgsl", wgpu_context)
     }
 
     pub fn bind<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, transform: Ref<Transform>, active_camera: &Camera, point_lights: &[PointLight], directional_light: &DirectionalLight, wgpu_context: &mut WGPUContext) {
