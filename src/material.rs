@@ -28,6 +28,7 @@ pub struct Material {
 
     pub point_light_uniforms: [PointLightUniforms; MAX_POINT_LIGHTS],
     pub point_light_buffer: Buffer,
+    pub nb_point_lights_buffer: Buffer,
 
     pub uniform_bind_group_layout: BindGroupLayout,
     pub uniform_bind_group: BindGroup,
@@ -79,6 +80,14 @@ impl Material {
             }
         );
 
+        let nb_point_lights_buffer = wgpu_context.device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Number of Point Lights Buffer"),
+                contents: cast_slice(&[0u32]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            }
+        );
+
         let uniform_bind_group_layout = wgpu_context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
@@ -116,6 +125,15 @@ impl Material {
                     min_binding_size: None,
                 },
                 count: NonZeroU32::new(MAX_POINT_LIGHTS as u32),
+            }, wgpu::BindGroupLayoutEntry {
+                binding: 4,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
             }],
             label: Some("Uniform Bind Group Layout"),
         });
@@ -134,6 +152,9 @@ impl Material {
             }, wgpu::BindGroupEntry {
                 binding: 3,
                 resource: point_light_storage_buffer.as_entire_binding(),
+            }, wgpu::BindGroupEntry {
+                binding: 4,
+                resource: nb_point_lights_buffer.as_entire_binding(),
             }],
             label: Some("Uniform Bind Group"),
         });
@@ -194,6 +215,7 @@ impl Material {
 
             point_light_uniforms,
             point_light_buffer: point_light_storage_buffer,
+            nb_point_lights_buffer,
 
             uniform_bind_group_layout,
             uniform_bind_group,
@@ -220,6 +242,7 @@ impl Material {
             self.point_light_uniforms[i].update(&point_lights[i]);
         }
         wgpu_context.queue.write_buffer(&self.point_light_buffer, 0, cast_slice(&[self.point_light_uniforms]));
+        wgpu_context.queue.write_buffer(&self.nb_point_lights_buffer, 0, cast_slice(&[point_lights.len() as u32]));
 
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);

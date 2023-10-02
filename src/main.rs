@@ -24,16 +24,26 @@ pub fn run() {
     scene.directional_light.set_color(0.0, 0.0, 0.0);
 
     let mut point_light = PointLight::default();
-    point_light.transform_mut().set_position(0.0, 5000.0, 0.0);
+    point_light.set_color(1.0, 0.0, 0.0);
+    point_light.transform_mut().set_position(0.0, 5.0, 0.0);
     scene.add_point_light(point_light);
+
+    let mut point_light2 = PointLight::default();
+    point_light2.set_color(0.0, 0.0, 1.0);
+    point_light2.transform_mut().set_position(0.0, -5.0, 0.0);
+    scene.add_point_light(point_light2);
 
     let cube1 = PrimitiveMesh::cube("Cube1", &mut engine);
     let cube1_idx = scene.add_mesh(cube1);
 
     let sphere1 = PrimitiveMesh::sphere("Cube", 32, &mut engine);
-
     sphere1.transform_mut().parent = Some(scene.meshes[cube1_idx].transform_rc());
     let sphere1_idx = scene.add_mesh(sphere1);
+
+    let sphere2 = PrimitiveMesh::sphere("Sphere2", 32, &mut engine);
+    sphere2.transform_mut().set_position(0.0, 0.0, -5.0);
+    sphere2.transform_mut().set_scaling(0.2, 0.2, 0.2);
+    scene.add_mesh(sphere2);
 
     let plane = PrimitiveMesh::plane("Plane", 10, 10.0, &mut engine);
     plane.transform_mut().set_position(0.0, -5.0, 0.0);

@@ -28,7 +28,8 @@ struct PointLightUniforms {
     position: vec3<f32>,
     intensity: f32
 }
-@group(0) @binding(3) var<uniform> point_lights : array<PointLightUniforms, 1>;
+@group(0) @binding(3) var<uniform> point_lights : array<PointLightUniforms, 4>;
+@group(0) @binding(4) var<uniform> point_lights_count : u32;
 
 struct VertexInput {
     @location(0) position: vec3<f32>,
@@ -73,15 +74,15 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let ndl = max(0.0, dot(in.vNormalW, -directionalLight.direction));
     var color = diffuse * ndl * directionalLight.color + specular;
 
-    for (var i = 0; i < 1; i = i + 1) {
-        let light_dir: vec3<f32> = normalize(point_lights[0].position - in.vPositionW);
+    for (var i: u32 = 0u; i < point_lights_count; i = i + 1u) {
+        let light_dir: vec3<f32> = normalize(point_lights[i].position - in.vPositionW);
         let ndl = max(0.0, dot(in.vNormalW, light_dir));
 
         let reflect_dir: vec3<f32> = reflect(-light_dir, in.vNormalW);
         let specular_strength: f32 = pow(max(0.0, dot(view_dir, reflect_dir)), 32.0);
-        let specular: vec3<f32> = specular_strength * point_lights[0].color;
+        let specular: vec3<f32> = specular_strength * point_lights[i].color;
 
-        color = color + diffuse * ndl * point_lights[0].color + specular;
+        color = color + diffuse * ndl * point_lights[i].color + specular;
     }
 
     return vec4(color, 1.0);
