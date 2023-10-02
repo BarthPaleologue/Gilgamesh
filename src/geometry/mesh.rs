@@ -98,7 +98,7 @@ impl Mesh {
     /// you may be asking wtf is going on with the lifetimes here, and I don't know either. Dark magic.
     pub fn render<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, active_camera: &Camera, directional_light: &DirectionalLight, point_lights: &[PointLight], wgpu_context: &mut WGPUContext) {
         let transform = self.transform_rc();
-        self.material.material_pipeline.bind(render_pass, transform.borrow(), active_camera, point_lights, directional_light, wgpu_context);
+        self.material.bind(render_pass, transform.borrow(), active_camera, point_lights, directional_light, wgpu_context);
 
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);

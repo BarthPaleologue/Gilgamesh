@@ -5,7 +5,7 @@ use wgpu::RenderPass;
 use crate::camera::camera::Camera;
 use crate::camera::uniforms::CameraUniforms;
 use crate::core::wgpu_context::WGPUContext;
-use crate::lights::directional_light::DirectionalLightUniform;
+use crate::lights::directional_light::{DirectionalLight, DirectionalLightUniform};
 use crate::lights::point_light::{PointLight, PointLightUniforms};
 use crate::materials::material_pipeline::MaterialPipeline;
 use crate::materials::utils::{create_array_buffer, create_buffer};
@@ -47,7 +47,7 @@ pub struct PhongMaterial {
     pub light_uniforms_buffer: wgpu::Buffer,
 
     pub point_light_uniforms: [PointLightUniforms; MAX_POINT_LIGHTS],
-    pub point_light_storage_buffer: wgpu::Buffer,
+    pub point_light_buffer: wgpu::Buffer,
     pub nb_point_lights_buffer: wgpu::Buffer,
 }
 
@@ -60,15 +60,15 @@ impl PhongMaterial {
         let light_uniforms_buffer = create_buffer::<DirectionalLightUniform>("DirectionalLight Buffer", wgpu_context);
 
         let point_light_uniforms = [PointLightUniforms::default(); MAX_POINT_LIGHTS];
-        let point_light_storage_buffer = create_array_buffer::<PointLightUniforms>("PointLights Array Buffer", MAX_POINT_LIGHTS, wgpu_context);
+        let point_light_buffer = create_array_buffer::<PointLightUniforms>("PointLights Array Buffer", MAX_POINT_LIGHTS, wgpu_context);
 
         let nb_point_lights_buffer = create_buffer::<u32>("Number of Point Lights Buffer", wgpu_context);
 
         let material_pipeline = MaterialPipeline::new_default(&vec![
-            camera_uniforms_buffer.as_entire_binding(),
-            light_uniforms_buffer.as_entire_binding(),
-            point_light_storage_buffer.as_entire_binding(),
-            nb_point_lights_buffer.as_entire_binding(),
+            &camera_uniforms_buffer,
+            &light_uniforms_buffer,
+            &point_light_buffer,
+            &nb_point_lights_buffer,
         ], wgpu_context);
 
         PhongMaterial {
@@ -82,15 +82,15 @@ impl PhongMaterial {
             light_uniforms_buffer,
 
             point_light_uniforms,
-            point_light_storage_buffer,
+            point_light_buffer,
 
             nb_point_lights_buffer,
         }
     }
 
-    /*pub fn bind<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, transform: Ref<Transform>, active_camera: &Camera, point_lights: &[PointLight], directional_light: &DirectionalLight, wgpu_context: &mut WGPUContext) {
-        self.transform_uniforms.update(transform.deref());
-        wgpu_context.queue.write_buffer(&self.transform_uniforms_buffer, 0, cast_slice(&[self.transform_uniforms]));
+    pub fn bind<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, transform: Ref<Transform>, active_camera: &Camera, point_lights: &[PointLight], directional_light: &DirectionalLight, wgpu_context: &mut WGPUContext) {
+        //self.transform_uniforms.update(transform.deref());
+        //wgpu_context.queue.write_buffer(&self.transform_uniforms_buffer, 0, cast_slice(&[self.transform_uniforms]));
 
         self.camera_uniforms.update(active_camera);
         wgpu_context.queue.write_buffer(&self.camera_uniforms_buffer, 0, cast_slice(&[self.camera_uniforms]));
@@ -104,8 +104,10 @@ impl PhongMaterial {
         wgpu_context.queue.write_buffer(&self.point_light_buffer, 0, cast_slice(&[self.point_light_uniforms]));
         wgpu_context.queue.write_buffer(&self.nb_point_lights_buffer, 0, cast_slice(&[point_lights.len() as u32]));
 
-        render_pass.set_pipeline(&self.pipeline);
+        self.material_pipeline.bind(render_pass, transform, active_camera, point_lights, directional_light, wgpu_context);
+
+        /*render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.transform_bind_group, &[]);
-        render_pass.set_bind_group(1, &self.uniform_bind_group, &[]);
-    }*/
+        render_pass.set_bind_group(1, &self.uniform_bind_group, &[]);*/
+    }
 }

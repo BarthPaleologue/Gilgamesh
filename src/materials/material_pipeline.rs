@@ -22,16 +22,6 @@ pub struct MaterialPipeline {
     pub transform_uniforms_buffer: Buffer,
     pub transform_bind_group: BindGroup,
 
-    pub camera_uniforms: CameraUniforms,
-    pub camera_uniforms_buffer: Buffer,
-
-    pub light_uniforms: DirectionalLightUniform,
-    pub light_uniforms_buffer: Buffer,
-
-    pub point_light_uniforms: [PointLightUniforms; MAX_POINT_LIGHTS],
-    pub point_light_buffer: Buffer,
-    pub nb_point_lights_buffer: Buffer,
-
     pub uniform_bind_group: BindGroup,
 
     pub pipeline_layout: PipelineLayout,
@@ -39,7 +29,7 @@ pub struct MaterialPipeline {
 }
 
 impl MaterialPipeline {
-    pub fn new(shader_file: &str, wgpu_context: &mut WGPUContext) -> MaterialPipeline {
+    pub fn new(shader_file: &str, uniforms: &[&Buffer], wgpu_context: &mut WGPUContext) -> MaterialPipeline {
         // load shader from file at runtime
         let shader_string = load_str!(shader_file);
         let shader = wgpu_context.device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -72,17 +62,6 @@ impl MaterialPipeline {
             }],
             label: Some("Transform Bind Group"),
         });
-
-        let camera_uniforms = CameraUniforms::default();
-        let camera_uniforms_buffer = create_buffer::<CameraUniforms>("Camera Buffer", wgpu_context);
-
-        let light_uniforms = DirectionalLightUniform::default();
-        let light_uniforms_buffer = create_buffer::<DirectionalLightUniform>("DirectionalLight Buffer", wgpu_context);
-
-        let point_light_uniforms = [PointLightUniforms::default(); MAX_POINT_LIGHTS];
-        let point_light_storage_buffer = create_array_buffer::<PointLightUniforms>("PointLights Array Buffer", MAX_POINT_LIGHTS, wgpu_context);
-
-        let nb_point_lights_buffer = create_buffer::<u32>("Number of Point Lights Buffer", wgpu_context);
 
         let uniform_bind_group_layout = wgpu_context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[wgpu::BindGroupLayoutEntry {
@@ -125,21 +104,16 @@ impl MaterialPipeline {
             label: Some("Uniform Bind Group Layout"),
         });
 
+        let entries: Vec<wgpu::BindGroupEntry> = uniforms.iter().enumerate().map(|(i, binding_resource)| {
+            wgpu::BindGroupEntry {
+                binding: i as u32,
+                resource: binding_resource.as_entire_binding(),
+            }
+        }).collect();
+
         let uniform_bind_group = wgpu_context.device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &uniform_bind_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: camera_uniforms_buffer.as_entire_binding(),
-            }, wgpu::BindGroupEntry {
-                binding: 1,
-                resource: light_uniforms_buffer.as_entire_binding(),
-            }, wgpu::BindGroupEntry {
-                binding: 2,
-                resource: point_light_storage_buffer.as_entire_binding(),
-            }, wgpu::BindGroupEntry {
-                binding: 3,
-                resource: nb_point_lights_buffer.as_entire_binding(),
-            }],
+            entries: &entries,
             label: Some("Uniform Bind Group"),
         });
 
@@ -195,42 +169,19 @@ impl MaterialPipeline {
             transform_uniforms_buffer,
             transform_bind_group,
 
-            camera_uniforms,
-            camera_uniforms_buffer,
-
-            light_uniforms,
-            light_uniforms_buffer,
-
-            point_light_uniforms,
-            point_light_buffer: point_light_storage_buffer,
-            nb_point_lights_buffer,
-
             uniform_bind_group,
 
             pipeline_layout,
             pipeline,
         }
     }
-    pub fn new_default(uniforms: &[BindingResource], wgpu_context: &mut WGPUContext) -> MaterialPipeline {
-        //let uniforms = Vec::new();
-        MaterialPipeline::new("../shader/default.wgsl", wgpu_context)
+    pub fn new_default(uniforms: &[&Buffer], wgpu_context: &mut WGPUContext) -> MaterialPipeline {
+        MaterialPipeline::new("../shader/default.wgsl", uniforms, wgpu_context)
     }
 
     pub fn bind<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, transform: Ref<Transform>, active_camera: &Camera, point_lights: &[PointLight], directional_light: &DirectionalLight, wgpu_context: &mut WGPUContext) {
         self.transform_uniforms.update(transform.deref());
         wgpu_context.queue.write_buffer(&self.transform_uniforms_buffer, 0, cast_slice(&[self.transform_uniforms]));
-
-        self.camera_uniforms.update(active_camera);
-        wgpu_context.queue.write_buffer(&self.camera_uniforms_buffer, 0, cast_slice(&[self.camera_uniforms]));
-
-        self.light_uniforms.update(directional_light);
-        wgpu_context.queue.write_buffer(&self.light_uniforms_buffer, 0, cast_slice(&[self.light_uniforms]));
-
-        for i in 0..point_lights.len() {
-            self.point_light_uniforms[i].update(&point_lights[i]);
-        }
-        wgpu_context.queue.write_buffer(&self.point_light_buffer, 0, cast_slice(&[self.point_light_uniforms]));
-        wgpu_context.queue.write_buffer(&self.nb_point_lights_buffer, 0, cast_slice(&[point_lights.len() as u32]));
 
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.transform_bind_group, &[]);
