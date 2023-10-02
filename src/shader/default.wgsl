@@ -32,16 +32,18 @@ struct VertexInput {
 
 struct VertexOutput {
     @builtin(position) position: vec4<f32>,
-    @location(0) vColor: vec3<f32>,
-    @location(1) vNormal: vec3<f32>,
-    @location(2) vNormalW: vec3<f32>,
-    @location(3) vUV: vec2<f32>
+    @location(0) vPositionW: vec3<f32>,
+    @location(1) vColor: vec3<f32>,
+    @location(2) vNormal: vec3<f32>,
+    @location(3) vNormalW: vec3<f32>,
+    @location(4) vUV: vec2<f32>
 };
 
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
     var output: VertexOutput;
     output.position = camera.proj_view * transform.world_matrix * vec4<f32>(in.position, 1.0);
+    output.vPositionW = (transform.world_matrix * vec4<f32>(in.position, 1.0)).xyz;
     output.vColor = in.color;
     output.vNormal = in.normal;
     output.vNormalW = (transform.normal_matrix * vec4<f32>(in.normal, 0.0)).xyz;
@@ -55,8 +57,14 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     let diffuse: vec3<f32> = normal01;
 
+    let view_dir: vec3<f32> = normalize(camera.position - in.vPositionW);
+
+    let reflect_dir: vec3<f32> = reflect(directionalLight.direction, in.vNormalW);
+    let specular_strength: f32 = pow(max(0.0, dot(view_dir, reflect_dir)), 32.0);
+    let specular: vec3<f32> = specular_strength * directionalLight.color;
+
     let ndl = max(0.0, dot(in.vNormalW, -directionalLight.direction));
-    let color = diffuse * ndl * directionalLight.color;
+    let color = diffuse * ndl * directionalLight.color + specular;
 
     return vec4(color, 1.0);
 }
