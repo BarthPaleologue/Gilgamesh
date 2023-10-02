@@ -75,7 +75,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     let reflect_dir: vec3<f32> = reflect(directionalLight.direction, in.vNormalW);
     let specular_strength: f32 = pow(max(0.0, dot(view_dir, reflect_dir)), 32.0);
-    let specular: vec3<f32> = specular_strength * directionalLight.color;
+    let specular: vec3<f32> = specular_strength * directionalLight.color * phong.specular_color;
 
     let ndl = max(0.0, dot(in.vNormalW, -directionalLight.direction));
     var color = diffuse * ndl * directionalLight.color * directionalLight.intensity + specular;

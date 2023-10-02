@@ -28,7 +28,7 @@ impl Default for PhongUniforms {
             _padding1: 0,
             ambient_color: [0.0, 0.0, 0.0],
             _padding2: 0,
-            specular_color: [0.0, 0.0, 0.0],
+            specular_color: [1.0, 1.0, 1.0],
             _padding3: 0,
         }
     }
@@ -95,5 +95,17 @@ impl PhongMaterial {
         wgpu_context.queue.write_buffer(&self.phong_uniforms_buffer, 0, cast_slice(&[self.phong_uniforms]));
 
         self.material_pipeline.bind(render_pass, transform, active_camera, wgpu_context);
+    }
+
+    pub fn set_diffuse_color(&mut self, r: f32, g: f32, b: f32) {
+        self.phong_uniforms.diffuse_color = [r, g, b];
+    }
+
+    pub fn set_ambient_color(&mut self, r: f32, g: f32, b: f32) {
+        self.phong_uniforms.ambient_color = [r, g, b];
+    }
+
+    pub fn set_specular_color(&mut self, r: f32, g: f32, b: f32) {
+        self.phong_uniforms.specular_color = [r, g, b];
     }
 }
