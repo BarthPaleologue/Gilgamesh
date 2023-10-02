@@ -3,15 +3,14 @@ use std::num::NonZeroU32;
 use std::ops::Deref;
 use bytemuck::{cast_slice};
 use load_file::load_str;
-use wgpu::{BindGroup, BindingResource, Buffer, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
+use wgpu::{BindGroup, Buffer, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
 use crate::camera::camera::Camera;
-use crate::camera::uniforms::CameraUniforms;
 
 use crate::geometry::mesh::Vertex;
 use crate::core::wgpu_context::WGPUContext;
-use crate::lights::directional_light::{DirectionalLight, DirectionalLightUniform};
-use crate::lights::point_light::{PointLight, PointLightUniforms};
-use crate::materials::utils::{create_array_buffer, create_buffer};
+use crate::lights::directional_light::{DirectionalLight};
+use crate::lights::point_light::{PointLight};
+use crate::materials::utils::{create_buffer};
 use crate::settings::MAX_POINT_LIGHTS;
 use crate::transform::{Transform, TransformUniforms};
 
@@ -63,44 +62,21 @@ impl MaterialPipeline {
             label: Some("Transform Bind Group"),
         });
 
-        let uniform_bind_group_layout = wgpu_context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
+        let entries: Vec<wgpu::BindGroupLayoutEntry> = uniforms.iter().enumerate().map(|(i, binding_resource)| {
+            wgpu::BindGroupLayoutEntry {
+                binding: i as u32,
                 visibility: wgpu::ShaderStages::all(),
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
                     has_dynamic_offset: false,
                     min_binding_size: None,
                 },
-                count: None,
-            }, wgpu::BindGroupLayoutEntry {
-                binding: 1,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            }, wgpu::BindGroupLayoutEntry {
-                binding: 2,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: NonZeroU32::new(MAX_POINT_LIGHTS as u32),
-            }, wgpu::BindGroupLayoutEntry {
-                binding: 3,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            }],
+                count: None, //NonZeroU32::new(MAX_POINT_LIGHTS as u32),
+            }
+        }).collect();
+
+        let uniform_bind_group_layout = wgpu_context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &entries,
             label: Some("Uniform Bind Group Layout"),
         });
 
