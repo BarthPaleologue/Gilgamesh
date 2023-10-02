@@ -20,20 +20,24 @@ pub fn run() {
     let mut camera = Camera::new(&engine);
     camera.control = Some(Box::<OrbitControl>::default());
 
+    scene.directional_light.set_intensity(0.0);
+
     scene.set_active_camera(camera);
 
     let mut point_light = PointLight::default();
     point_light.set_color(1.0, 0.0, 0.0);
-    point_light.transform_mut().set_position(0.0, 5.0, 0.0);
     show_point_light_debug_mesh(&point_light, &mut scene, &mut engine);
-    scene.add_point_light(point_light);
+    let point_light1_idx = scene.add_point_light(point_light);
 
     let mut point_light2 = PointLight::default();
     point_light2.set_color(0.0, 0.0, 1.0);
-    point_light2.set_intensity(2.0);
-    point_light2.transform_mut().set_position(0.0, -5.0, 0.0);
     show_point_light_debug_mesh(&point_light2, &mut scene, &mut engine);
-    scene.add_point_light(point_light2);
+    let point_light2_idx = scene.add_point_light(point_light2);
+
+    let mut point_light3 = PointLight::default();
+    point_light3.set_color(0.0, 1.0, 0.0);
+    show_point_light_debug_mesh(&point_light3, &mut scene, &mut engine);
+    let point_light3_idx = scene.add_point_light(point_light3);
 
     let cube1 = PrimitiveMesh::cube("Cube1", &mut engine);
     let cube1_idx = scene.add_mesh(cube1);
@@ -46,7 +50,7 @@ pub fn run() {
     plane.transform_mut().set_position(0.0, -5.0, 0.0);
     let plane_idx = scene.add_mesh(plane);
 
-    scene.on_before_render.push(Box::new(move |engine, active_camera, meshes, mouse| {
+    scene.on_before_render.push(Box::new(move |engine, active_camera, meshes, point_lights, mouse| {
         meshes[cube1_idx].transform_mut().set_rotation(
             0.0,
             engine.get_elapsed_time(),
@@ -58,16 +62,27 @@ pub fn run() {
             0.0,
             0.0,
         );
+
+        point_lights[point_light1_idx].transform_mut().set_position(
+            12.0 * f32::cos(2.0 * engine.get_elapsed_time()),
+            0.0,
+            12.0 * f32::sin(2.0 * engine.get_elapsed_time()),
+        );
+
+        point_lights[point_light2_idx].transform_mut().set_position(
+            12.0 * f32::sin(2.0 * engine.get_elapsed_time()),
+            12.0 * f32::cos(2.0 * engine.get_elapsed_time()),
+            0.0,
+        );
+
+        point_lights[point_light3_idx].transform_mut().set_position(
+            0.0,
+            12.0 * f32::cos(-2.0 * engine.get_elapsed_time()),
+            12.0 * f32::sin(-2.0 * engine.get_elapsed_time()),
+        );
     }));
 
-    scene.on_key_pressed.push(Box::new(|engine, active_camera, key| {
-        match key {
-            T => {
-                println!("T pressed at {}", engine.get_elapsed_time());
-            }
-            _ => {}
-        }
-    }));
+    //scene.on_key_pressed.push(Box::new(|engine, active_camera, key| {}));
 
     engine.start(scene, event_loop);
 }

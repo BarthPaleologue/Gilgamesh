@@ -12,7 +12,7 @@ use crate::settings::MAX_POINT_LIGHTS;
 
 pub const ANIMATION_SPEED: f32 = 1.0;
 
-pub type SceneClosure = Box<dyn FnMut(&Engine, &mut Option<Camera>, &mut Vec<Mesh>, &Mouse)>;
+pub type SceneClosure = Box<dyn FnMut(&Engine, &mut Option<Camera>, &mut Vec<Mesh>, &mut Vec<PointLight>, &Mouse)>;
 
 pub struct Scene {
     pub active_camera: Option<Camera>,
@@ -100,7 +100,7 @@ impl Scene {
             active_camera.listen_to_control(&self.mouse, engine);
         }
 
-        self.on_before_render.iter_mut().for_each(|f| f(engine, &mut self.active_camera, &mut self.meshes, &self.mouse));
+        self.on_before_render.iter_mut().for_each(|f| f(engine, &mut self.active_camera, &mut self.meshes, &mut self.point_lights, &self.mouse));
 
         let output = engine.wgpu_context.surface.get_current_texture()?;
         let view = output
