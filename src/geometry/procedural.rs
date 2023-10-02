@@ -1,7 +1,7 @@
 use hexasphere::shapes::IcoSphere;
 use crate::core::engine::Engine;
 
-use crate::material::Material;
+use crate::materials::material::Material;
 use crate::geometry::mesh::Mesh;
 use crate::geometry::vertex_data::VertexData;
 

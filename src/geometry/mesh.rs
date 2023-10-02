@@ -13,7 +13,7 @@ use crate::lights::directional_light::DirectionalLight;
 use crate::lights::point_light::PointLight;
 
 use crate::transform::{Transform, Transformable};
-use crate::material::Material;
+use crate::materials::material::Material;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]

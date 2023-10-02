@@ -41,7 +41,7 @@ impl Material {
     pub fn new(wgpu_context: &mut WGPUContext) -> Material {
         let shader = wgpu_context.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("shader/default.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(include_str!("../shader/default.wgsl").into()),
         });
 
         let transform_uniforms = TransformUniforms::default();

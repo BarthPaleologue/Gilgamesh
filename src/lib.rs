@@ -3,9 +3,9 @@ use wasm_bindgen::prelude::*;
 
 pub mod camera;
 pub mod transform;
-pub mod material;
 pub mod geometry;
 pub mod core;
 pub mod input;
 pub mod lights;
 pub mod settings;
+pub mod materials;
