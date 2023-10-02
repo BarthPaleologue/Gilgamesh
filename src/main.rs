@@ -6,6 +6,7 @@ use gilgamesh::input::transform_control::OrbitControl;
 use gilgamesh::core::engine::Engine;
 use gilgamesh::core::scene::Scene;
 use gilgamesh::geometry::primitive::PrimitiveMesh;
+use gilgamesh::lights::debug::show_point_light_debug_mesh;
 use gilgamesh::lights::light::Light;
 use gilgamesh::lights::point_light::PointLight;
 use gilgamesh::transform::{Transformable};
@@ -24,12 +25,14 @@ pub fn run() {
     let mut point_light = PointLight::default();
     point_light.set_color(1.0, 0.0, 0.0);
     point_light.transform_mut().set_position(0.0, 5.0, 0.0);
+    show_point_light_debug_mesh(&point_light, &mut scene, &mut engine);
     scene.add_point_light(point_light);
 
     let mut point_light2 = PointLight::default();
     point_light2.set_color(0.0, 0.0, 1.0);
     point_light2.set_intensity(2.0);
     point_light2.transform_mut().set_position(0.0, -5.0, 0.0);
+    show_point_light_debug_mesh(&point_light2, &mut scene, &mut engine);
     scene.add_point_light(point_light2);
 
     let cube1 = PrimitiveMesh::cube("Cube1", &mut engine);
