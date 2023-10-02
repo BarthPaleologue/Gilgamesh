@@ -56,7 +56,7 @@ impl PhongMaterial {
 
         let nb_point_lights_buffer = create_buffer::<u32>("Number of Point Lights Buffer", wgpu_context);
 
-        let material_pipeline = MaterialPipeline::new_default(&vec![
+        let material_pipeline = MaterialPipeline::new("../shader/default.wgsl", &vec![
             &light_uniforms_buffer,
             &point_light_buffer,
             &nb_point_lights_buffer,

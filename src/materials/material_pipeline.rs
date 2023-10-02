@@ -171,9 +171,6 @@ impl MaterialPipeline {
             pipeline,
         }
     }
-    pub fn new_default(uniforms: &[&Buffer], wgpu_context: &mut WGPUContext) -> MaterialPipeline {
-        MaterialPipeline::new("../shader/default.wgsl", uniforms, wgpu_context)
-    }
 
     pub fn bind<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, transform: Ref<Transform>, active_camera: &Camera, wgpu_context: &mut WGPUContext) {
         self.transform_uniforms.update(transform.deref());
