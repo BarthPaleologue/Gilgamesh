@@ -15,7 +15,7 @@ pub struct DirectionalLightUniform {
     _padding: u32,
     direction: [f32; 3],
     // Due to uniforms requiring 16 byte (4 float) spacing, we need to use a padding field here
-    _padding2: u32,
+    //_padding2: u32,
     intensity: f32,
 }
 

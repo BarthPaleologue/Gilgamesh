@@ -72,7 +72,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let specular: vec3<f32> = specular_strength * directionalLight.color;
 
     let ndl = max(0.0, dot(in.vNormalW, -directionalLight.direction));
-    var color = diffuse * ndl * directionalLight.color + specular;
+    var color = diffuse * ndl * directionalLight.color * directionalLight.intensity + specular;
 
     for (var i: u32 = 0u; i < point_lights_count; i = i + 1u) {
         let light_dir: vec3<f32> = normalize(point_lights[i].position - in.vPositionW);
@@ -82,7 +82,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         let specular_strength: f32 = pow(max(0.0, dot(view_dir, reflect_dir)), 32.0);
         let specular: vec3<f32> = specular_strength * point_lights[i].color;
 
-        color = color + diffuse * ndl * point_lights[i].color + specular;
+        color = color + diffuse * ndl * point_lights[i].color * point_lights[i].intensity + specular;
     }
 
     return vec4(color, 1.0);

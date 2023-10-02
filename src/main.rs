@@ -21,8 +21,6 @@ pub fn run() {
 
     scene.set_active_camera(camera);
 
-    scene.directional_light.set_color(0.0, 0.0, 0.0);
-
     let mut point_light = PointLight::default();
     point_light.set_color(1.0, 0.0, 0.0);
     point_light.transform_mut().set_position(0.0, 5.0, 0.0);
@@ -30,6 +28,7 @@ pub fn run() {
 
     let mut point_light2 = PointLight::default();
     point_light2.set_color(0.0, 0.0, 1.0);
+    point_light2.set_intensity(2.0);
     point_light2.transform_mut().set_position(0.0, -5.0, 0.0);
     scene.add_point_light(point_light2);
 
