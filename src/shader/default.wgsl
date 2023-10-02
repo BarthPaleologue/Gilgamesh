@@ -68,9 +68,8 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let normal01: vec3<f32> = in.vNormal * 0.5 + 0.5;
-
-    let diffuse: vec3<f32> = normal01;
+    let diffuse: vec3<f32> = phong.diffuse_color;
+    let ambient: vec3<f32> = phong.ambient_color;
 
     let view_dir: vec3<f32> = normalize(camera.position - in.vPositionW);
 
@@ -87,10 +86,12 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
         let reflect_dir: vec3<f32> = reflect(-light_dir, in.vNormalW);
         let specular_strength: f32 = pow(max(0.0, dot(view_dir, reflect_dir)), 32.0);
-        let specular: vec3<f32> = specular_strength * point_lights[i].color;
+        let specular: vec3<f32> = specular_strength * point_lights[i].color * phong.specular_color;
 
         color = color + diffuse * ndl * point_lights[i].color * point_lights[i].intensity + specular;
     }
+
+    color = color + ambient;
 
     return vec4(color, 1.0);
 }

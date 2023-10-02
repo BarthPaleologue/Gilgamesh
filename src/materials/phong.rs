@@ -35,7 +35,6 @@ impl Default for PhongUniforms {
 }
 
 pub struct PhongMaterial {
-    pub phong_uniforms: PhongUniforms,
     pub material_pipeline: MaterialPipeline,
 
     pub light_uniforms: DirectionalLightUniform,
@@ -45,6 +44,7 @@ pub struct PhongMaterial {
     pub point_light_buffer: wgpu::Buffer,
     pub nb_point_lights_buffer: wgpu::Buffer,
 
+    pub phong_uniforms: PhongUniforms,
     pub phong_uniforms_buffer: wgpu::Buffer,
 }
 
@@ -69,7 +69,6 @@ impl PhongMaterial {
         ], wgpu_context);
 
         PhongMaterial {
-            phong_uniforms: PhongUniforms::default(),
             material_pipeline,
 
             light_uniforms,
@@ -79,6 +78,7 @@ impl PhongMaterial {
             point_light_buffer,
             nb_point_lights_buffer,
 
+            phong_uniforms,
             phong_uniforms_buffer,
         }
     }
@@ -92,6 +92,7 @@ impl PhongMaterial {
         }
         wgpu_context.queue.write_buffer(&self.point_light_buffer, 0, cast_slice(&[self.point_light_uniforms]));
         wgpu_context.queue.write_buffer(&self.nb_point_lights_buffer, 0, cast_slice(&[point_lights.len() as u32]));
+        wgpu_context.queue.write_buffer(&self.phong_uniforms_buffer, 0, cast_slice(&[self.phong_uniforms]));
 
         self.material_pipeline.bind(render_pass, transform, active_camera, wgpu_context);
     }
