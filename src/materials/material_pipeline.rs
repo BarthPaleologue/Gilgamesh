@@ -1,17 +1,14 @@
 use std::cell::Ref;
-use std::num::NonZeroU32;
 use std::ops::Deref;
 use bytemuck::{cast_slice};
 use load_file::load_str;
 use wgpu::{BindGroup, Buffer, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
 use crate::camera::camera::Camera;
+use crate::camera::uniforms::CameraUniforms;
 
 use crate::geometry::mesh::Vertex;
 use crate::core::wgpu_context::WGPUContext;
-use crate::lights::directional_light::{DirectionalLight};
-use crate::lights::point_light::{PointLight};
 use crate::materials::utils::{create_buffer};
-use crate::settings::MAX_POINT_LIGHTS;
 use crate::transform::{Transform, TransformUniforms};
 
 pub struct MaterialPipeline {
@@ -19,7 +16,11 @@ pub struct MaterialPipeline {
 
     pub transform_uniforms: TransformUniforms,
     pub transform_uniforms_buffer: Buffer,
-    pub transform_bind_group: BindGroup,
+
+    pub camera_uniforms: CameraUniforms,
+    pub camera_uniforms_buffer: Buffer,
+
+    pub required_bind_group: BindGroup,
 
     pub uniform_bind_group: BindGroup,
 
@@ -39,8 +40,11 @@ impl MaterialPipeline {
         let transform_uniforms = TransformUniforms::default();
         let transform_uniforms_buffer = create_buffer::<TransformUniforms>("Transform Buffer", wgpu_context);
 
-        let transform_bind_group_layout = wgpu_context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Transform Bind Group Layout"),
+        let camera_uniforms = CameraUniforms::default();
+        let camera_uniforms_buffer = create_buffer::<CameraUniforms>("Camera Buffer", wgpu_context);
+
+        let required_bind_group_layout = wgpu_context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Required Bind Group Layout"),
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
                 visibility: wgpu::ShaderStages::VERTEX,
@@ -50,14 +54,26 @@ impl MaterialPipeline {
                     min_binding_size: None,
                 },
                 count: None,
+            }, wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                visibility: wgpu::ShaderStages::all(),
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
             }],
         });
 
-        let transform_bind_group = wgpu_context.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &transform_bind_group_layout,
+        let required_bind_group = wgpu_context.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &required_bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
                 resource: transform_uniforms_buffer.as_entire_binding(),
+            }, wgpu::BindGroupEntry {
+                binding: 1,
+                resource: camera_uniforms_buffer.as_entire_binding(),
             }],
             label: Some("Transform Bind Group"),
         });
@@ -96,7 +112,7 @@ impl MaterialPipeline {
         let pipeline_layout = wgpu_context.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
             bind_group_layouts: &[
-                &transform_bind_group_layout,
+                &required_bind_group_layout,
                 &uniform_bind_group_layout
             ],
             push_constant_ranges: &[],
@@ -143,7 +159,11 @@ impl MaterialPipeline {
 
             transform_uniforms,
             transform_uniforms_buffer,
-            transform_bind_group,
+
+            camera_uniforms,
+            camera_uniforms_buffer,
+
+            required_bind_group,
 
             uniform_bind_group,
 
@@ -159,8 +179,11 @@ impl MaterialPipeline {
         self.transform_uniforms.update(transform.deref());
         wgpu_context.queue.write_buffer(&self.transform_uniforms_buffer, 0, cast_slice(&[self.transform_uniforms]));
 
+        self.camera_uniforms.update(active_camera);
+        wgpu_context.queue.write_buffer(&self.camera_uniforms_buffer, 0, cast_slice(&[self.camera_uniforms]));
+
         render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, &self.transform_bind_group, &[]);
+        render_pass.set_bind_group(0, &self.required_bind_group, &[]);
         render_pass.set_bind_group(1, &self.uniform_bind_group, &[]);
     }
 }

@@ -12,7 +12,7 @@ struct CameraUniforms {
     proj_view: mat4x4<f32>,
     position: vec3<f32>
 }
-@group(1) @binding(0)
+@group(0) @binding(1)
 var<uniform> camera: CameraUniforms;
 
 struct DirectionalLightUniforms {
@@ -20,7 +20,7 @@ struct DirectionalLightUniforms {
     direction: vec3<f32>,
     intensity: f32
 }
-@group(1) @binding(1)
+@group(1) @binding(0)
 var<uniform> directionalLight: DirectionalLightUniforms;
 
 struct PointLightUniforms {
@@ -28,8 +28,8 @@ struct PointLightUniforms {
     position: vec3<f32>,
     intensity: f32
 }
-@group(1) @binding(2) var<uniform> point_lights : array<PointLightUniforms, 8>;
-@group(1) @binding(3) var<uniform> point_lights_count : u32;
+@group(1) @binding(1) var<uniform> point_lights : array<PointLightUniforms, 8>;
+@group(1) @binding(2) var<uniform> point_lights_count : u32;
 
 struct VertexInput {
     @location(0) position: vec3<f32>,
