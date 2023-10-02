@@ -3,8 +3,7 @@ use std::num::NonZeroU32;
 use std::ops::Deref;
 use bytemuck::{cast_slice};
 use load_file::load_str;
-use wgpu::{BindGroup, BindGroupLayout, Buffer, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
-use wgpu::util::{DeviceExt};
+use wgpu::{BindGroup, Buffer, BufferAddress, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
 use crate::camera::camera::Camera;
 use crate::camera::uniforms::CameraUniforms;
 
@@ -48,11 +47,12 @@ impl Material {
         });
 
         let transform_uniforms = TransformUniforms::default();
-        let transform_uniforms_buffer = wgpu_context.device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
+        let transform_uniforms_buffer = wgpu_context.device.create_buffer(
+            &wgpu::BufferDescriptor {
                 label: Some("Transform Buffer"),
-                contents: cast_slice(&[transform_uniforms]),
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                size: std::mem::size_of::<TransformUniforms>() as BufferAddress,
+                mapped_at_creation: false,
             }
         );
 
@@ -80,37 +80,41 @@ impl Material {
         });
 
         let camera_uniforms = CameraUniforms::default();
-        let camera_uniforms_buffer = wgpu_context.device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
+        let camera_uniforms_buffer = wgpu_context.device.create_buffer(
+            &wgpu::BufferDescriptor {
                 label: Some("Camera Buffer"),
-                contents: cast_slice(&[camera_uniforms]),
+                size: std::mem::size_of::<CameraUniforms>() as BufferAddress,
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
             }
         );
 
         let light_uniforms = DirectionalLightUniform::default();
-        let light_uniforms_buffer = wgpu_context.device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
+        let light_uniforms_buffer = wgpu_context.device.create_buffer(
+            &wgpu::BufferDescriptor {
                 label: Some("Light Buffer"),
-                contents: cast_slice(&[light_uniforms]),
+                size: std::mem::size_of::<DirectionalLightUniform>() as BufferAddress,
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
             }
         );
 
         let point_light_uniforms = [PointLightUniforms::default(); MAX_POINT_LIGHTS];
-        let point_light_storage_buffer = wgpu_context.device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
+        let point_light_storage_buffer = wgpu_context.device.create_buffer(
+            &wgpu::BufferDescriptor {
                 label: Some("Point Light Storage Buffer"),
-                contents: cast_slice(&[point_light_uniforms]),
+                size: std::mem::size_of::<PointLightUniforms>() as BufferAddress * MAX_POINT_LIGHTS as BufferAddress,
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
             }
         );
 
-        let nb_point_lights_buffer = wgpu_context.device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
+        let nb_point_lights_buffer = wgpu_context.device.create_buffer(
+            &wgpu::BufferDescriptor {
                 label: Some("Number of Point Lights Buffer"),
-                contents: cast_slice(&[0u32]),
+                size: std::mem::size_of::<u32>() as BufferAddress,
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
             }
         );
 
@@ -242,6 +246,7 @@ impl Material {
         }
     }
     pub fn new_default(wgpu_context: &mut WGPUContext) -> Material {
+        //let uniforms = Vec::new();
         Material::new("../shader/default.wgsl", wgpu_context)
     }
 
