@@ -31,6 +31,13 @@ struct PointLightUniforms {
 @group(1) @binding(1) var<uniform> point_lights : array<PointLightUniforms, 8>;
 @group(1) @binding(2) var<uniform> point_lights_count : u32;
 
+struct PhongUniforms {
+    diffuse_color: vec3<f32>,
+    ambient_color: vec3<f32>,
+    specular_color: vec3<f32>
+}
+@group(1) @binding(3) var<uniform> phong: PhongUniforms;
+
 struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) color: vec3<f32>,

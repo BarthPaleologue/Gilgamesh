@@ -44,6 +44,8 @@ pub struct PhongMaterial {
     pub point_light_uniforms: [PointLightUniforms; MAX_POINT_LIGHTS],
     pub point_light_buffer: wgpu::Buffer,
     pub nb_point_lights_buffer: wgpu::Buffer,
+
+    pub phong_uniforms_buffer: wgpu::Buffer,
 }
 
 impl PhongMaterial {
@@ -56,10 +58,14 @@ impl PhongMaterial {
 
         let nb_point_lights_buffer = create_buffer::<u32>("Number of Point Lights Buffer", wgpu_context);
 
+        let phong_uniforms = PhongUniforms::default();
+        let phong_uniforms_buffer = create_buffer::<PhongUniforms>("Phong Buffer", wgpu_context);
+
         let material_pipeline = MaterialPipeline::new("../shader/default.wgsl", &vec![
             &light_uniforms_buffer,
             &point_light_buffer,
             &nb_point_lights_buffer,
+            &phong_uniforms_buffer,
         ], wgpu_context);
 
         PhongMaterial {
@@ -71,8 +77,9 @@ impl PhongMaterial {
 
             point_light_uniforms,
             point_light_buffer,
-
             nb_point_lights_buffer,
+
+            phong_uniforms_buffer,
         }
     }
 
