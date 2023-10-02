@@ -5,7 +5,7 @@ pub fn create_buffer<T>(name: &str, wgpu_context: &mut WGPUContext) -> wgpu::Buf
     create_array_buffer::<T>(name, 1, wgpu_context)
 }
 
-pub fn create_array_buffer<T>(name: &str, nb_elements: u32, wgpu_context: &mut WGPUContext) -> wgpu::Buffer {
+pub fn create_array_buffer<T>(name: &str, nb_elements: usize, wgpu_context: &mut WGPUContext) -> wgpu::Buffer {
     wgpu_context.device.create_buffer(
         &wgpu::BufferDescriptor {
             label: Some(name),

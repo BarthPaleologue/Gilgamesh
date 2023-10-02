@@ -11,7 +11,7 @@ use crate::geometry::mesh::Vertex;
 use crate::core::wgpu_context::WGPUContext;
 use crate::lights::directional_light::{DirectionalLight, DirectionalLightUniform};
 use crate::lights::point_light::{PointLight, PointLightUniforms};
-use crate::materials::utils::create_buffer;
+use crate::materials::utils::{create_array_buffer, create_buffer};
 use crate::settings::MAX_POINT_LIGHTS;
 use crate::transform::{Transform, TransformUniforms};
 
@@ -48,14 +48,7 @@ impl MaterialPipeline {
         });
 
         let transform_uniforms = TransformUniforms::default();
-        let transform_uniforms_buffer = wgpu_context.device.create_buffer(
-            &wgpu::BufferDescriptor {
-                label: Some("Transform Buffer"),
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                size: std::mem::size_of::<TransformUniforms>() as BufferAddress,
-                mapped_at_creation: false,
-            }
-        );
+        let transform_uniforms_buffer = create_buffer::<TransformUniforms>("Transform Buffer", wgpu_context);
 
         let transform_bind_group_layout = wgpu_context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("Transform Bind Group Layout"),
@@ -87,23 +80,9 @@ impl MaterialPipeline {
         let light_uniforms_buffer = create_buffer::<DirectionalLightUniform>("DirectionalLight Buffer", wgpu_context);
 
         let point_light_uniforms = [PointLightUniforms::default(); MAX_POINT_LIGHTS];
-        let point_light_storage_buffer = wgpu_context.device.create_buffer(
-            &wgpu::BufferDescriptor {
-                label: Some("Point Light Storage Buffer"),
-                size: std::mem::size_of::<PointLightUniforms>() as BufferAddress * MAX_POINT_LIGHTS as BufferAddress,
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                mapped_at_creation: false,
-            }
-        );
+        let point_light_storage_buffer = create_array_buffer::<PointLightUniforms>("PointLights Array Buffer", MAX_POINT_LIGHTS, wgpu_context);
 
-        let nb_point_lights_buffer = wgpu_context.device.create_buffer(
-            &wgpu::BufferDescriptor {
-                label: Some("Number of Point Lights Buffer"),
-                size: std::mem::size_of::<u32>() as BufferAddress,
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                mapped_at_creation: false,
-            }
-        );
+        let nb_point_lights_buffer = create_buffer::<u32>("Number of Point Lights Buffer", wgpu_context);
 
         let uniform_bind_group_layout = wgpu_context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[wgpu::BindGroupLayoutEntry {
