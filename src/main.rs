@@ -8,7 +8,7 @@ use gilgamesh::core::scene::Scene;
 use gilgamesh::geometry::primitive::PrimitiveMesh;
 use gilgamesh::lights::light::Light;
 use gilgamesh::lights::point_light::PointLight;
-use gilgamesh::transform::{Transform, Transformable};
+use gilgamesh::transform::{Transformable};
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(start))]
 pub fn run() {
@@ -38,11 +38,6 @@ pub fn run() {
     let sphere1 = PrimitiveMesh::sphere("Cube", 32, &mut engine);
     sphere1.transform_mut().parent = Some(scene.meshes[cube1_idx].transform_rc());
     let sphere1_idx = scene.add_mesh(sphere1);
-
-    let sphere2 = PrimitiveMesh::sphere("Sphere2", 32, &mut engine);
-    sphere2.transform_mut().set_position(0.0, 0.0, -8.0);
-    sphere2.transform_mut().set_scaling(0.7, 0.7, 0.7);
-    scene.add_mesh(sphere2);
 
     let plane = PrimitiveMesh::plane("Plane", 10, 10.0, &mut engine);
     plane.transform_mut().set_position(0.0, -5.0, 0.0);
