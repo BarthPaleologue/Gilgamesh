@@ -9,6 +9,24 @@ pub struct PointLight {
     transform: Rc<RefCell<Transform>>,
 }
 
+pub struct PointLightUniforms {
+    color: [f32; 3],
+    // Due to uniforms requiring 16 byte (4 float) spacing, we need to use a padding field here
+    _padding1: u32,
+    position: [f32; 3],
+    // Due to uniforms requiring 16 byte (4 float) spacing, we need to use a padding field here
+    _padding2: u32,
+    intensity: f32,
+}
+
+impl PointLightUniforms {
+    pub fn update(&mut self, point_light: &PointLight) {
+        self.color = point_light.color;
+        self.intensity = point_light.intensity;
+        self.position = point_light.transform.borrow().position.into();
+    }
+}
+
 impl Default for PointLight {
     fn default() -> Self {
         PointLight {
