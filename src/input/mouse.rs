@@ -6,6 +6,7 @@ pub struct Mouse {
     pub left_button_pressed: bool,
     pub right_button_pressed: bool,
     pub middle_button_pressed: bool,
+    pub scroll_delta: f32,
 }
 
 impl Default for Mouse {
@@ -16,6 +17,7 @@ impl Default for Mouse {
             left_button_pressed: false,
             right_button_pressed: false,
             middle_button_pressed: false,
+            scroll_delta: 0.0,
         }
     }
 }
@@ -38,16 +40,23 @@ impl Mouse {
 
         self.delta = [new_position[0] - self.position[0], new_position[1] - self.position[1]];
 
-        if self.delta[0].abs() < 0.8 {
-            self.delta[0] = 0.0;
-        }
-        if self.delta[1].abs() < 0.8 {
-            self.delta[1] = 0.0;
-        }
-
         self.position = new_position;
 
+        self.scroll_delta = 0.0;
+
         match event {
+            WindowEvent::MouseWheel {
+                delta: winit::event::MouseScrollDelta::LineDelta(_, y),
+                ..
+            } => {
+                self.scroll_delta = *y;
+            }
+            WindowEvent::TouchpadMagnify {
+                delta,
+                ..
+            } => {
+                self.scroll_delta = *delta as f32;
+            }
             WindowEvent::MouseInput {
                 state: ElementState::Pressed,
                 button: winit::event::MouseButton::Left,
@@ -64,5 +73,10 @@ impl Mouse {
             }
             _ => {}
         }
+    }
+
+    pub fn reset(&mut self) {
+        self.delta = [0.0, 0.0];
+        self.scroll_delta = 0.0;
     }
 }

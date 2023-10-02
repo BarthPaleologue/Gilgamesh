@@ -39,6 +39,11 @@ pub fn run() {
     show_point_light_debug_mesh(&point_light3, &mut scene, &mut engine);
     let point_light3_idx = scene.add_point_light(point_light3);
 
+    let mut point_light4 = PointLight::default();
+    point_light4.set_color(1.0, 1.0, 0.0);
+    show_point_light_debug_mesh(&point_light4, &mut scene, &mut engine);
+    let point_light4_idx = scene.add_point_light(point_light4);
+
     let cube1 = PrimitiveMesh::cube("Cube1", &mut engine);
     let cube1_idx = scene.add_mesh(cube1);
 
@@ -79,6 +84,12 @@ pub fn run() {
             0.0,
             12.0 * f32::cos(-2.0 * engine.get_elapsed_time()),
             12.0 * f32::sin(-2.0 * engine.get_elapsed_time()),
+        );
+
+        point_lights[point_light4_idx].transform_mut().set_position(
+            15.0 * f32::sin(2.0 * engine.get_elapsed_time()),
+            0.0,
+            15.0 * f32::cos(2.0 * engine.get_elapsed_time()),
         );
     }));
 

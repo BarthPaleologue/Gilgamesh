@@ -33,6 +33,9 @@ impl TransformMouseController for OrbitControl {
             self.theta = self.theta.max(-std::f32::consts::PI + self.epsilon).min(-self.epsilon);
         }
 
+        self.radius -= mouse.scroll_delta * engine.get_delta_time() * 30.0;
+        self.radius = self.radius.max(1.0);
+
         let x = self.radius * self.theta.sin() * self.phi.cos();
         let y = self.radius * self.theta.cos();
         let z = self.radius * self.theta.sin() * self.phi.sin();

@@ -102,6 +102,8 @@ impl Scene {
 
         self.on_before_render.iter_mut().for_each(|f| f(engine, &mut self.active_camera, &mut self.meshes, &mut self.point_lights, &self.mouse));
 
+        self.mouse.reset();
+
         let output = engine.wgpu_context.surface.get_current_texture()?;
         let view = output
             .texture
