@@ -38,6 +38,9 @@ struct PhongUniforms {
 }
 @group(1) @binding(3) var<uniform> phong: PhongUniforms;
 
+@group(2) @binding(0) var t_diffuse: texture_2d<f32>;
+@group(2) @binding(1) var s_diffuse: sampler;
+
 struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) color: vec3<f32>,
@@ -71,6 +74,8 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let diffuse: vec3<f32> = phong.diffuse_color;
     let ambient: vec3<f32> = phong.ambient_color;
 
+    let tex_color = textureSample(t_diffuse, s_diffuse, in.vUV).rgb;
+
     let view_dir: vec3<f32> = normalize(camera.position - in.vPositionW);
 
     let reflect_dir: vec3<f32> = reflect(directionalLight.direction, in.vNormalW);
@@ -93,5 +98,5 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     color = color + ambient;
 
-    return vec4(color, 1.0);
+    return vec4(tex_color, 1.0);
 }

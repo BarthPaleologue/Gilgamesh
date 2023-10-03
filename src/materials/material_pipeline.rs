@@ -1,14 +1,17 @@
 use std::cell::Ref;
 use std::ops::Deref;
+use std::rc::Rc;
+use std::borrow::Borrow;
 use bytemuck::{cast_slice};
 use load_file::load_str;
-use wgpu::{BindGroup, Buffer, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
+use wgpu::{BindGroup, BindGroupLayout, Buffer, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
 use crate::camera::camera::Camera;
 use crate::camera::uniforms::CameraUniforms;
 
 use crate::geometry::mesh::Vertex;
 use crate::core::wgpu_context::WGPUContext;
 use crate::materials::utils::{create_buffer};
+use crate::texture::Texture;
 use crate::transform::{Transform, TransformUniforms};
 
 pub struct MaterialPipeline {
@@ -24,12 +27,14 @@ pub struct MaterialPipeline {
 
     pub uniform_bind_group: BindGroup,
 
+    pub texture_bind_groups: Vec<Rc<BindGroup>>,
+
     pub pipeline_layout: PipelineLayout,
     pub pipeline: RenderPipeline,
 }
 
 impl MaterialPipeline {
-    pub fn new(shader_file: &str, uniforms: &[&Buffer], wgpu_context: &mut WGPUContext) -> MaterialPipeline {
+    pub fn new(shader_file: &str, uniforms: &[&Buffer], textures: &[&Texture], wgpu_context: &mut WGPUContext) -> MaterialPipeline {
         // load shader from file at runtime
         let shader_string = load_str!(shader_file);
         let shader = wgpu_context.device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -109,12 +114,18 @@ impl MaterialPipeline {
             label: Some("Uniform Bind Group"),
         });
 
+        let texture_bind_group_layouts: Vec<&BindGroupLayout> = textures.iter().map(|texture| &texture.bind_group_layout).collect();
+        let texture_bind_groups: Vec<Rc<BindGroup>> = textures.iter().map(|texture| texture.bind_group.clone()).collect();
+
+        let bind_group_layouts = vec![
+            &required_bind_group_layout,
+            &uniform_bind_group_layout,
+        ];
+        let layouts = [bind_group_layouts, texture_bind_group_layouts].concat();
+
         let pipeline_layout = wgpu_context.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[
-                &required_bind_group_layout,
-                &uniform_bind_group_layout
-            ],
+            bind_group_layouts: &layouts,
             push_constant_ranges: &[],
         });
 
@@ -167,6 +178,8 @@ impl MaterialPipeline {
 
             uniform_bind_group,
 
+            texture_bind_groups,
+
             pipeline_layout,
             pipeline,
         }
@@ -182,5 +195,8 @@ impl MaterialPipeline {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.required_bind_group, &[]);
         render_pass.set_bind_group(1, &self.uniform_bind_group, &[]);
+        for i in 2..self.texture_bind_groups.len() + 2 {
+            render_pass.set_bind_group(i as u32, self.texture_bind_groups[i - 2].borrow(), &[]);
+        }
     }
 }

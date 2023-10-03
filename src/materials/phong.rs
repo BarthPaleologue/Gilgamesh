@@ -8,6 +8,7 @@ use crate::lights::point_light::{PointLight, PointLightUniforms};
 use crate::materials::material_pipeline::MaterialPipeline;
 use crate::materials::utils::{create_array_buffer, create_buffer};
 use crate::settings::MAX_POINT_LIGHTS;
+use crate::texture::Texture;
 use crate::transform::Transform;
 
 #[repr(C)]
@@ -37,6 +38,8 @@ impl Default for PhongUniforms {
 pub struct PhongMaterial {
     pub material_pipeline: MaterialPipeline,
 
+    pub test_texture: Texture,
+
     pub light_uniforms: DirectionalLightUniform,
     pub light_uniforms_buffer: wgpu::Buffer,
 
@@ -61,15 +64,21 @@ impl PhongMaterial {
         let phong_uniforms = PhongUniforms::default();
         let phong_uniforms_buffer = create_buffer::<PhongUniforms>("Phong Buffer", wgpu_context);
 
+        let test_texture = Texture::new("test", "textures/test.png", wgpu_context);
+
         let material_pipeline = MaterialPipeline::new("../shader/phong.wgsl", &vec![
             &light_uniforms_buffer,
             &point_light_buffer,
             &nb_point_lights_buffer,
             &phong_uniforms_buffer,
+        ], &vec![
+            &test_texture
         ], wgpu_context);
 
         PhongMaterial {
             material_pipeline,
+
+            test_texture,
 
             light_uniforms,
             light_uniforms_buffer,

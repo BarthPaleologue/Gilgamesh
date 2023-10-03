@@ -66,3 +66,14 @@ impl Transformable for PointLight {
         self.transform.clone()
     }
 }
+
+/*impl PointLight {
+    pub fn uniforms(&self) -> PointLightUniforms {
+        PointLightUniforms {
+            position: self.transform().position.into(),
+            color: self.color,
+            intensity: self.intensity,
+            ..PointLightUniforms::default()
+        }
+    }
+}*/
