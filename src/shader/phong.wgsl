@@ -1,5 +1,4 @@
-// vertex shader
-
+// Required Uniforms
 struct TransformUniforms {
     position: vec3<f32>,
     world_matrix: mat4x4<f32>,
@@ -15,6 +14,7 @@ struct CameraUniforms {
 @group(0) @binding(1)
 var<uniform> camera: CameraUniforms;
 
+// Additional Uniforms
 struct DirectionalLightUniforms {
     color: vec3<f32>,
     direction: vec3<f32>,
@@ -41,6 +41,7 @@ struct PhongUniforms {
 }
 @group(1) @binding(3) var<uniform> phong: PhongUniforms;
 
+// Textures
 @group(2) @binding(0) var diffuse_texture: texture_2d<f32>;
 @group(2) @binding(1) var diffuse_sampler: sampler;
 
