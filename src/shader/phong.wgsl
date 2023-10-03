@@ -41,8 +41,11 @@ struct PhongUniforms {
 }
 @group(1) @binding(3) var<uniform> phong: PhongUniforms;
 
-@group(2) @binding(0) var t_diffuse: texture_2d<f32>;
-@group(2) @binding(1) var s_diffuse: sampler;
+@group(2) @binding(0) var diffuse_texture: texture_2d<f32>;
+@group(2) @binding(1) var diffuse_sampler: sampler;
+
+@group(3) @binding(0) var ambient_texture: texture_2d<f32>;
+@group(3) @binding(1) var ambient_sampler: sampler;
 
 struct VertexInput {
     @location(0) position: vec3<f32>,
@@ -76,11 +79,13 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var diffuse: vec3<f32> = phong.diffuse_color;
     if(phong.has_diffuse_texture > 0u) {
-        diffuse = textureSample(t_diffuse, s_diffuse, in.vUV).rgb;
+        diffuse = textureSample(diffuse_texture, diffuse_sampler, in.vUV).rgb;
     }
 
-    let ambient: vec3<f32> = phong.ambient_color;
-
+    var ambient: vec3<f32> = phong.ambient_color;
+    if(phong.has_ambient_texture > 0u) {
+        ambient = textureSample(ambient_texture, ambient_sampler, in.vUV).rgb;
+    }
 
     let view_dir: vec3<f32> = normalize(camera.position - in.vPositionW);
 

@@ -44,11 +44,12 @@ pub fn run() {
     show_point_light_debug_mesh(&point_light4, &mut scene, &mut engine);
     let point_light4_idx = scene.add_point_light(point_light4);
 
-    let cube1 = PrimitiveMesh::cube("Cube1", &mut engine);
-    let cube1_idx = scene.add_mesh(cube1);
+    let mut sun = PrimitiveMesh::sphere("Sun", 32, &mut engine);
+    sun.material.set_ambient_texture("textures/sun.jpg", &mut engine.wgpu_context);
+    let sun_idx = scene.add_mesh(sun);
 
     let mut sphere1 = PrimitiveMesh::sphere("Cube", 32, &mut engine);
-    sphere1.transform_mut().parent = Some(scene.meshes[cube1_idx].transform_rc());
+    sphere1.transform_mut().parent = Some(scene.meshes[sun_idx].transform_rc());
     sphere1.material.set_diffuse_texture("textures/earth.jpg", &mut engine.wgpu_context);
     let sphere1_idx = scene.add_mesh(sphere1);
 
@@ -57,7 +58,7 @@ pub fn run() {
     let plane_idx = scene.add_mesh(plane);
 
     scene.on_before_render.push(Box::new(move |engine, active_camera, meshes, point_lights, mouse| {
-        meshes[cube1_idx].transform_mut().set_rotation(
+        meshes[sun_idx].transform_mut().set_rotation(
             0.0,
             engine.get_elapsed_time(),
             0.0,

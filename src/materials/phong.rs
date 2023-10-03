@@ -49,6 +49,8 @@ pub struct PhongMaterial {
     pub phong_uniforms_buffer: wgpu::Buffer,
 
     pub diffuse_texture: Texture,
+    pub ambient_texture: Texture,
+    //pub specular_texture: Texture,
 }
 
 impl PhongMaterial {
@@ -64,13 +66,12 @@ impl PhongMaterial {
         let phong_uniforms = PhongUniforms::default();
         let phong_uniforms_buffer = create_buffer::<PhongUniforms>("Phong Buffer", wgpu_context);
 
-        let diffuse_texture = Texture::new("Diffuse Texture", "textures/test.png", wgpu_context);
-        //let diffuse_texture = Texture::new_empty("test", wgpu_context);
+        let diffuse_texture = Texture::new_empty("Default Diffuse Texture", wgpu_context);
+        let ambient_texture = Texture::new_empty("Default Ambient Texture", wgpu_context);
+        //let specular_texture = Texture::new_empty("Default Specular Texture", wgpu_context);
 
         PhongMaterial {
             material_pipeline: None,
-
-            diffuse_texture,
 
             light_uniforms,
             light_uniforms_buffer,
@@ -81,6 +82,10 @@ impl PhongMaterial {
 
             phong_uniforms,
             phong_uniforms_buffer,
+
+            diffuse_texture,
+            ambient_texture,
+            //specular_texture,
         }
     }
 
@@ -91,7 +96,9 @@ impl PhongMaterial {
             &self.nb_point_lights_buffer,
             &self.phong_uniforms_buffer,
         ], &vec![
-            &self.diffuse_texture
+            &self.diffuse_texture,
+            &self.ambient_texture,
+            //&self.specular_texture,
         ], wgpu_context));
     }
 
@@ -120,6 +127,11 @@ impl PhongMaterial {
 
     pub fn set_diffuse_color(&mut self, r: f32, g: f32, b: f32) {
         self.phong_uniforms.diffuse_color = [r, g, b];
+    }
+
+    pub fn set_ambient_texture(&mut self, path: &str, wgpu_context: &mut WGPUContext) {
+        self.ambient_texture = Texture::new("Ambient Texture", path, wgpu_context);
+        self.phong_uniforms.has_ambient_texture = 1;
     }
 
     pub fn set_ambient_color(&mut self, r: f32, g: f32, b: f32) {
