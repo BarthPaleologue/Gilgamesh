@@ -22,23 +22,29 @@ pub fn run() {
 
     scene.directional_light.set_intensity(0.0);
 
+    let light_intensity = 0.2;
+
     let mut point_light = PointLight::default();
     point_light.set_color(1.0, 0.0, 0.0);
+    point_light.set_intensity(light_intensity);
     show_point_light_debug_mesh(&point_light, &mut scene, &mut engine);
     let point_light1_idx = scene.add_point_light(point_light);
 
     let mut point_light2 = PointLight::default();
     point_light2.set_color(0.0, 0.0, 1.0);
+    point_light2.set_intensity(light_intensity);
     show_point_light_debug_mesh(&point_light2, &mut scene, &mut engine);
     let point_light2_idx = scene.add_point_light(point_light2);
 
     let mut point_light3 = PointLight::default();
     point_light3.set_color(0.0, 1.0, 0.0);
+    point_light3.set_intensity(light_intensity);
     show_point_light_debug_mesh(&point_light3, &mut scene, &mut engine);
     let point_light3_idx = scene.add_point_light(point_light3);
 
     let mut point_light4 = PointLight::default();
     point_light4.set_color(1.0, 1.0, 0.0);
+    point_light4.set_intensity(light_intensity);
     show_point_light_debug_mesh(&point_light4, &mut scene, &mut engine);
     let point_light4_idx = scene.add_point_light(point_light4);
 

@@ -13,7 +13,6 @@ use crate::lights::directional_light::DirectionalLight;
 use crate::lights::point_light::PointLight;
 
 use crate::transform::{Transform, Transformable};
-use crate::materials::material_pipeline::MaterialPipeline;
 use crate::materials::phong::PhongMaterial;
 
 #[repr(C)]
@@ -22,11 +21,12 @@ pub struct Vertex {
     pub position: [f32; 3],
     pub color: [f32; 3],
     pub normal: [f32; 3],
+    pub tangent: [f32; 3],
     pub uv: [f32; 2],
 }
 
 impl Vertex {
-    const ATTRIBUTES: [wgpu::VertexAttribute; 4] = wgpu::vertex_attr_array![0=>Float32x3, 1=>Float32x3, 2=>Float32x3, 3=>Float32x2];
+    const ATTRIBUTES: [wgpu::VertexAttribute; 5] = wgpu::vertex_attr_array![0=>Float32x3, 1=>Float32x3, 2=>Float32x3, 3=>Float32x3, 4=>Float32x2];
     pub(crate) fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         wgpu::VertexBufferLayout {
             array_stride: mem::size_of::<Vertex>() as wgpu::BufferAddress,
@@ -59,31 +59,16 @@ impl Transformable for Mesh {
 
 impl Mesh {
     pub fn from_vertex_data(name: &str, vertex_data: VertexData, engine: &mut Engine) -> Mesh {
-        let colors = vec![[0.6, 0.6, 0.6]; vertex_data.positions.len()];
-        let normals = vertex_data.normals;
-        let positions = vertex_data.positions;
-        let indices = vertex_data.indices;
-        let uvs = vertex_data.uvs;
-
         let vertex_buffer = engine.wgpu_context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
-            contents: cast_slice(&zip_vertex_data(&positions, &colors, &normals, &uvs)),
+            contents: cast_slice(&zip_vertex_data(&vertex_data)),
             usage: wgpu::BufferUsages::VERTEX,
         });
         let index_buffer = engine.wgpu_context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Index Buffer"),
-            contents: cast_slice(&indices),
+            contents: cast_slice(&vertex_data.indices),
             usage: wgpu::BufferUsages::INDEX,
         });
-
-        let nb_vertices = positions.len();
-        let vertex_data = VertexData {
-            positions,
-            colors,
-            normals,
-            indices,
-            uvs: vec![[0.0, 0.0]; nb_vertices],
-        };
 
         Mesh {
             name: name.to_string(),
@@ -106,14 +91,16 @@ impl Mesh {
     }
 }
 
-pub fn zip_vertex_data(positions: &[[f32; 3]], colors: &[[f32; 3]], normals: &[[f32; 3]], uvs: &[[f32; 2]]) -> Vec<Vertex> {
-    let mut data: Vec<Vertex> = Vec::with_capacity(positions.len());
-    for i in 0..positions.len() {
+pub fn zip_vertex_data(vertex_data: &VertexData) -> Vec<Vertex> {
+    let nb_vertices = vertex_data.positions.len();
+    let mut data: Vec<Vertex> = Vec::with_capacity(nb_vertices);
+    for i in 0..nb_vertices {
         data.push(Vertex {
-            position: [positions[i][0], positions[i][1], positions[i][2]],
-            color: [colors[i][0], colors[i][1], colors[i][2]],
-            normal: [normals[i][0], normals[i][1], normals[i][2]],
-            uv: [uvs[i][0], uvs[i][1]],
+            position: vertex_data.positions[i],
+            color: vertex_data.colors[i],
+            normal: vertex_data.normals[i],
+            tangent: vertex_data.tangents[i],
+            uv: vertex_data.uvs[i],
         });
     }
     data.to_vec()

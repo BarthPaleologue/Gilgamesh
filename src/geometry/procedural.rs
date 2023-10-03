@@ -44,10 +44,12 @@ impl ProceduralMesh {
             positions,
             colors: vec![[0.6, 0.6, 0.6]; nb_vertices],
             normals: vec![[0.0, 0.0, 0.0]; nb_vertices],
+            tangents: vec![[0.0, 0.0, 0.0]; nb_vertices],
             indices,
             uvs: vec![[0.0, 0.0]; nb_vertices],
         };
         vertex_data.create_normals();
+        vertex_data.create_tangents();
 
         let mut mesh = Mesh::from_vertex_data(name, vertex_data, engine);
         mesh.material = PhongMaterial::new(&mut engine.wgpu_context);
@@ -83,10 +85,12 @@ impl ProceduralMesh {
             positions: vertices,
             colors: vec![[0.6, 0.6, 0.6]; nb_vertices],
             normals: vec![[0.0, 0.0, 0.0]; nb_vertices],
+            tangents: vec![[0.0, 0.0, 0.0]; nb_vertices],
             indices,
             uvs: vec![[0.0, 0.0]; nb_vertices],
         };
         vertex_data.create_normals();
+        vertex_data.create_tangents();
 
         let mut mesh = Mesh::from_vertex_data(name, vertex_data, engine);
         mesh.material = PhongMaterial::new(&mut engine.wgpu_context);

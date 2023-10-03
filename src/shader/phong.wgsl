@@ -59,7 +59,8 @@ struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) color: vec3<f32>,
     @location(2) normal: vec3<f32>,
-    @location(3) uv: vec2<f32>
+    @location(3) tangent: vec3<f32>,
+    @location(4) uv: vec2<f32>
 };
 
 struct VertexOutput {
@@ -109,12 +110,12 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         specular = specular * textureSample(specular_texture, specular_sampler, in.vUV).r;
     }
 
-    let ndl = max(0.0, dot(normal, -directionalLight.direction));
-    var color = diffuse * ndl * directionalLight.color * directionalLight.intensity + specular * ndl;
+    var ndl = max(0.0, dot(normal, -directionalLight.direction));
+    var color = diffuse * directionalLight.color * directionalLight.intensity + specular;
 
     for (var i: u32 = 0u; i < point_lights_count; i = i + 1u) {
         let light_dir: vec3<f32> = normalize(point_lights[i].position - in.vPositionW);
-        let ndl = max(0.0, dot(normal, light_dir));
+        ndl = ndl + max(0.0, dot(normal, light_dir));
 
         let reflect_dir: vec3<f32> = reflect(-light_dir, normal);
         let specular_strength: f32 = pow(max(0.0, dot(view_dir, reflect_dir)), 32.0);
@@ -123,10 +124,10 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
              specular = specular * textureSample(specular_texture, specular_sampler, in.vUV).r;
         }
 
-        color = color + diffuse * ndl * point_lights[i].color * point_lights[i].intensity + specular * ndl;
+        color = color + diffuse * point_lights[i].color * point_lights[i].intensity + specular;
     }
 
-    color = color + ambient;
+    color = color * ndl + ambient;
 
     return vec4(color, 1.0);
 }

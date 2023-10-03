@@ -37,13 +37,17 @@ impl PrimitiveMesh {
             }
         }
 
-        let vertex_data = VertexData {
+        let nb_vertices = positions.len();
+        let mut vertex_data = VertexData {
             positions,
             colors,
             normals,
+            tangents: vec![[0.0, 0.0, 0.0]; nb_vertices],
             indices,
             uvs,
         };
+
+        vertex_data.create_tangents();
 
         Mesh::from_vertex_data(name, vertex_data, engine)
     }
@@ -98,13 +102,17 @@ impl PrimitiveMesh {
             [0.0, 0.0, 0.0], // 7
         );
 
-        let vertex_data = VertexData {
+        let nb_vertices = positions.len();
+        let mut vertex_data = VertexData {
             positions,
             colors,
             normals,
+            tangents: vec![[0.0, 0.0, 0.0]; nb_vertices],
             indices,
             uvs,
         };
+
+        vertex_data.create_tangents();
 
         Mesh::from_vertex_data(name, vertex_data, engine)
     }
@@ -174,13 +182,16 @@ impl PrimitiveMesh {
             }
         }
 
-        let vertex_data = VertexData {
+        let nb_vertices = positions.len();
+        let mut vertex_data = VertexData {
             positions,
             normals,
+            tangents: vec![[0.0, 0.0, 0.0]; nb_vertices],
             uvs,
             indices,
             colors,
         };
+        vertex_data.create_tangents();
 
         Mesh::from_vertex_data(name, vertex_data, engine)
     }
