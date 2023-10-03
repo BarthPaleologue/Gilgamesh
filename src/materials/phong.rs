@@ -103,12 +103,12 @@ impl PhongMaterial {
     }
 
     pub fn compile(&mut self, wgpu_context: &mut WGPUContext) {
-        self.material_pipeline = Some(MaterialPipeline::new("../shader/phong.wgsl", &vec![
+        self.material_pipeline = Some(MaterialPipeline::new("../shader/phong.wgsl", &[
             &self.light_uniforms_buffer,
             &self.point_light_buffer,
             &self.nb_point_lights_buffer,
             &self.phong_uniforms_buffer,
-        ], &vec![
+        ], &[
             &self.diffuse_texture,
             &self.ambient_texture,
             &self.specular_texture,

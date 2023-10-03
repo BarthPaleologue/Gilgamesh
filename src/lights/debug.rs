@@ -10,8 +10,8 @@ pub fn show_point_light_debug_mesh(point_light: &PointLight, scene: &mut Scene, 
     mesh.transform_mut().parent = Some(point_light.transform_rc());
     mesh.transform_mut().set_scaling(0.5, 0.5, 0.5);
     let (r, g, b) = point_light.color().into();
-    mesh.material.set_ambient_color(r, g, b);
-    mesh.material.set_diffuse_color(0.0, 0.0, 0.0);
-    mesh.material.set_specular_color(0.0, 0.0, 0.0);
+    mesh.material().set_ambient_color(r, g, b);
+    mesh.material().set_diffuse_color(0.0, 0.0, 0.0);
+    mesh.material().set_specular_color(0.0, 0.0, 0.0);
     scene.add_mesh(mesh)
 }

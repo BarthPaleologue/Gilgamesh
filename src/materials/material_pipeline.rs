@@ -114,17 +114,17 @@ impl MaterialPipeline {
             label: Some("Uniform Bind Group"),
         });
 
-        let entries: Vec<wgpu::BindGroupLayoutEntry> = textures.iter().enumerate().map(|(i, texture)| {
+        let entries: Vec<wgpu::BindGroupLayoutEntry> = textures.iter().enumerate().flat_map(|(i, texture)| {
             texture.create_bind_group_layout_entries(2 * i as u32)
-        }).flatten().collect();
+        }).collect();
         let texture_bind_group_layout = wgpu_context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &entries,
             label: Some("Texture Bind Group Layout"),
         });
 
-        let entries: Vec<wgpu::BindGroupEntry> = textures.iter().enumerate().map(|(i, texture)| {
+        let entries: Vec<wgpu::BindGroupEntry> = textures.iter().enumerate().flat_map(|(i, texture)| {
             texture.create_bind_group_entries(2 * i as u32)
-        }).flatten().collect();
+        }).collect();
         let texture_bind_group = wgpu_context.device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &texture_bind_group_layout,
             entries: &entries,

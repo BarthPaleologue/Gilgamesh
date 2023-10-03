@@ -37,12 +37,12 @@ impl Vertex {
 }
 
 pub struct Mesh {
-    pub name: String,
+    name: String,
     transform: Rc<RefCell<Transform>>,
-    pub vertex_data: VertexData,
-    pub index_buffer: Buffer,
-    pub vertex_buffer: Buffer,
-    pub material: PhongMaterial,
+    vertex_data: VertexData,
+    index_buffer: Buffer,
+    vertex_buffer: Buffer,
+    material: PhongMaterial,
 }
 
 impl Transformable for Mesh {
@@ -78,6 +78,14 @@ impl Mesh {
             index_buffer,
             material: PhongMaterial::new(&mut engine.wgpu_context),
         }
+    }
+
+    pub fn material(&mut self) -> &mut PhongMaterial {
+        &mut self.material
+    }
+
+    pub fn set_material(&mut self, material: PhongMaterial) {
+        self.material = material;
     }
 
     /// you may be asking wtf is going on with the lifetimes here, and I don't know either. Dark magic.

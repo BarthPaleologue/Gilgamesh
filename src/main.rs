@@ -1,6 +1,5 @@
 extern crate gilgamesh;
 
-use winit::event::VirtualKeyCode::*;
 use gilgamesh::camera::camera::Camera;
 use gilgamesh::input::transform_control::OrbitControl;
 use gilgamesh::core::engine::Engine;
@@ -49,13 +48,13 @@ pub fn run() {
     let point_light4_idx = scene.add_point_light(point_light4);
 
     let mut sun = PrimitiveMesh::sphere("Sun", 32, &mut engine);
-    sun.material.set_ambient_texture("textures/sun.jpg", &mut engine.wgpu_context);
+    sun.material().set_ambient_texture("textures/sun.jpg", &mut engine.wgpu_context);
     let sun_idx = scene.add_mesh(sun);
 
     let mut earth = PrimitiveMesh::sphere("Earth", 32, &mut engine);
     earth.transform_mut().parent = Some(scene.meshes[sun_idx].transform_rc());
-    earth.material.set_diffuse_texture("textures/2k_earth_daymap.jpg", &mut engine.wgpu_context);
-    earth.material.set_specular_texture("textures/2k_earth_specular_map.jpg", &mut engine.wgpu_context);
+    earth.material().set_diffuse_texture("textures/2k_earth_daymap.jpg", &mut engine.wgpu_context);
+    earth.material().set_specular_texture("textures/2k_earth_specular_map.jpg", &mut engine.wgpu_context);
     //earth.material.set_normal_map("textures/2k_earth_normal_map.jpg", &mut engine.wgpu_context);
     //earth.material.set_polygon_mode(wgpu::PolygonMode::Line);
     camera.transform_mut().parent = Some(earth.transform_rc());

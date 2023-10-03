@@ -52,7 +52,7 @@ impl ProceduralMesh {
         vertex_data.create_tangents();
 
         let mut mesh = Mesh::from_vertex_data(name, vertex_data, engine);
-        mesh.material = PhongMaterial::new(&mut engine.wgpu_context);
+        mesh.set_material(PhongMaterial::new(&mut engine.wgpu_context));
 
         mesh
     }
@@ -93,7 +93,7 @@ impl ProceduralMesh {
         vertex_data.create_tangents();
 
         let mut mesh = Mesh::from_vertex_data(name, vertex_data, engine);
-        mesh.material = PhongMaterial::new(&mut engine.wgpu_context);
+        mesh.set_material(PhongMaterial::new(&mut engine.wgpu_context));
 
         mesh
     }
