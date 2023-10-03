@@ -38,6 +38,7 @@ struct PhongUniforms {
     has_ambient_texture: u32,
     specular_color: vec3<f32>,
     has_specular_texture: u32,
+    has_normal_map: u32
 }
 @group(1) @binding(3) var<uniform> phong: PhongUniforms;
 
@@ -67,7 +68,7 @@ struct VertexOutput {
     @location(1) vColor: vec3<f32>,
     @location(2) vNormal: vec3<f32>,
     @location(3) vNormalW: vec3<f32>,
-    @location(4) vUV: vec2<f32>
+    @location(4) vUV: vec2<f32>,
 };
 
 @vertex
@@ -84,6 +85,11 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    var normal = in.vNormalW;
+    if(phong.has_normal_map > 0u) {
+        // do complicated stuff in tangent space
+    }
+
     var diffuse: vec3<f32> = phong.diffuse_color;
     if(phong.has_diffuse_texture > 0u) {
         diffuse = textureSample(diffuse_texture, diffuse_sampler, in.vUV).rgb;
@@ -96,28 +102,28 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     let view_dir: vec3<f32> = normalize(camera.position - in.vPositionW);
 
-    let reflect_dir: vec3<f32> = reflect(directionalLight.direction, in.vNormalW);
+    let reflect_dir: vec3<f32> = reflect(directionalLight.direction, normal);
     let specular_strength: f32 = pow(max(0.0, dot(view_dir, reflect_dir)), 32.0);
     var specular: vec3<f32> = specular_strength * directionalLight.color * directionalLight.intensity * phong.specular_color;
     if(phong.has_specular_texture > 0u) {
         specular = specular * textureSample(specular_texture, specular_sampler, in.vUV).r;
     }
 
-    let ndl = max(0.0, dot(in.vNormalW, -directionalLight.direction));
-    var color = diffuse * ndl * directionalLight.color * directionalLight.intensity + specular;
+    let ndl = max(0.0, dot(normal, -directionalLight.direction));
+    var color = diffuse * ndl * directionalLight.color * directionalLight.intensity + specular * ndl;
 
     for (var i: u32 = 0u; i < point_lights_count; i = i + 1u) {
         let light_dir: vec3<f32> = normalize(point_lights[i].position - in.vPositionW);
-        let ndl = max(0.0, dot(in.vNormalW, light_dir));
+        let ndl = max(0.0, dot(normal, light_dir));
 
-        let reflect_dir: vec3<f32> = reflect(-light_dir, in.vNormalW);
+        let reflect_dir: vec3<f32> = reflect(-light_dir, normal);
         let specular_strength: f32 = pow(max(0.0, dot(view_dir, reflect_dir)), 32.0);
         var specular: vec3<f32> = specular_strength * point_lights[i].color * phong.specular_color;
         if(phong.has_specular_texture > 0u) {
              specular = specular * textureSample(specular_texture, specular_sampler, in.vUV).r;
         }
 
-        color = color + diffuse * ndl * point_lights[i].color * point_lights[i].intensity + specular;
+        color = color + diffuse * ndl * point_lights[i].color * point_lights[i].intensity + specular * ndl;
     }
 
     color = color + ambient;

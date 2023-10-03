@@ -12,7 +12,7 @@ pub struct CameraUniforms {
 
 impl CameraUniforms {
     pub fn update(&mut self, camera: &Camera) {
-        self.proj_view = camera.proj_view().into();
+        self.proj_view = camera.projection_view().into();
         self.position = camera.transform().position.into();
     }
 }

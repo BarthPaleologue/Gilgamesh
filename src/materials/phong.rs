@@ -21,6 +21,7 @@ pub struct PhongUniforms {
     specular_color: [f32; 3],
     has_specular_texture: u32,
     has_normal_map: u32,
+    _padding: [u32; 3],
 }
 
 impl Default for PhongUniforms {
@@ -33,6 +34,7 @@ impl Default for PhongUniforms {
             specular_color: [1.0, 1.0, 1.0],
             has_specular_texture: 0,
             has_normal_map: 0,
+            _padding: [0; 3],
         }
     }
 }

@@ -1,6 +1,6 @@
 use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
-use cgmath::{Deg, EuclideanSpace, Matrix4, perspective, Point3, Vector3};
+use cgmath::{Deg, EuclideanSpace, Matrix4, perspective, Point3, SquareMatrix, Vector3};
 use crate::input::transform_control::TransformMouseController;
 
 use crate::transform::{Transform, Transformable};
@@ -29,12 +29,16 @@ impl Camera {
         }
     }
     pub fn view_matrix(&self) -> Matrix4<f32> {
-        Matrix4::look_at_rh(Point3::from_vec(self.transform.borrow().position), Point3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 1.0, 0.0))
+        let mut view = Matrix4::look_at_rh(Point3::from_vec(self.transform.borrow().position), Point3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 1.0, 0.0));
+        if let Some(parent) = &self.transform().parent {
+            view = view * parent.borrow().compute_world_matrix().invert().unwrap();
+        }
+        view
     }
     pub fn projection_matrix(&self) -> Matrix4<f32> {
         OPENGL_TO_WGPU_MATRIX * perspective(Deg(self.fov), self.aspect_ratio, self.z_near, self.z_far)
     }
-    pub fn proj_view(&self) -> Matrix4<f32> {
+    pub fn projection_view(&self) -> Matrix4<f32> {
         self.projection_matrix() * self.view_matrix()
     }
 

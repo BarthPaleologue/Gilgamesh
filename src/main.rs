@@ -22,8 +22,6 @@ pub fn run() {
 
     scene.directional_light.set_intensity(0.0);
 
-    scene.set_active_camera(camera);
-
     let mut point_light = PointLight::default();
     point_light.set_color(1.0, 0.0, 0.0);
     show_point_light_debug_mesh(&point_light, &mut scene, &mut engine);
@@ -50,13 +48,17 @@ pub fn run() {
 
     let mut earth = PrimitiveMesh::sphere("Earth", 32, &mut engine);
     earth.transform_mut().parent = Some(scene.meshes[sun_idx].transform_rc());
-    earth.material.set_diffuse_texture("textures/earth.jpg", &mut engine.wgpu_context);
-    earth.material.set_specular_texture("textures/earth_specular.jpg", &mut engine.wgpu_context);
-    let sphere1_idx = scene.add_mesh(earth);
+    earth.material.set_diffuse_texture("textures/2k_earth_daymap.jpg", &mut engine.wgpu_context);
+    earth.material.set_specular_texture("textures/2k_earth_specular_map.jpg", &mut engine.wgpu_context);
+    camera.transform_mut().parent = Some(earth.transform_rc());
+    let earth_idx = scene.add_mesh(earth);
 
     let plane = PrimitiveMesh::plane("Plane", 10, 10.0, &mut engine);
     plane.transform_mut().set_position(0.0, -5.0, 0.0);
     let plane_idx = scene.add_mesh(plane);
+
+
+    scene.set_active_camera(camera);
 
     scene.on_before_render.push(Box::new(move |engine, active_camera, meshes, point_lights, mouse| {
         meshes[sun_idx].transform_mut().set_rotation(
@@ -65,11 +67,17 @@ pub fn run() {
             0.0,
         );
 
-        meshes[sphere1_idx].transform_mut().set_position(
-            6.0 + f32::cos(2.0 * engine.get_elapsed_time()),
+        meshes[earth_idx].transform_mut().set_position(
+            6.0,
             0.0,
             0.0,
         );
+
+        /*meshes[earth_idx].transform_mut().set_rotation(
+            0.0,
+            2.0 * engine.get_elapsed_time(),
+            0.0,
+        );*/
 
         point_lights[point_light1_idx].transform_mut().set_position(
             12.0 * f32::cos(2.0 * engine.get_elapsed_time()),
