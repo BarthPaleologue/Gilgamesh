@@ -58,6 +58,7 @@ pub struct PhongMaterial {
     pub normal_map: Texture,
 
     polygon_mode: wgpu::PolygonMode,
+    back_face_culling: bool,
 }
 
 impl PhongMaterial {
@@ -97,6 +98,7 @@ impl PhongMaterial {
             normal_map,
 
             polygon_mode: wgpu::PolygonMode::Fill,
+            back_face_culling: true,
         }
     }
 
@@ -111,7 +113,7 @@ impl PhongMaterial {
             &self.ambient_texture,
             &self.specular_texture,
             &self.normal_map,
-        ], self.polygon_mode, wgpu_context));
+        ], self.polygon_mode, self.back_face_culling, wgpu_context));
     }
 
     pub fn bind<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, transform: Ref<Transform>, active_camera: &Camera, point_lights: &[PointLight], directional_light: &DirectionalLight, wgpu_context: &mut WGPUContext) {
@@ -166,5 +168,9 @@ impl PhongMaterial {
 
     pub fn set_polygon_mode(&mut self, polygon_mode: wgpu::PolygonMode) {
         self.polygon_mode = polygon_mode;
+    }
+
+    pub fn set_back_face_culling(&mut self, back_face_culling: bool) {
+        self.back_face_culling = back_face_culling;
     }
 }

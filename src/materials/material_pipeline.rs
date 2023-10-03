@@ -34,7 +34,7 @@ pub struct MaterialPipeline {
 }
 
 impl MaterialPipeline {
-    pub fn new(shader_file: &str, uniforms: &[&Buffer], textures: &[&Texture], polygon_mode: wgpu::PolygonMode, wgpu_context: &mut WGPUContext) -> MaterialPipeline {
+    pub fn new(shader_file: &str, uniforms: &[&Buffer], textures: &[&Texture], polygon_mode: wgpu::PolygonMode, back_face_culling: bool, wgpu_context: &mut WGPUContext) -> MaterialPipeline {
         // load shader from file at runtime
         let shader_string = load_str!(shader_file);
         let shader = wgpu_context.device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -164,7 +164,7 @@ impl MaterialPipeline {
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
                 polygon_mode,
-                cull_mode: Some(wgpu::Face::Back),
+                cull_mode: if back_face_culling { Some(wgpu::Face::Back) } else { None },
                 ..Default::default()
             },
             depth_stencil: Some(wgpu::DepthStencilState {
