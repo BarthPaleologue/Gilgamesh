@@ -40,22 +40,22 @@ impl Default for PhongUniforms {
 }
 
 pub struct PhongMaterial {
-    pub material_pipeline: Option<MaterialPipeline>,
+    material_pipeline: Option<MaterialPipeline>,
 
-    pub light_uniforms: DirectionalLightUniform,
-    pub light_uniforms_buffer: wgpu::Buffer,
+    light_uniforms: DirectionalLightUniform,
+    light_uniforms_buffer: wgpu::Buffer,
 
-    pub point_light_uniforms: [PointLightUniforms; MAX_POINT_LIGHTS],
-    pub point_light_buffer: wgpu::Buffer,
-    pub nb_point_lights_buffer: wgpu::Buffer,
+    point_light_uniforms: [PointLightUniforms; MAX_POINT_LIGHTS],
+    point_light_buffer: wgpu::Buffer,
+    nb_point_lights_buffer: wgpu::Buffer,
 
-    pub phong_uniforms: PhongUniforms,
-    pub phong_uniforms_buffer: wgpu::Buffer,
+    phong_uniforms: PhongUniforms,
+    phong_uniforms_buffer: wgpu::Buffer,
 
-    pub diffuse_texture: Texture,
-    pub ambient_texture: Texture,
-    pub specular_texture: Texture,
-    pub normal_map: Texture,
+    diffuse_texture: Texture,
+    ambient_texture: Texture,
+    specular_texture: Texture,
+    normal_map: Texture,
 
     polygon_mode: wgpu::PolygonMode,
     back_face_culling: bool,
