@@ -164,6 +164,7 @@ impl MaterialPipeline {
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
                 polygon_mode: wgpu::PolygonMode::Fill,
+                cull_mode: Some(wgpu::Face::Back),
                 ..Default::default()
             },
             depth_stencil: Some(wgpu::DepthStencilState {
