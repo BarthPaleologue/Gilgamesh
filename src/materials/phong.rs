@@ -56,6 +56,8 @@ pub struct PhongMaterial {
     pub ambient_texture: Texture,
     pub specular_texture: Texture,
     pub normal_map: Texture,
+
+    polygon_mode: wgpu::PolygonMode,
 }
 
 impl PhongMaterial {
@@ -93,6 +95,8 @@ impl PhongMaterial {
             ambient_texture,
             specular_texture,
             normal_map,
+
+            polygon_mode: wgpu::PolygonMode::Fill,
         }
     }
 
@@ -107,7 +111,7 @@ impl PhongMaterial {
             &self.ambient_texture,
             &self.specular_texture,
             &self.normal_map,
-        ], wgpu_context));
+        ], self.polygon_mode, wgpu_context));
     }
 
     pub fn bind<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, transform: Ref<Transform>, active_camera: &Camera, point_lights: &[PointLight], directional_light: &DirectionalLight, wgpu_context: &mut WGPUContext) {
@@ -158,5 +162,9 @@ impl PhongMaterial {
     pub fn set_normal_map(&mut self, path: &str, wgpu_context: &mut WGPUContext) {
         self.normal_map = Texture::new("Normal Map", path, wgpu_context);
         self.phong_uniforms.has_normal_map = 1;
+    }
+
+    pub fn set_polygon_mode(&mut self, polygon_mode: wgpu::PolygonMode) {
+        self.polygon_mode = polygon_mode;
     }
 }

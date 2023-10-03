@@ -34,7 +34,7 @@ pub struct MaterialPipeline {
 }
 
 impl MaterialPipeline {
-    pub fn new(shader_file: &str, uniforms: &[&Buffer], textures: &[&Texture], wgpu_context: &mut WGPUContext) -> MaterialPipeline {
+    pub fn new(shader_file: &str, uniforms: &[&Buffer], textures: &[&Texture], polygon_mode: wgpu::PolygonMode, wgpu_context: &mut WGPUContext) -> MaterialPipeline {
         // load shader from file at runtime
         let shader_string = load_str!(shader_file);
         let shader = wgpu_context.device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -123,7 +123,7 @@ impl MaterialPipeline {
         });
 
         let entries: Vec<wgpu::BindGroupEntry> = textures.iter().enumerate().map(|(i, texture)| {
-           texture.create_bind_group_entries(2 * i as u32)
+            texture.create_bind_group_entries(2 * i as u32)
         }).flatten().collect();
         let texture_bind_group = wgpu_context.device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &texture_bind_group_layout,
@@ -163,7 +163,7 @@ impl MaterialPipeline {
             }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
-                polygon_mode: wgpu::PolygonMode::Fill,
+                polygon_mode,
                 cull_mode: Some(wgpu::Face::Back),
                 ..Default::default()
             },
