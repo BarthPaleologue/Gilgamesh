@@ -15,22 +15,22 @@ use crate::transform::Transform;
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct PhongUniforms {
     diffuse_color: [f32; 3],
-    _padding1: u32,
+    has_diffuse_texture: u32,
     ambient_color: [f32; 3],
-    _padding2: u32,
+    has_ambient_texture: u32,
     specular_color: [f32; 3],
-    _padding3: u32,
+    has_specular_texture: u32,
 }
 
 impl Default for PhongUniforms {
     fn default() -> Self {
         PhongUniforms {
             diffuse_color: [1.0, 1.0, 1.0],
-            _padding1: 0,
+            has_diffuse_texture: 0,
             ambient_color: [0.0, 0.0, 0.0],
-            _padding2: 0,
+            has_ambient_texture: 0,
             specular_color: [1.0, 1.0, 1.0],
-            _padding3: 0,
+            has_specular_texture: 0,
         }
     }
 }
@@ -111,6 +111,11 @@ impl PhongMaterial {
         wgpu_context.queue.write_buffer(&self.phong_uniforms_buffer, 0, cast_slice(&[self.phong_uniforms]));
 
         self.material_pipeline.as_mut().unwrap().bind(render_pass, transform, active_camera, wgpu_context);
+    }
+
+    pub fn set_diffuse_texture(&mut self, path: &str, wgpu_context: &mut WGPUContext) {
+        self.diffuse_texture = Texture::new("Diffuse Texture", path, wgpu_context);
+        self.phong_uniforms.has_diffuse_texture = 1;
     }
 
     pub fn set_diffuse_color(&mut self, r: f32, g: f32, b: f32) {

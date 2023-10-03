@@ -33,8 +33,11 @@ struct PointLightUniforms {
 
 struct PhongUniforms {
     diffuse_color: vec3<f32>,
+    has_diffuse_texture: u32,
     ambient_color: vec3<f32>,
-    specular_color: vec3<f32>
+    has_ambient_texture: u32,
+    specular_color: vec3<f32>,
+    has_specular_texture: u32,
 }
 @group(1) @binding(3) var<uniform> phong: PhongUniforms;
 
@@ -71,10 +74,13 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    //let diffuse: vec3<f32> = phong.diffuse_color;
+    var diffuse: vec3<f32> = phong.diffuse_color;
+    if(phong.has_diffuse_texture > 0u) {
+        diffuse = textureSample(t_diffuse, s_diffuse, in.vUV).rgb;
+    }
+
     let ambient: vec3<f32> = phong.ambient_color;
 
-    let diffuse = textureSample(t_diffuse, s_diffuse, in.vUV).rgb;
 
     let view_dir: vec3<f32> = normalize(camera.position - in.vPositionW);
 

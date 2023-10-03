@@ -47,8 +47,9 @@ pub fn run() {
     let cube1 = PrimitiveMesh::cube("Cube1", &mut engine);
     let cube1_idx = scene.add_mesh(cube1);
 
-    let sphere1 = PrimitiveMesh::sphere("Cube", 32, &mut engine);
+    let mut sphere1 = PrimitiveMesh::sphere("Cube", 32, &mut engine);
     sphere1.transform_mut().parent = Some(scene.meshes[cube1_idx].transform_rc());
+    sphere1.material.set_diffuse_texture("textures/earth.jpg", &mut engine.wgpu_context);
     let sphere1_idx = scene.add_mesh(sphere1);
 
     let plane = PrimitiveMesh::plane("Plane", 10, 10.0, &mut engine);
