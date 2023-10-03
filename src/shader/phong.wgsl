@@ -44,8 +44,8 @@ struct PhongUniforms {
 @group(2) @binding(0) var diffuse_texture: texture_2d<f32>;
 @group(2) @binding(1) var diffuse_sampler: sampler;
 
-@group(3) @binding(0) var ambient_texture: texture_2d<f32>;
-@group(3) @binding(1) var ambient_sampler: sampler;
+@group(2) @binding(2) var ambient_texture: texture_2d<f32>;
+@group(2) @binding(3) var ambient_sampler: sampler;
 
 struct VertexInput {
     @location(0) position: vec3<f32>,

@@ -27,7 +27,7 @@ pub struct MaterialPipeline {
 
     pub uniform_bind_group: BindGroup,
 
-    pub texture_bind_groups: Vec<Rc<BindGroup>>,
+    pub texture_bind_group: BindGroup,
 
     pub pipeline_layout: PipelineLayout,
     pub pipeline: RenderPipeline,
@@ -114,18 +114,30 @@ impl MaterialPipeline {
             label: Some("Uniform Bind Group"),
         });
 
-        let texture_bind_group_layouts: Vec<&BindGroupLayout> = textures.iter().map(|texture| &texture.bind_group_layout).collect();
-        let texture_bind_groups: Vec<Rc<BindGroup>> = textures.iter().map(|texture| texture.bind_group.clone()).collect();
+        let entries: Vec<wgpu::BindGroupLayoutEntry> = textures.iter().enumerate().map(|(i, texture)| {
+            texture.create_bind_group_layout_entries(2 * i as u32)
+        }).flatten().collect();
+        let texture_bind_group_layout = wgpu_context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &entries,
+            label: Some("Texture Bind Group Layout"),
+        });
 
-        let bind_group_layouts = vec![
-            &required_bind_group_layout,
-            &uniform_bind_group_layout,
-        ];
-        let layouts = [bind_group_layouts, texture_bind_group_layouts].concat();
+        let entries: Vec<wgpu::BindGroupEntry> = textures.iter().enumerate().map(|(i, texture)| {
+           texture.create_bind_group_entries(2 * i as u32)
+        }).flatten().collect();
+        let texture_bind_group = wgpu_context.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &texture_bind_group_layout,
+            entries: &entries,
+            label: Some("Texture Bind Group"),
+        });
 
         let pipeline_layout = wgpu_context.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &layouts,
+            bind_group_layouts: &[
+                &required_bind_group_layout,
+                &uniform_bind_group_layout,
+                &texture_bind_group_layout
+            ],
             push_constant_ranges: &[],
         });
 
@@ -178,7 +190,7 @@ impl MaterialPipeline {
 
             uniform_bind_group,
 
-            texture_bind_groups,
+            texture_bind_group,
 
             pipeline_layout,
             pipeline,
@@ -195,8 +207,6 @@ impl MaterialPipeline {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.required_bind_group, &[]);
         render_pass.set_bind_group(1, &self.uniform_bind_group, &[]);
-        for i in 2..self.texture_bind_groups.len() + 2 {
-            render_pass.set_bind_group(i as u32, self.texture_bind_groups[i - 2].borrow(), &[]);
-        }
+        render_pass.set_bind_group(2, &self.texture_bind_group, &[]);
     }
 }

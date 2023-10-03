@@ -5,6 +5,8 @@ use crate::core::wgpu_context::WGPUContext;
 pub struct Texture {
     pub bind_group_layout: wgpu::BindGroupLayout,
     pub bind_group: Rc<wgpu::BindGroup>,
+    texture_view: wgpu::TextureView,
+    sampler: wgpu::Sampler,
 }
 
 impl Texture {
@@ -99,6 +101,8 @@ impl Texture {
         Texture {
             bind_group_layout,
             bind_group: Rc::new(bind_group),
+            texture_view,
+            sampler,
         }
     }
     pub fn new(name: &str, path: &str, wgpu_context: &mut WGPUContext) -> Texture {
@@ -216,6 +220,44 @@ impl Texture {
         Texture {
             bind_group_layout,
             bind_group: Rc::new(bind_group),
+            texture_view,
+            sampler,
         }
+    }
+
+    pub fn create_bind_group_layout_entries(&self, start_index: u32) -> [wgpu::BindGroupLayoutEntry; 2] {
+        [
+            wgpu::BindGroupLayoutEntry {
+                binding: start_index,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Texture {
+                    multisampled: false,
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: start_index + 1,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                // This should match the filterable field of the
+                // corresponding Texture entry above.
+                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                count: None,
+            },
+        ]
+    }
+
+    pub fn create_bind_group_entries(&self, start_index: u32) -> [wgpu::BindGroupEntry; 2] {
+        [
+            wgpu::BindGroupEntry {
+                binding: start_index,
+                resource: wgpu::BindingResource::TextureView(&self.texture_view),
+            },
+            wgpu::BindGroupEntry {
+                binding: start_index + 1,
+                resource: wgpu::BindingResource::Sampler(&self.sampler),
+            }
+        ]
     }
 }
