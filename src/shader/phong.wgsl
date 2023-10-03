@@ -68,9 +68,8 @@ struct VertexOutput {
     @location(0) vPositionW: vec3<f32>,
     @location(1) vColor: vec3<f32>,
     @location(2) vNormal: vec3<f32>,
-    @location(3) vNormalW: vec3<f32>,
-    @location(4) vTangent: vec3<f32>,
-    @location(5) vUV: vec2<f32>,
+    @location(3) vTangent: vec3<f32>,
+    @location(4) vUV: vec2<f32>,
 };
 
 @vertex
@@ -80,7 +79,6 @@ fn vs_main(in: VertexInput) -> VertexOutput {
     output.vPositionW = (transform.world_matrix * vec4<f32>(in.position, 1.0)).xyz;
     output.vColor = in.color;
     output.vNormal = in.normal;
-    output.vNormalW = (transform.normal_matrix * vec4<f32>(in.normal, 0.0)).xyz;
     output.vTangent = in.tangent;
     output.vUV = in.uv;
     return output;
@@ -88,19 +86,18 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    var normal = in.vNormalW;
+    var normal = in.vNormal;
     if(phong.has_normal_map > 0u) {
         // do complicated stuff in tangent space
         let normal_map: vec3<f32> = textureSample(normal_texture, normal_sampler, in.vUV).rgb;
         let normal_map_tangent: vec3<f32> = normalize(normal_map * 2.0 - 1.0);
         let normal_map_bitangent: vec3<f32> = normalize(cross(in.vNormal, in.vTangent));
 
-        let normal_map_normal: mat3x3<f32> = mat3x3<f32>(in.vTangent, normal_map_bitangent, in.vNormal);
+        let normal_map_normal: mat3x3<f32> = mat3x3<f32>(in.vTangent, normal_map_bitangent, normal);
         normal = normalize(normal_map_normal * normal_map_tangent);
-
-        // to world space
-        normal = normalize((transform.normal_matrix * vec4<f32>(normal, 0.0)).xyz);
     }
+    // to world space
+    normal = normalize((transform.normal_matrix * vec4<f32>(normal, 0.0)).xyz);
 
     var diffuse: vec3<f32> = phong.diffuse_color;
     if(phong.has_diffuse_texture > 0u) {

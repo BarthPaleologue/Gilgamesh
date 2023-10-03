@@ -56,7 +56,7 @@ pub fn run() {
     earth.transform_mut().parent = Some(scene.meshes[sun_idx].transform_rc());
     earth.material.set_diffuse_texture("textures/2k_earth_daymap.jpg", &mut engine.wgpu_context);
     earth.material.set_specular_texture("textures/2k_earth_specular_map.jpg", &mut engine.wgpu_context);
-    earth.material.set_normal_map("textures/2k_earth_normal_map.jpg", &mut engine.wgpu_context);
+    //earth.material.set_normal_map("textures/2k_earth_normal_map.jpg", &mut engine.wgpu_context);
     //earth.material.set_polygon_mode(wgpu::PolygonMode::Line);
     camera.transform_mut().parent = Some(earth.transform_rc());
     let earth_idx = scene.add_mesh(earth);
