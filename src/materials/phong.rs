@@ -50,7 +50,7 @@ pub struct PhongMaterial {
 
     pub diffuse_texture: Texture,
     pub ambient_texture: Texture,
-    //pub specular_texture: Texture,
+    pub specular_texture: Texture,
 }
 
 impl PhongMaterial {
@@ -68,7 +68,7 @@ impl PhongMaterial {
 
         let diffuse_texture = Texture::new_empty("Default Diffuse Texture", wgpu_context);
         let ambient_texture = Texture::new_empty("Default Ambient Texture", wgpu_context);
-        //let specular_texture = Texture::new_empty("Default Specular Texture", wgpu_context);
+        let specular_texture = Texture::new_empty("Default Specular Texture", wgpu_context);
 
         PhongMaterial {
             material_pipeline: None,
@@ -85,7 +85,7 @@ impl PhongMaterial {
 
             diffuse_texture,
             ambient_texture,
-            //specular_texture,
+            specular_texture,
         }
     }
 
@@ -98,7 +98,7 @@ impl PhongMaterial {
         ], &vec![
             &self.diffuse_texture,
             &self.ambient_texture,
-            //&self.specular_texture,
+            &self.specular_texture,
         ], wgpu_context));
     }
 
@@ -136,6 +136,11 @@ impl PhongMaterial {
 
     pub fn set_ambient_color(&mut self, r: f32, g: f32, b: f32) {
         self.phong_uniforms.ambient_color = [r, g, b];
+    }
+
+    pub fn set_specular_texture(&mut self, path: &str, wgpu_context: &mut WGPUContext) {
+        self.specular_texture = Texture::new("Specular Texture", path, wgpu_context);
+        self.phong_uniforms.has_specular_texture = 1;
     }
 
     pub fn set_specular_color(&mut self, r: f32, g: f32, b: f32) {
