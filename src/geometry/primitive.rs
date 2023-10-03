@@ -8,6 +8,7 @@ impl PrimitiveMesh {
     pub fn plane(name: &str, nb_subdivisions: u32, size: f32, engine: &mut Engine) -> Mesh {
         let mut positions = vec!([0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize);
         let mut normals = vec!([0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize);
+        let mut tangents = vec!([0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize);
         let mut indices = vec!(0; (6 * (nb_subdivisions - 1) * (nb_subdivisions - 1)) as usize);
         let mut uvs = vec!([0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize);
         let colors = vec!([1.0, 1.0, 1.0]; (nb_subdivisions * nb_subdivisions) as usize);
@@ -24,6 +25,7 @@ impl PrimitiveMesh {
 
                 positions[(x * nb_subdivisions + y) as usize] = [actual_x, 0.0, actual_y];
                 normals[(x * nb_subdivisions + y) as usize] = [0.0, 1.0, 0.0];
+                tangents[(x * nb_subdivisions + y) as usize] = [1.0, 0.0, 0.0];
 
                 if x == nb_subdivisions - 1 || y == nb_subdivisions - 1 { continue; }
 
@@ -37,17 +39,14 @@ impl PrimitiveMesh {
             }
         }
 
-        let nb_vertices = positions.len();
-        let mut vertex_data = VertexData {
+        let vertex_data = VertexData {
             positions,
             colors,
             normals,
-            tangents: vec![[0.0, 0.0, 0.0]; nb_vertices],
+            tangents,
             indices,
             uvs,
         };
-
-        vertex_data.create_tangents();
 
         Mesh::from_vertex_data(name, vertex_data, engine)
     }
@@ -120,6 +119,7 @@ impl PrimitiveMesh {
     pub fn sphere(name: &str, resolution: u32, engine: &mut Engine) -> Mesh {
         let mut positions = Vec::new();
         let mut normals = Vec::new();
+        let mut tangents = Vec::new();
         let mut uvs = Vec::new();
         let mut indices = Vec::new();
         let mut colors = Vec::new();
@@ -149,6 +149,20 @@ impl PrimitiveMesh {
                 let ny = y;
                 let nz = z;
                 normals.push([nx, nz, ny]);
+
+                // vertex tangent
+                let d_sector = 0.01;
+                let x1 = xy * (sector_angle + d_sector).cos();
+                let y1 = xy * (sector_angle + d_sector).sin();
+                let z1 = z;
+                let x2 = xy * (sector_angle - d_sector).cos();
+                let y2 = xy * (sector_angle - d_sector).sin();
+                let z2 = z;
+                let tx = x1 - x2;
+                let ty = y1 - y2;
+                let tz = z1 - z2;
+                let length = (tx * tx + ty * ty + tz * tz).sqrt();
+                tangents.push([tx / length, tz / length, ty / length]);
 
                 // vertex tex coord between [0, 1]
                 let s = j as f32 / (resolution as f32 - 1.0);
@@ -182,16 +196,14 @@ impl PrimitiveMesh {
             }
         }
 
-        let nb_vertices = positions.len();
-        let mut vertex_data = VertexData {
+        let vertex_data = VertexData {
             positions,
             normals,
-            tangents: vec![[0.0, 0.0, 0.0]; nb_vertices],
+            tangents,
             uvs,
             indices,
             colors,
         };
-        vertex_data.create_tangents();
 
         Mesh::from_vertex_data(name, vertex_data, engine)
     }
