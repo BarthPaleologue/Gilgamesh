@@ -71,10 +71,10 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let diffuse: vec3<f32> = phong.diffuse_color;
+    //let diffuse: vec3<f32> = phong.diffuse_color;
     let ambient: vec3<f32> = phong.ambient_color;
 
-    let tex_color = textureSample(t_diffuse, s_diffuse, in.vUV).rgb;
+    let diffuse = textureSample(t_diffuse, s_diffuse, in.vUV).rgb;
 
     let view_dir: vec3<f32> = normalize(camera.position - in.vPositionW);
 
@@ -98,5 +98,5 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     color = color + ambient;
 
-    return vec4(tex_color, 1.0);
+    return vec4(color, 1.0);
 }

@@ -38,8 +38,6 @@ impl Default for PhongUniforms {
 pub struct PhongMaterial {
     pub material_pipeline: MaterialPipeline,
 
-    pub test_texture: Texture,
-
     pub light_uniforms: DirectionalLightUniform,
     pub light_uniforms_buffer: wgpu::Buffer,
 
@@ -49,6 +47,8 @@ pub struct PhongMaterial {
 
     pub phong_uniforms: PhongUniforms,
     pub phong_uniforms_buffer: wgpu::Buffer,
+
+    pub diffuse_texture: Texture,
 }
 
 impl PhongMaterial {
@@ -64,7 +64,7 @@ impl PhongMaterial {
         let phong_uniforms = PhongUniforms::default();
         let phong_uniforms_buffer = create_buffer::<PhongUniforms>("Phong Buffer", wgpu_context);
 
-        let test_texture = Texture::new("test", "textures/test.png", wgpu_context);
+        let diffuse_texture = Texture::new("test", "textures/test.png", wgpu_context);
 
         let material_pipeline = MaterialPipeline::new("../shader/phong.wgsl", &vec![
             &light_uniforms_buffer,
@@ -72,13 +72,13 @@ impl PhongMaterial {
             &nb_point_lights_buffer,
             &phong_uniforms_buffer,
         ], &vec![
-            &test_texture
+            &diffuse_texture
         ], wgpu_context);
 
         PhongMaterial {
             material_pipeline,
 
-            test_texture,
+            diffuse_texture,
 
             light_uniforms,
             light_uniforms_buffer,

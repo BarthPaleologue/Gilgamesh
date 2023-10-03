@@ -66,8 +66,8 @@ impl Texture {
 
         // We don't need to configure the texture view much, so let's
         // let wgpu define it.
-        let diffuse_texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let diffuse_sampler = wgpu_context.device.create_sampler(&wgpu::SamplerDescriptor {
+        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let sampler = wgpu_context.device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,
@@ -77,7 +77,7 @@ impl Texture {
             ..Default::default()
         });
 
-        let texture_bind_group_layout =
+        let bind_group_layout =
             wgpu_context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
                     wgpu::BindGroupLayoutEntry {
@@ -102,17 +102,17 @@ impl Texture {
                 label: Some("texture_bind_group_layout"),
             });
 
-        let diffuse_bind_group = wgpu_context.device.create_bind_group(
+        let bind_group = wgpu_context.device.create_bind_group(
             &wgpu::BindGroupDescriptor {
-                layout: &texture_bind_group_layout,
+                layout: &bind_group_layout,
                 entries: &[
                     wgpu::BindGroupEntry {
                         binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&diffuse_texture_view),
+                        resource: wgpu::BindingResource::TextureView(&texture_view),
                     },
                     wgpu::BindGroupEntry {
                         binding: 1,
-                        resource: wgpu::BindingResource::Sampler(&diffuse_sampler),
+                        resource: wgpu::BindingResource::Sampler(&sampler),
                     }
                 ],
                 label: Some("diffuse_bind_group"),
@@ -121,8 +121,8 @@ impl Texture {
 
 
         Texture {
-            bind_group_layout: texture_bind_group_layout,
-            bind_group: Rc::new(diffuse_bind_group),
+            bind_group_layout,
+            bind_group: Rc::new(bind_group),
         }
     }
 }
