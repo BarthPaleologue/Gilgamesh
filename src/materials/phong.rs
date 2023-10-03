@@ -36,7 +36,7 @@ impl Default for PhongUniforms {
 }
 
 pub struct PhongMaterial {
-    pub material_pipeline: MaterialPipeline,
+    pub material_pipeline: Option<MaterialPipeline>,
 
     pub light_uniforms: DirectionalLightUniform,
     pub light_uniforms_buffer: wgpu::Buffer,
@@ -64,19 +64,11 @@ impl PhongMaterial {
         let phong_uniforms = PhongUniforms::default();
         let phong_uniforms_buffer = create_buffer::<PhongUniforms>("Phong Buffer", wgpu_context);
 
-        let diffuse_texture = Texture::new("test", "textures/test.png", wgpu_context);
-
-        let material_pipeline = MaterialPipeline::new("../shader/phong.wgsl", &vec![
-            &light_uniforms_buffer,
-            &point_light_buffer,
-            &nb_point_lights_buffer,
-            &phong_uniforms_buffer,
-        ], &vec![
-            &diffuse_texture
-        ], wgpu_context);
+        let diffuse_texture = Texture::new("Diffuse Texture", "textures/test.png", wgpu_context);
+        //let diffuse_texture = Texture::new_empty("test", wgpu_context);
 
         PhongMaterial {
-            material_pipeline,
+            material_pipeline: None,
 
             diffuse_texture,
 
@@ -92,7 +84,22 @@ impl PhongMaterial {
         }
     }
 
+    pub fn compile(&mut self, wgpu_context: &mut WGPUContext) {
+        self.material_pipeline = Some(MaterialPipeline::new("../shader/phong.wgsl", &vec![
+            &self.light_uniforms_buffer,
+            &self.point_light_buffer,
+            &self.nb_point_lights_buffer,
+            &self.phong_uniforms_buffer,
+        ], &vec![
+            &self.diffuse_texture
+        ], wgpu_context));
+    }
+
     pub fn bind<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, transform: Ref<Transform>, active_camera: &Camera, point_lights: &[PointLight], directional_light: &DirectionalLight, wgpu_context: &mut WGPUContext) {
+        if self.material_pipeline.is_none() {
+            self.compile(wgpu_context);
+        }
+
         self.light_uniforms.update(directional_light);
         wgpu_context.queue.write_buffer(&self.light_uniforms_buffer, 0, cast_slice(&[self.light_uniforms]));
 
@@ -103,7 +110,7 @@ impl PhongMaterial {
         wgpu_context.queue.write_buffer(&self.nb_point_lights_buffer, 0, cast_slice(&[point_lights.len() as u32]));
         wgpu_context.queue.write_buffer(&self.phong_uniforms_buffer, 0, cast_slice(&[self.phong_uniforms]));
 
-        self.material_pipeline.bind(render_pass, transform, active_camera, wgpu_context);
+        self.material_pipeline.as_mut().unwrap().bind(render_pass, transform, active_camera, wgpu_context);
     }
 
     pub fn set_diffuse_color(&mut self, r: f32, g: f32, b: f32) {
