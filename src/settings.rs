@@ -1,1 +1,1 @@
-pub const MAX_POINT_LIGHTS: usize = 8;
+pub const MAX_POINT_LIGHTS: usize = 64;

@@ -28,7 +28,7 @@ struct PointLightUniforms {
     position: vec3<f32>,
     intensity: f32
 }
-@group(1) @binding(1) var<uniform> point_lights : array<PointLightUniforms, 8>;
+@group(1) @binding(1) var<uniform> point_lights : array<PointLightUniforms, 64>;
 @group(1) @binding(2) var<uniform> point_lights_count : u32;
 
 struct PhongUniforms {
