@@ -48,10 +48,11 @@ pub fn run() {
     sun.material.set_ambient_texture("textures/sun.jpg", &mut engine.wgpu_context);
     let sun_idx = scene.add_mesh(sun);
 
-    let mut sphere1 = PrimitiveMesh::sphere("Cube", 32, &mut engine);
-    sphere1.transform_mut().parent = Some(scene.meshes[sun_idx].transform_rc());
-    sphere1.material.set_diffuse_texture("textures/earth.jpg", &mut engine.wgpu_context);
-    let sphere1_idx = scene.add_mesh(sphere1);
+    let mut earth = PrimitiveMesh::sphere("Earth", 32, &mut engine);
+    earth.transform_mut().parent = Some(scene.meshes[sun_idx].transform_rc());
+    earth.material.set_diffuse_texture("textures/earth.jpg", &mut engine.wgpu_context);
+    earth.material.set_specular_texture("textures/earth_specular.jpg", &mut engine.wgpu_context);
+    let sphere1_idx = scene.add_mesh(earth);
 
     let plane = PrimitiveMesh::plane("Plane", 10, 10.0, &mut engine);
     plane.transform_mut().set_position(0.0, -5.0, 0.0);

@@ -51,6 +51,9 @@ struct PhongUniforms {
 @group(2) @binding(4) var specular_texture: texture_2d<f32>;
 @group(2) @binding(5) var specular_sampler: sampler;
 
+@group(2) @binding(6) var normal_texture: texture_2d<f32>;
+@group(2) @binding(7) var normal_sampler: sampler;
+
 struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) color: vec3<f32>,
@@ -95,7 +98,10 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     let reflect_dir: vec3<f32> = reflect(directionalLight.direction, in.vNormalW);
     let specular_strength: f32 = pow(max(0.0, dot(view_dir, reflect_dir)), 32.0);
-    let specular: vec3<f32> = specular_strength * directionalLight.color * directionalLight.intensity * phong.specular_color;
+    var specular: vec3<f32> = specular_strength * directionalLight.color * directionalLight.intensity * phong.specular_color;
+    if(phong.has_specular_texture > 0u) {
+        specular = specular * textureSample(specular_texture, specular_sampler, in.vUV).r;
+    }
 
     let ndl = max(0.0, dot(in.vNormalW, -directionalLight.direction));
     var color = diffuse * ndl * directionalLight.color * directionalLight.intensity + specular;
@@ -106,7 +112,10 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
         let reflect_dir: vec3<f32> = reflect(-light_dir, in.vNormalW);
         let specular_strength: f32 = pow(max(0.0, dot(view_dir, reflect_dir)), 32.0);
-        let specular: vec3<f32> = specular_strength * point_lights[i].color * phong.specular_color;
+        var specular: vec3<f32> = specular_strength * point_lights[i].color * phong.specular_color;
+        if(phong.has_specular_texture > 0u) {
+             specular = specular * textureSample(specular_texture, specular_sampler, in.vUV).r;
+        }
 
         color = color + diffuse * ndl * point_lights[i].color * point_lights[i].intensity + specular;
     }
