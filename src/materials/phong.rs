@@ -1,4 +1,5 @@
 use std::cell::Ref;
+use std::rc::Rc;
 use bytemuck::cast_slice;
 use wgpu::RenderPass;
 use crate::camera::camera::Camera;
@@ -52,10 +53,10 @@ pub struct PhongMaterial {
     phong_uniforms: PhongUniforms,
     phong_uniforms_buffer: wgpu::Buffer,
 
-    diffuse_texture: Texture,
-    ambient_texture: Texture,
-    specular_texture: Texture,
-    normal_map: Texture,
+    diffuse_texture: Rc<Texture>,
+    ambient_texture: Rc<Texture>,
+    specular_texture: Rc<Texture>,
+    normal_map: Rc<Texture>,
 
     polygon_mode: wgpu::PolygonMode,
     back_face_culling: bool,
@@ -74,10 +75,10 @@ impl PhongMaterial {
         let phong_uniforms = PhongUniforms::default();
         let phong_uniforms_buffer = create_buffer::<PhongUniforms>("Phong Buffer", wgpu_context);
 
-        let diffuse_texture = Texture::new_empty("Default Diffuse Texture", wgpu_context);
-        let ambient_texture = Texture::new_empty("Default Ambient Texture", wgpu_context);
-        let specular_texture = Texture::new_empty("Default Specular Texture", wgpu_context);
-        let normal_map = Texture::new_empty("Default Normal Map", wgpu_context);
+        let diffuse_texture = Rc::new(Texture::new_empty("Default Diffuse Texture", wgpu_context));
+        let ambient_texture = Rc::new(Texture::new_empty("Default Ambient Texture", wgpu_context));
+        let specular_texture = Rc::new(Texture::new_empty("Default Specular Texture", wgpu_context));
+        let normal_map = Rc::new(Texture::new_empty("Default Normal Map", wgpu_context));
 
         PhongMaterial {
             material_pipeline: None,
@@ -134,8 +135,8 @@ impl PhongMaterial {
         self.material_pipeline.as_mut().unwrap().bind(render_pass, transform, active_camera, wgpu_context);
     }
 
-    pub fn set_diffuse_texture(&mut self, path: &str, wgpu_context: &mut WGPUContext) {
-        self.diffuse_texture = Texture::new("Diffuse Texture", path, wgpu_context);
+    pub fn set_diffuse_texture(&mut self, texture: Rc<Texture>) {
+        self.diffuse_texture = texture;
         self.phong_uniforms.has_diffuse_texture = 1;
     }
 
@@ -143,8 +144,8 @@ impl PhongMaterial {
         self.phong_uniforms.diffuse_color = [r, g, b];
     }
 
-    pub fn set_ambient_texture(&mut self, path: &str, wgpu_context: &mut WGPUContext) {
-        self.ambient_texture = Texture::new("Ambient Texture", path, wgpu_context);
+    pub fn set_ambient_texture(&mut self, texture: Rc<Texture>) {
+        self.ambient_texture = texture;
         self.phong_uniforms.has_ambient_texture = 1;
     }
 
@@ -152,8 +153,8 @@ impl PhongMaterial {
         self.phong_uniforms.ambient_color = [r, g, b];
     }
 
-    pub fn set_specular_texture(&mut self, path: &str, wgpu_context: &mut WGPUContext) {
-        self.specular_texture = Texture::new("Specular Texture", path, wgpu_context);
+    pub fn set_specular_texture(&mut self, texture: Rc<Texture>) {
+        self.specular_texture = texture;
         self.phong_uniforms.has_specular_texture = 1;
     }
 
@@ -161,8 +162,8 @@ impl PhongMaterial {
         self.phong_uniforms.specular_color = [r, g, b];
     }
 
-    pub fn set_normal_map(&mut self, path: &str, wgpu_context: &mut WGPUContext) {
-        self.normal_map = Texture::new("Normal Map", path, wgpu_context);
+    pub fn set_normal_map(&mut self, texture: Rc<Texture>) {
+        self.normal_map = texture;
         self.phong_uniforms.has_normal_map = 1;
     }
 
