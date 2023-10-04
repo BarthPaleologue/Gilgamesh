@@ -16,3 +16,5 @@ pub mod settings;
 pub mod materials;
 pub mod animation;
 pub mod texture;
+pub mod demo_scene_1;
+pub mod demo_scene_2;

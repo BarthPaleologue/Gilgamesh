@@ -21,7 +21,7 @@ impl Default for OrbitControl {
             target_radius: 10.0,
             radius: 10.0,
             phi: 0.0,
-            theta: -std::f32::consts::PI / 2.0,
+            theta: -std::f32::consts::PI / 4.0,
             epsilon: 0.0001,
         }
     }
