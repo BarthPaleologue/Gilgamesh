@@ -57,7 +57,7 @@ impl Texture {
             sampler,
         }
     }
-    pub fn new(name: &str, path: &str, wgpu_context: &mut WGPUContext) -> Texture {
+    pub fn new(name: &str, path: &str, wgpu_context: &WGPUContext) -> Texture {
         let bytes = load_bytes!(path);
         let image = image::load_from_memory(bytes).unwrap();
         let image_rgba = image.to_rgba8();

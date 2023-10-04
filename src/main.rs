@@ -28,44 +28,44 @@ pub fn run() {
     let mut point_light = PointLight::default();
     point_light.set_color(1.0, 0.0, 0.0);
     point_light.set_intensity(light_intensity);
-    show_point_light_debug_mesh(&point_light, &mut scene, &mut engine);
+    show_point_light_debug_mesh(&point_light, &mut scene, &engine);
     let point_light1_idx = scene.add_point_light(point_light);
 
     let mut point_light2 = PointLight::default();
     point_light2.set_color(0.0, 0.0, 1.0);
     point_light2.set_intensity(light_intensity);
-    show_point_light_debug_mesh(&point_light2, &mut scene, &mut engine);
+    show_point_light_debug_mesh(&point_light2, &mut scene, &engine);
     let point_light2_idx = scene.add_point_light(point_light2);
 
     let mut point_light3 = PointLight::default();
     point_light3.set_color(0.0, 1.0, 0.0);
     point_light3.set_intensity(light_intensity);
-    show_point_light_debug_mesh(&point_light3, &mut scene, &mut engine);
+    show_point_light_debug_mesh(&point_light3, &mut scene, &engine);
     let point_light3_idx = scene.add_point_light(point_light3);
 
     let mut point_light4 = PointLight::default();
     point_light4.set_color(1.0, 1.0, 0.0);
     point_light4.set_intensity(light_intensity);
-    show_point_light_debug_mesh(&point_light4, &mut scene, &mut engine);
+    show_point_light_debug_mesh(&point_light4, &mut scene, &engine);
     let point_light4_idx = scene.add_point_light(point_light4);
 
-    let mut sun = PrimitiveMesh::sphere("Sun", 32, &mut engine);
-    let sun_texture = Rc::new(Texture::new("Sun texture", "textures/sun.jpg", &mut engine.wgpu_context));
+    let mut sun = PrimitiveMesh::sphere("Sun", 32, &engine);
+    let sun_texture = Rc::new(Texture::new("Sun texture", "textures/sun.jpg", &engine.wgpu_context));
     sun.material().set_ambient_texture(sun_texture.clone());
     let sun_idx = scene.add_mesh(sun);
 
-    let mut earth = PrimitiveMesh::sphere("Earth", 32, &mut engine);
+    let mut earth = PrimitiveMesh::sphere("Earth", 32, &engine);
     earth.transform_mut().parent = Some(scene.meshes[sun_idx].transform_rc());
-    let earth_diffuse_texture = Rc::new(Texture::new("Earth diffuse texture", "textures/2k_earth_daymap.jpg", &mut engine.wgpu_context));
+    let earth_diffuse_texture = Rc::new(Texture::new("Earth diffuse texture", "textures/2k_earth_daymap.jpg", &engine.wgpu_context));
     earth.material().set_diffuse_texture(earth_diffuse_texture.clone());
-    let earth_specular_texture = Rc::new(Texture::new("Earth specular texture", "textures/2k_earth_specular_map.jpg", &mut engine.wgpu_context));
+    let earth_specular_texture = Rc::new(Texture::new("Earth specular texture", "textures/2k_earth_specular_map.jpg", &engine.wgpu_context));
     earth.material().set_specular_texture(earth_specular_texture.clone());
     //earth.material.set_normal_map("textures/2k_earth_normal_map.jpg", &mut engine.wgpu_context);
     //earth.material.set_polygon_mode(wgpu::PolygonMode::Line);
     camera.transform_mut().parent = Some(earth.transform_rc());
     let earth_idx = scene.add_mesh(earth);
 
-    let plane = PrimitiveMesh::plane("Plane", 10, 10.0, &mut engine);
+    let plane = PrimitiveMesh::plane("Plane", 10, 10.0, &engine);
     plane.transform_mut().set_position(0.0, -5.0, 0.0);
     let plane_idx = scene.add_mesh(plane);
 

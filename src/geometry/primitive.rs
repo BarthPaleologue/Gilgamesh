@@ -5,7 +5,7 @@ use crate::geometry::vertex_data::VertexData;
 pub struct PrimitiveMesh {}
 
 impl PrimitiveMesh {
-    pub fn plane(name: &str, nb_subdivisions: u32, size: f32, engine: &mut Engine) -> Mesh {
+    pub fn plane(name: &str, nb_subdivisions: u32, size: f32, engine: &Engine) -> Mesh {
         let mut positions = vec!([0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize);
         let mut normals = vec!([0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize);
         let mut tangents = vec!([0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize);
@@ -51,7 +51,7 @@ impl PrimitiveMesh {
         Mesh::from_vertex_data(name, vertex_data, engine)
     }
 
-    pub fn cube(name: &str, engine: &mut Engine) -> Mesh {
+    pub fn cube(name: &str, engine: &Engine) -> Mesh {
         let positions = vec!(
             [-0.5, -0.5, -0.5], // 0
             [0.5, -0.5, -0.5], // 1
@@ -116,7 +116,7 @@ impl PrimitiveMesh {
         Mesh::from_vertex_data(name, vertex_data, engine)
     }
 
-    pub fn sphere(name: &str, resolution: u32, engine: &mut Engine) -> Mesh {
+    pub fn sphere(name: &str, resolution: u32, engine: &Engine) -> Mesh {
         let mut positions = Vec::new();
         let mut normals = Vec::new();
         let mut tangents = Vec::new();

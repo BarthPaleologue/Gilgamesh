@@ -34,7 +34,7 @@ pub struct MaterialPipeline {
 }
 
 impl MaterialPipeline {
-    pub fn new(shader_file: &str, uniforms: &[&Buffer], textures: &[&Texture], polygon_mode: wgpu::PolygonMode, back_face_culling: bool, wgpu_context: &mut WGPUContext) -> MaterialPipeline {
+    pub fn new(shader_file: &str, uniforms: &[&Buffer], textures: &[&Texture], polygon_mode: wgpu::PolygonMode, back_face_culling: bool, wgpu_context: &WGPUContext) -> MaterialPipeline {
         // load shader from file at runtime
         let shader_string = load_str!(shader_file);
         let shader = wgpu_context.device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -198,7 +198,7 @@ impl MaterialPipeline {
         }
     }
 
-    pub fn bind<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, transform: Ref<Transform>, active_camera: &Camera, wgpu_context: &mut WGPUContext) {
+    pub fn bind<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, transform: Ref<Transform>, active_camera: &Camera, wgpu_context: &WGPUContext) {
         self.transform_uniforms.update(transform.deref());
         wgpu_context.queue.write_buffer(&self.transform_uniforms_buffer, 0, cast_slice(&[self.transform_uniforms]));
 

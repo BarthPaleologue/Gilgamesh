@@ -58,7 +58,7 @@ impl Transformable for Mesh {
 }
 
 impl Mesh {
-    pub fn from_vertex_data(name: &str, vertex_data: VertexData, engine: &mut Engine) -> Mesh {
+    pub fn from_vertex_data(name: &str, vertex_data: VertexData, engine: &Engine) -> Mesh {
         let vertex_buffer = engine.wgpu_context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
             contents: cast_slice(&zip_vertex_data(&vertex_data)),
@@ -76,7 +76,7 @@ impl Mesh {
             vertex_data,
             vertex_buffer,
             index_buffer,
-            material: PhongMaterial::new(&mut engine.wgpu_context),
+            material: PhongMaterial::new(&engine.wgpu_context),
         }
     }
 
@@ -89,7 +89,7 @@ impl Mesh {
     }
 
     /// you may be asking wtf is going on with the lifetimes here, and I don't know either. Dark magic.
-    pub fn render<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, active_camera: &Camera, directional_light: &DirectionalLight, point_lights: &[PointLight], wgpu_context: &mut WGPUContext) {
+    pub fn render<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, active_camera: &Camera, directional_light: &DirectionalLight, point_lights: &[PointLight], wgpu_context: &WGPUContext) {
         let transform = self.transform_rc();
         self.material.bind(render_pass, transform.borrow(), active_camera, point_lights, directional_light, wgpu_context);
 

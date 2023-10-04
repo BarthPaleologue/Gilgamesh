@@ -63,7 +63,7 @@ pub struct PhongMaterial {
 }
 
 impl PhongMaterial {
-    pub fn new(wgpu_context: &mut WGPUContext) -> Self {
+    pub fn new(wgpu_context: &WGPUContext) -> Self {
         let light_uniforms = DirectionalLightUniform::default();
         let light_uniforms_buffer = create_buffer::<DirectionalLightUniform>("DirectionalLight Buffer", wgpu_context);
 
@@ -103,7 +103,7 @@ impl PhongMaterial {
         }
     }
 
-    pub fn compile(&mut self, wgpu_context: &mut WGPUContext) {
+    pub fn compile(&mut self, wgpu_context: &WGPUContext) {
         self.material_pipeline = Some(MaterialPipeline::new("../shader/phong.wgsl", &[
             &self.light_uniforms_buffer,
             &self.point_light_buffer,
@@ -117,7 +117,7 @@ impl PhongMaterial {
         ], self.polygon_mode, self.back_face_culling, wgpu_context));
     }
 
-    pub fn bind<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, transform: Ref<Transform>, active_camera: &Camera, point_lights: &[PointLight], directional_light: &DirectionalLight, wgpu_context: &mut WGPUContext) {
+    pub fn bind<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, transform: Ref<Transform>, active_camera: &Camera, point_lights: &[PointLight], directional_light: &DirectionalLight, wgpu_context: &WGPUContext) {
         if self.material_pipeline.is_none() {
             self.compile(wgpu_context);
         }
