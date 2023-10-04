@@ -19,7 +19,9 @@ pub fn run() {
     let mut scene = Scene::new(&engine);
 
     let mut camera = Camera::new(&engine);
-    camera.control = Some(Box::<OrbitControl>::default());
+    let mut camera_control = OrbitControl::default();
+    camera_control.set_radius(2.0);
+    camera.control = Some(Box::new(camera_control));
 
     scene.directional_light.set_intensity(0.0);
 
@@ -60,8 +62,9 @@ pub fn run() {
     earth.material().set_diffuse_texture(earth_diffuse_texture.clone());
     let earth_specular_texture = Rc::new(Texture::new("Earth specular texture", "textures/2k_earth_specular_map.jpg", &engine.wgpu_context));
     earth.material().set_specular_texture(earth_specular_texture.clone());
-    //earth.material.set_normal_map("textures/2k_earth_normal_map.jpg", &mut engine.wgpu_context);
-    //earth.material.set_polygon_mode(wgpu::PolygonMode::Line);
+    let earth_normal_map = Rc::new(Texture::new("Earth normal map", "textures/2k_earth_normal_map.jpg", &engine.wgpu_context));
+    //earth.material().set_normal_map(earth_normal_map.clone());
+    //earth.material().set_polygon_mode(wgpu::PolygonMode::Line);
     camera.transform_mut().parent = Some(earth.transform_rc());
     let earth_idx = scene.add_mesh(earth);
 

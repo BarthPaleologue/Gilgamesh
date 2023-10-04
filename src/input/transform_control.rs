@@ -27,6 +27,13 @@ impl Default for OrbitControl {
     }
 }
 
+impl OrbitControl {
+    pub fn set_radius(&mut self, radius: f32) {
+        self.target_radius = radius;
+        self.radius = radius;
+    }
+}
+
 impl TransformMouseController for OrbitControl {
     fn update(&mut self, mouse: &Mouse, engine: &Engine) -> (Vector3<f32>, Point3<f32>, Point3<f32>) {
         if mouse.left_button_pressed {

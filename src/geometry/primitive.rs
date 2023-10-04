@@ -1,3 +1,4 @@
+use cgmath::{InnerSpace, Vector3};
 use crate::core::engine::Engine;
 use crate::geometry::mesh::Mesh;
 use crate::geometry::vertex_data::VertexData;
@@ -124,76 +125,168 @@ impl PrimitiveMesh {
         let mut indices = Vec::new();
         let mut colors = Vec::new();
 
-        let pi = std::f32::consts::PI;
-
-        let sector_step = 2.0 * pi / (resolution as f32 - 1.0);
-        let stack_step = pi / (resolution as f32 - 1.0);
-
+        let mut index = 0;
         for i in 0..resolution {
-            let stack_angle = pi / 2.0 - i as f32 * stack_step;        // starting from pi/2 to -pi/2
-            let xy = stack_angle.cos();             // r * cos(u)
-            let z = stack_angle.sin();              // r * sin(u)
+            let v = i as f32 / (resolution as f32 - 1.0);
+            let theta = v * std::f32::consts::PI;
+            let sin_theta = theta.sin();
+            let cos_theta = theta.cos();
 
-            // add (sectorCount+1) positions per stack
-            // the first and last positions have same position and normal, but different tex coords
             for j in 0..resolution {
-                let sector_angle = j as f32 * sector_step;           // starting from 0 to 2pi
+                let u = j as f32 / (resolution as f32 - 1.0);
+                let phi = u * 2.0 * std::f32::consts::PI;
+                let sin_phi = phi.sin();
+                let cos_phi = phi.cos();
 
-                // vertex position
-                let x = xy * sector_angle.cos();             // r * cos(u) * cos(v)
-                let y = xy * sector_angle.sin();             // r * cos(u) * sin(v)
-                positions.push([x, z, y]);
+                let x = cos_phi * sin_theta;
+                let y = cos_theta;
+                let z = sin_phi * sin_theta;
 
-                // normalized vertex normal
-                let nx = x;
-                let ny = y;
-                let nz = z;
-                normals.push([nx, nz, ny]);
+                let tx = -sin_phi * sin_theta;
+                let tz = cos_phi * sin_theta;
 
-                // vertex tangent
-                let d_sector = 0.01;
-                let x1 = xy * (sector_angle + d_sector).cos();
-                let y1 = xy * (sector_angle + d_sector).sin();
-                let z1 = z;
-                let x2 = xy * (sector_angle - d_sector).cos();
-                let y2 = xy * (sector_angle - d_sector).sin();
-                let z2 = z;
-                let tx = x1 - x2;
-                let ty = y1 - y2;
-                let tz = z1 - z2;
-                let length = (tx * tx + ty * ty + tz * tz).sqrt();
-                tangents.push([tx / length, tz / length, ty / length]);
-
-                // vertex tex coord between [0, 1]
-                let s = j as f32 / (resolution as f32 - 1.0);
-                let t = i as f32 / (resolution as f32 - 1.0);
-                uvs.push([1.0 - s, t]);
-
+                positions.push([x, y, z]);
+                normals.push([x, y, z]);
+                tangents.push([tx, 0.0, tz]);
+                uvs.push([1.0 - u, v]);
                 colors.push([1.0, 1.0, 1.0]);
+
+                if v != (resolution - 1) as f32 && u != (resolution - 1) as f32 {
+                    indices.push(index);
+                    indices.push(index + resolution + 1);
+                    indices.push(index + resolution);
+                    indices.push(index);
+                    indices.push(index + 1);
+                    indices.push(index + resolution + 1);
+                }
+
+                index += 1;
             }
         }
 
-        // indices
-        //  k1--k1+1
-        //  |  / |
-        //  | /  |
-        //  k2--k2+1
-        for i in 0..resolution - 1 {
-            let k1 = i * resolution;     // beginning of current stack
-            let k2 = k1 + resolution;    // beginning of next stack
 
-            for j in 0..resolution - 1 {
-                // 2 triangles per sector excluding first and last stacks
-                // k1 => k2 => k1+1
-                indices.push(k1 + j);
-                indices.push(k1 + j + 1);
-                indices.push(k2 + j);
+        let vertex_data = VertexData {
+            positions,
+            normals,
+            tangents,
+            uvs,
+            indices,
+            colors,
+        };
 
-                // k1+1 => k2 => k2+1
-                indices.push(k1 + j + 1);
-                indices.push(k2 + j + 1);
-                indices.push(k2 + j);
+        Mesh::from_vertex_data(name, vertex_data, engine)
+    }
+
+    pub fn ico_sphere(name: &str, nb_subdivisions: u32, engine: &Engine) -> Mesh {
+        let mut positions = Vec::new();
+        let mut normals = Vec::new();
+        let mut tangents = Vec::new();
+        let mut uvs = Vec::new();
+        let mut indices: Vec<u32> = Vec::new();
+        let mut colors = Vec::new();
+
+        let t = (1.0 + 5.0_f32.sqrt()) / 2.0;
+
+        let mut base_positions = vec![
+            Vector3::new(-1.0, t, 0.0).normalize(),
+            Vector3::new(1.0, t, 0.0).normalize(),
+            Vector3::new(-1.0, -t, 0.0).normalize(),
+            Vector3::new(1.0, -t, 0.0).normalize(),
+            Vector3::new(0.0, -1.0, t).normalize(),
+            Vector3::new(0.0, 1.0, t).normalize(),
+            Vector3::new(0.0, -1.0, -t).normalize(),
+            Vector3::new(0.0, 1.0, -t).normalize(),
+            Vector3::new(t, 0.0, -1.0).normalize(),
+            Vector3::new(t, 0.0, 1.0).normalize(),
+            Vector3::new(-t, 0.0, -1.0).normalize(),
+            Vector3::new(-t, 0.0, 1.0).normalize(),
+        ];
+
+        let mut base_indices = vec![
+            0, 11, 5,
+            0, 5, 1,
+            0, 1, 7,
+            0, 7, 10,
+            0, 10, 11,
+            1, 5, 9,
+            5, 11, 4,
+            11, 10, 2,
+            10, 7, 6,
+            7, 1, 8,
+            3, 9, 4,
+            3, 4, 2,
+            3, 2, 6,
+            3, 6, 8,
+            3, 8, 9,
+            4, 9, 5,
+            2, 4, 11,
+            6, 2, 10,
+            8, 6, 7,
+            9, 8, 1,
+        ];
+
+        for _ in 0..nb_subdivisions {
+            let mut new_indices = Vec::new();
+            for i in 0..base_indices.len() / 3 {
+                let i0 = base_indices[i * 3];
+                let i1 = base_indices[i * 3 + 1];
+                let i2 = base_indices[i * 3 + 2];
+
+                let v0 = base_positions[i0 as usize];
+                let v1 = base_positions[i1 as usize];
+                let v2 = base_positions[i2 as usize];
+
+                let v01 = (v0 + v1).normalize();
+                let v12 = (v1 + v2).normalize();
+                let v20 = (v2 + v0).normalize();
+
+                let i01 = base_positions.len() as u32;
+                let i12 = i01 + 1;
+                let i20 = i12 + 1;
+
+                base_positions.push(v01);
+                base_positions.push(v12);
+                base_positions.push(v20);
+
+                new_indices.push(i0);
+                new_indices.push(i01);
+                new_indices.push(i20);
+
+                new_indices.push(i1);
+                new_indices.push(i12);
+                new_indices.push(i01);
+
+                new_indices.push(i2);
+                new_indices.push(i20);
+                new_indices.push(i12);
+
+                new_indices.push(i01);
+                new_indices.push(i12);
+                new_indices.push(i20);
             }
+            base_indices = new_indices;
+        }
+
+        for i in 0..base_positions.len() {
+            let v = base_positions[i];
+            positions.push(v.into());
+            normals.push(v.into());
+
+            let theta = v.z.atan2(v.x);
+            let phi = v.y.acos();
+            let tx = -phi.sin() * theta.sin();
+            let tz = phi.cos() * theta.sin();
+            tangents.push([tx, 0.0, tz]);
+
+            let u = theta / (2.0 * std::f32::consts::PI) + 0.5;
+            let v = phi / std::f32::consts::PI;
+            uvs.push([1.0 - u, v]);
+
+            colors.push([1.0, 1.0, 1.0]);
+        }
+
+        for i in 0..base_indices.len() {
+            indices.push(base_indices[i]);
         }
 
         let vertex_data = VertexData {

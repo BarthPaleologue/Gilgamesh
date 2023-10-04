@@ -137,7 +137,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     color = color * ndl + ambient;
 
-    //color = in.vTangent * 0.5 + 0.5;
+    //color = vec3(in.vUV, 1.0);//in.vNormal * 0.5 + 0.5;
 
     return vec4(color, 1.0);
 }
