@@ -15,6 +15,7 @@ use crate::texture::Texture;
 use crate::transform::{Transform, TransformUniforms};
 
 pub struct MaterialPipeline {
+    pub name: String,
     pub shader_module: ShaderModule,
 
     pub transform_uniforms: TransformUniforms,
@@ -34,22 +35,22 @@ pub struct MaterialPipeline {
 }
 
 impl MaterialPipeline {
-    pub fn new(shader_file: &str, uniforms: &[&Buffer], textures: &[&Texture], polygon_mode: wgpu::PolygonMode, back_face_culling: bool, wgpu_context: &WGPUContext) -> MaterialPipeline {
+    pub fn new(name: &str, shader_file: &str, uniforms: &[&Buffer], textures: &[&Texture], polygon_mode: wgpu::PolygonMode, back_face_culling: bool, wgpu_context: &WGPUContext) -> MaterialPipeline {
         // load shader from file at runtime
         let shader_string = load_str!(shader_file);
         let shader = wgpu_context.device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Shader"),
+            label: Some(&format!("{name}Shader")),
             source: wgpu::ShaderSource::Wgsl(shader_string.into()),
         });
 
         let transform_uniforms = TransformUniforms::default();
-        let transform_uniforms_buffer = create_buffer::<TransformUniforms>("Transform Buffer", wgpu_context);
+        let transform_uniforms_buffer = create_buffer::<TransformUniforms>(&format!("{name} Transform Buffer"), wgpu_context);
 
         let camera_uniforms = CameraUniforms::default();
-        let camera_uniforms_buffer = create_buffer::<CameraUniforms>("Camera Buffer", wgpu_context);
+        let camera_uniforms_buffer = create_buffer::<CameraUniforms>(&format!("{name }Camera Buffer"), wgpu_context);
 
         let required_bind_group_layout = wgpu_context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Required Bind Group Layout"),
+            label: Some(&format!("{name} Required Bind Group Layout")),
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
                 visibility: wgpu::ShaderStages::all(),
@@ -72,6 +73,7 @@ impl MaterialPipeline {
         });
 
         let required_bind_group = wgpu_context.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some(&format!("{name} Transform Bind Group")),
             layout: &required_bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
@@ -80,7 +82,6 @@ impl MaterialPipeline {
                 binding: 1,
                 resource: camera_uniforms_buffer.as_entire_binding(),
             }],
-            label: Some("Transform Bind Group"),
         });
 
         let entries: Vec<wgpu::BindGroupLayoutEntry> = uniforms.iter().enumerate().map(|(i, binding_resource)| {
@@ -98,7 +99,7 @@ impl MaterialPipeline {
 
         let uniform_bind_group_layout = wgpu_context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &entries,
-            label: Some("Uniform Bind Group Layout"),
+            label: Some(&format!("{name} Uniform Bind Group Layout")),
         });
 
         let entries: Vec<wgpu::BindGroupEntry> = uniforms.iter().enumerate().map(|(i, binding_resource)| {
@@ -111,7 +112,7 @@ impl MaterialPipeline {
         let uniform_bind_group = wgpu_context.device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &uniform_bind_group_layout,
             entries: &entries,
-            label: Some("Uniform Bind Group"),
+            label: Some(&format!("{name} Uniform Bind Group")),
         });
 
         let entries: Vec<wgpu::BindGroupLayoutEntry> = textures.iter().enumerate().flat_map(|(i, texture)| {
@@ -119,7 +120,7 @@ impl MaterialPipeline {
         }).collect();
         let texture_bind_group_layout = wgpu_context.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &entries,
-            label: Some("Texture Bind Group Layout"),
+            label: Some(&format!("{name} Texture Bind Group Layout")),
         });
 
         let entries: Vec<wgpu::BindGroupEntry> = textures.iter().enumerate().flat_map(|(i, texture)| {
@@ -128,11 +129,11 @@ impl MaterialPipeline {
         let texture_bind_group = wgpu_context.device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &texture_bind_group_layout,
             entries: &entries,
-            label: Some("Texture Bind Group"),
+            label: Some(&format!("{name} Texture Bind Group")),
         });
 
         let pipeline_layout = wgpu_context.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Render Pipeline Layout"),
+            label: Some(&format!("{name} Render Pipeline Layout")),
             bind_group_layouts: &[
                 &required_bind_group_layout,
                 &uniform_bind_group_layout,
@@ -142,7 +143,7 @@ impl MaterialPipeline {
         });
 
         let pipeline = wgpu_context.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Render Pipeline"),
+            label: Some(&format!("{name} Render Pipeline")),
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
@@ -179,6 +180,7 @@ impl MaterialPipeline {
         });
 
         MaterialPipeline {
+            name: name.to_string(),
             shader_module: shader,
 
             transform_uniforms,

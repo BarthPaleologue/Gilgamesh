@@ -41,6 +41,8 @@ impl Default for PhongUniforms {
 }
 
 pub struct PhongMaterial {
+    name: String,
+
     material_pipeline: Option<MaterialPipeline>,
 
     light_uniforms: DirectionalLightUniform,
@@ -63,17 +65,17 @@ pub struct PhongMaterial {
 }
 
 impl PhongMaterial {
-    pub fn new(wgpu_context: &WGPUContext) -> Self {
+    pub fn new(name: &str, wgpu_context: &WGPUContext) -> Self {
         let light_uniforms = DirectionalLightUniform::default();
-        let light_uniforms_buffer = create_buffer::<DirectionalLightUniform>("DirectionalLight Buffer", wgpu_context);
+        let light_uniforms_buffer = create_buffer::<DirectionalLightUniform>(&format!("{} DirectionalLight Buffer", name), wgpu_context);
 
         let point_light_uniforms = [PointLightUniforms::default(); MAX_POINT_LIGHTS];
-        let point_light_buffer = create_array_buffer::<PointLightUniforms>("PointLights Array Buffer", MAX_POINT_LIGHTS, wgpu_context);
+        let point_light_buffer = create_array_buffer::<PointLightUniforms>(&format!("{} PointLights Array Buffer", name), MAX_POINT_LIGHTS, wgpu_context);
 
-        let nb_point_lights_buffer = create_buffer::<u32>("Number of Point Lights Buffer", wgpu_context);
+        let nb_point_lights_buffer = create_buffer::<u32>(&format!("{} Number of Point Lights Buffer", name), wgpu_context);
 
         let phong_uniforms = PhongUniforms::default();
-        let phong_uniforms_buffer = create_buffer::<PhongUniforms>("Phong Buffer", wgpu_context);
+        let phong_uniforms_buffer = create_buffer::<PhongUniforms>(&format!("{} Phong Buffer", name), wgpu_context);
 
         let diffuse_texture = wgpu_context.empty_texture();
         let ambient_texture = wgpu_context.empty_texture();
@@ -81,6 +83,7 @@ impl PhongMaterial {
         let normal_map = wgpu_context.empty_texture();
 
         PhongMaterial {
+            name: name.to_string(),
             material_pipeline: None,
 
             light_uniforms,
@@ -104,7 +107,7 @@ impl PhongMaterial {
     }
 
     pub fn compile(&mut self, wgpu_context: &WGPUContext) {
-        self.material_pipeline = Some(MaterialPipeline::new("../shader/phong.wgsl", &[
+        self.material_pipeline = Some(MaterialPipeline::new(&format!("{} MaterialPipeline", self.name), "../shader/phong.wgsl", &[
             &self.light_uniforms_buffer,
             &self.point_light_buffer,
             &self.nb_point_lights_buffer,

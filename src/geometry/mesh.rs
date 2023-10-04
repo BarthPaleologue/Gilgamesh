@@ -76,7 +76,7 @@ impl Mesh {
             vertex_data,
             vertex_buffer,
             index_buffer,
-            material: PhongMaterial::new(&engine.wgpu_context),
+            material: PhongMaterial::new(&format!("{}Material", name), &engine.wgpu_context),
         }
     }
 

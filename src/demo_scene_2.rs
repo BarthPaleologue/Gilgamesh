@@ -18,9 +18,9 @@ pub fn run() {
     scene.set_active_camera(camera);
 
     let mut mesh = ProceduralMesh::terrain("sinc", 10.0, 128, &|x, z| {
-        let d = 5.0 * (x * x + z * z).sqrt();
-        3.0 * (f32::sin(d) / d).min(1.0)
-    }, 1.0, &engine);
+            let d = 5.0 * (x * x + z * z).sqrt();
+            3.0 * (f32::sin(d) / d).min(1.0)
+        }, &engine);
     mesh.material().set_diffuse_color(0.5, 0.2, 1.0);
     scene.add_mesh(mesh);
 
