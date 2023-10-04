@@ -7,14 +7,14 @@ pub struct Texture {
 }
 
 impl Texture {
-    pub fn new_empty(name: &str, wgpu_context: &mut WGPUContext) -> Texture {
+    pub fn new_empty(name: &str, device: &wgpu::Device) -> Texture {
         let texture_size = wgpu::Extent3d {
             width: 1,
             height: 1,
             depth_or_array_layers: 1,
         };
 
-        let texture = wgpu_context.device.create_texture(
+        let texture = device.create_texture(
             &wgpu::TextureDescriptor {
                 // All textures are stored as 3D, we represent our 2D texture
                 // by setting depth to 1.
@@ -42,7 +42,7 @@ impl Texture {
         // We don't need to configure the texture view much, so let's
         // let wgpu define it.
         let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let sampler = wgpu_context.device.create_sampler(&wgpu::SamplerDescriptor {
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,

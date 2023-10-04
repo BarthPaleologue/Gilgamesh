@@ -75,10 +75,10 @@ impl PhongMaterial {
         let phong_uniforms = PhongUniforms::default();
         let phong_uniforms_buffer = create_buffer::<PhongUniforms>("Phong Buffer", wgpu_context);
 
-        let diffuse_texture = Rc::new(Texture::new_empty("Default Diffuse Texture", wgpu_context));
-        let ambient_texture = Rc::new(Texture::new_empty("Default Ambient Texture", wgpu_context));
-        let specular_texture = Rc::new(Texture::new_empty("Default Specular Texture", wgpu_context));
-        let normal_map = Rc::new(Texture::new_empty("Default Normal Map", wgpu_context));
+        let diffuse_texture = wgpu_context.empty_texture();
+        let ambient_texture = wgpu_context.empty_texture();
+        let specular_texture = wgpu_context.empty_texture();
+        let normal_map = wgpu_context.empty_texture();
 
         PhongMaterial {
             material_pipeline: None,

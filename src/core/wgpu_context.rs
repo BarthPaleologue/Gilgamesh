@@ -1,11 +1,14 @@
+use std::rc::Rc;
 use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
 use winit::window::Window;
+use crate::texture::Texture;
 
 pub struct WGPUContext {
     pub surface: Surface,
     pub device: Device,
     pub queue: Queue,
-    pub config: SurfaceConfiguration
+    pub config: SurfaceConfiguration,
+    empty_texture: Rc<Texture>,
 }
 
 impl WGPUContext {
@@ -59,11 +62,18 @@ impl WGPUContext {
         };
         surface.configure(&device, &config);
 
+        let empty_texture = Rc::new(Texture::new_empty("Default Texture", &device));
+
         WGPUContext {
             surface,
             device,
             queue,
             config,
+            empty_texture,
         }
+    }
+
+    pub fn empty_texture(&self) -> Rc<Texture> {
+        self.empty_texture.clone()
     }
 }
