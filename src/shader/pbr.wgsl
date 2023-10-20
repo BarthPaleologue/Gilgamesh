@@ -126,8 +126,29 @@ fn fresnelSchlick(cosTheta: f32, F0: vec3<f32>) -> vec3<f32> {
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
-fn pbr_radiance(L: vec3<f32>, H: vec3<f32>, V: vec3<f32>, N: vec3<f32>, distance: f32) -> vec3<f32> {
-    return vec3(0.7, 0.3, 0.3);
+fn pbr_radiance(L: vec3<f32>, H: vec3<f32>, V: vec3<f32>, N: vec3<f32>, light_color: vec3<f32>, distance: f32, albedo_color: vec3<f32>, metallic: f32, roughness: f32) -> vec3<f32> {
+    let attenuation: f32 = 1.0 / (distance * distance);
+    let radiance: vec3<f32> = light_color * attenuation;
+
+    var F0: vec3<f32> = vec3(0.04);
+    F0      = mix(F0, albedo_color, metallic);
+
+    let F: vec3<f32>  = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+    let NDF: f32 = DistributionGGX(N, H, roughness);
+    let G: f32   = GeometrySmith(N, V, L, roughness);
+
+    let numerator: vec3<f32>    = NDF * G * F;
+    let denominator: f32 = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0)  + 0.0001;
+    let specular: vec3<f32>     = numerator / denominator;
+
+    let kS: vec3<f32> = F;
+    var kD: vec3<f32> = 1.0 - kS;
+
+    kD *= 1.0 - metallic;
+
+    let NdotL: f32 = max(dot(N, L), 0.0);
+    return (kD * albedo_color / PI + specular) * radiance * NdotL;
 }
 
 @fragment
@@ -146,7 +167,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     normal = normalize((transform.normal_matrix * vec4<f32>(normal, 0.0)).xyz);
 
     var albedo: vec3<f32> = pbr.albedo_color;
-    if(pbr.has_diffuse_texture > 0u) {
+    if(pbr.has_albedo_texture > 0u) {
         albedo = textureSample(albedo_texture, albedo_sampler, in.vUV).rgb;
     }
 
@@ -155,42 +176,30 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         ambient = textureSample(ambient_texture, ambient_sampler, in.vUV).rgb;
     }
 
+    var metallic: f32 = pbr.metallic;
+    var roughness: f32 = pbr.roughness;
+
+    var Lo: vec3<f32> = vec3(0.0);
+
     let V: vec3<f32> = normalize(camera.position - in.vPositionW);
-    let L: vec3<f32> = normalize(directionalLight.direction);
 
-    let H: vec3<f32> = normalize(V + L);
+    {
+        let L: vec3<f32> = -normalize(directionalLight.direction);
+        let H: vec3<f32> = normalize(V + L);
 
-    let radiance: vec3<f32> = pbr_radiance(L, H, V, normal, 1.0);
-
-    /*let reflect_dir: vec3<f32> = reflect(directionalLight.direction, normal);
-    let specular_strength: f32 = pow(max(0.0, dot(V, reflect_dir)), 32.0);
-    var specular: vec3<f32> = specular_strength * directionalLight.color * directionalLight.intensity * pbr.specular_color;
-    if(pbr.has_specular_texture > 0u) {
-        specular = specular * textureSample(specular_texture, specular_sampler, in.vUV).r;
+        Lo += pbr_radiance(L, H, V, normal, directionalLight.color, 1.0, albedo, metallic, roughness) * directionalLight.intensity;
     }
-
-    var ndl = max(0.0, dot(normal, -directionalLight.direction));
-    var color = albedo * directionalLight.color * directionalLight.intensity + specular;
 
     for (var i: u32 = 0u; i < point_lights_count; i = i + 1u) {
-        let light_dir: vec3<f32> = normalize(point_lights[i].position - in.vPositionW);
-        ndl = ndl + max(0.0, dot(normal, light_dir));
+        let L: vec3<f32> = normalize(point_lights[i].position - in.vPositionW);
+        let H: vec3<f32> = normalize(V + L);
 
-        let reflect_dir: vec3<f32> = reflect(-light_dir, normal);
-        let specular_strength: f32 = pow(max(0.0, dot(V, reflect_dir)), 32.0);
-        var specular: vec3<f32> = specular_strength * point_lights[i].color * pbr.specular_color;
-        if(pbr.has_specular_texture > 0u) {
-             specular = specular * textureSample(specular_texture, specular_sampler, in.vUV).r;
-        }
+        let distance: f32 = 1.0; //length(point_lights[i].position - in.vPositionW);
 
-        color = color + albedo * point_lights[i].color * point_lights[i].intensity + specular;
+        Lo += pbr_radiance(L, H, V, normal, point_lights[i].color, distance, albedo, metallic, roughness) * point_lights[i].intensity;
     }
 
-    color = color * ndl + ambient;*/
-
-    let color = radiance * albedo + ambient;
-
-    //color = vec3(in.vUV, 1.0);//in.vNormal * 0.5 + 0.5;
+    let color = Lo + ambient;
 
     return vec4(color, 1.0);
 }

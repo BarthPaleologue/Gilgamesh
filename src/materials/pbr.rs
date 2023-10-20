@@ -38,9 +38,9 @@ impl Default for PbrUniforms {
             has_albedo_texture: 0,
             ambient_color: [0.0, 0.0, 0.0],
             has_ambient_texture: 0,
-            metallic: 0.2,
+            metallic: 0.7,
             has_metallic_texture: 0,
-            roughness: 0.8,
+            roughness: 0.4,
             has_roughness_texture: 0,
             has_normal_map: 0,
             _padding: [0; 3],
@@ -118,7 +118,7 @@ impl PbrMaterial {
     }
 
     pub fn compile(&mut self, wgpu_context: &WGPUContext) {
-        self.material_pipeline = Some(Shader::new(&format!("{} MaterialPipeline", self.name), "../shader/blinn_phong.wgsl", &[
+        self.material_pipeline = Some(Shader::new(&format!("{} MaterialPipeline", self.name), "../shader/pbr.wgsl", &[
             &self.directional_light_uniforms_buffer,
             &self.point_light_buffer,
             &self.nb_point_lights_buffer,
