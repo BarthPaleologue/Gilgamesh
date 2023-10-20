@@ -2,6 +2,7 @@ use winit::event::{ElementState, WindowEvent};
 
 pub struct Mouse {
     pub position: [f64; 2],
+    pub new_position: [f64; 2],
     pub delta: [f64; 2],
     pub left_button_pressed: bool,
     pub right_button_pressed: bool,
@@ -13,6 +14,7 @@ impl Default for Mouse {
     fn default() -> Self {
         Mouse {
             position: [0.0, 0.0],
+            new_position: [0.0, 0.0],
             delta: [0.0, 0.0],
             left_button_pressed: false,
             right_button_pressed: false,
@@ -28,19 +30,17 @@ impl Mouse {
     }
 
     pub fn listen_to_event(&mut self, event: &WindowEvent) {
-        let new_position = match event {
+        self.new_position = match event {
             WindowEvent::CursorMoved {
                 position: pos,
                 ..
             } => {
                 [pos.x, pos.y]
             }
-            _ => self.position,
+            _ => self.new_position,
         };
 
-        self.delta = [new_position[0] - self.position[0], new_position[1] - self.position[1]];
-
-        self.position = new_position;
+        self.delta = [self.new_position[0] - self.position[0], self.new_position[1] - self.position[1]];
 
         self.scroll_delta = 0.0;
 
@@ -76,6 +76,7 @@ impl Mouse {
     }
 
     pub fn reset(&mut self) {
+        self.position = self.new_position;
         self.delta = [0.0, 0.0];
         self.scroll_delta = 0.0;
     }

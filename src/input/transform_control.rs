@@ -13,6 +13,7 @@ pub struct OrbitControl {
     phi: f32,
     theta: f32,
     epsilon: f32,
+    rotation_speed: f32,
 }
 
 impl Default for OrbitControl {
@@ -23,6 +24,7 @@ impl Default for OrbitControl {
             phi: 0.0,
             theta: -std::f32::consts::PI / 4.0,
             epsilon: 0.0001,
+            rotation_speed: 0.5,
         }
     }
 }
@@ -37,8 +39,8 @@ impl OrbitControl {
 impl TransformMouseController for OrbitControl {
     fn update(&mut self, mouse: &Mouse, engine: &Engine) -> (Vector3<f32>, Point3<f32>, Point3<f32>) {
         if mouse.left_button_pressed {
-            self.phi += mouse.delta[0] as f32 * engine.get_delta_time();
-            self.theta += mouse.delta[1] as f32 * engine.get_delta_time();
+            self.phi += mouse.delta[0] as f32 * self.rotation_speed * engine.get_delta_time();
+            self.theta += mouse.delta[1] as f32 * self.rotation_speed * engine.get_delta_time();
 
             self.theta = self.theta.max(-std::f32::consts::PI + self.epsilon).min(-self.epsilon);
         }
