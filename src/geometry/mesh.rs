@@ -13,7 +13,7 @@ use crate::lights::directional_light::DirectionalLight;
 use crate::lights::point_light::PointLight;
 
 use crate::transform::{Transform, Transformable};
-use crate::materials::phong::PhongMaterial;
+use crate::materials::blinn_phong::BlinnPhongMaterial;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
@@ -42,7 +42,7 @@ pub struct Mesh {
     vertex_data: VertexData,
     index_buffer: Buffer,
     vertex_buffer: Buffer,
-    material: PhongMaterial,
+    material: BlinnPhongMaterial,
 }
 
 impl Transformable for Mesh {
@@ -76,15 +76,15 @@ impl Mesh {
             vertex_data,
             vertex_buffer,
             index_buffer,
-            material: PhongMaterial::new(&format!("{}Material", name), &engine.wgpu_context),
+            material: BlinnPhongMaterial::new(&format!("{}Material", name), &engine.wgpu_context),
         }
     }
 
-    pub fn material(&mut self) -> &mut PhongMaterial {
+    pub fn material(&mut self) -> &mut BlinnPhongMaterial {
         &mut self.material
     }
 
-    pub fn set_material(&mut self, material: PhongMaterial) {
+    pub fn set_material(&mut self, material: BlinnPhongMaterial) {
         self.material = material;
     }
 

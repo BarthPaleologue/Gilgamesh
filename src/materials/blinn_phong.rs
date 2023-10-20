@@ -14,7 +14,7 @@ use crate::transform::Transform;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct PhongUniforms {
+pub struct BlinnPhongUniforms {
     diffuse_color: [f32; 3],
     has_diffuse_texture: u32,
     ambient_color: [f32; 3],
@@ -25,9 +25,9 @@ pub struct PhongUniforms {
     _padding: [u32; 3],
 }
 
-impl Default for PhongUniforms {
+impl Default for BlinnPhongUniforms {
     fn default() -> Self {
-        PhongUniforms {
+        BlinnPhongUniforms {
             diffuse_color: [1.0, 1.0, 1.0],
             has_diffuse_texture: 0,
             ambient_color: [0.0, 0.0, 0.0],
@@ -40,7 +40,7 @@ impl Default for PhongUniforms {
     }
 }
 
-pub struct PhongMaterial {
+pub struct BlinnPhongMaterial {
     name: String,
 
     material_pipeline: Option<MaterialPipeline>,
@@ -52,7 +52,7 @@ pub struct PhongMaterial {
     point_light_buffer: wgpu::Buffer,
     nb_point_lights_buffer: wgpu::Buffer,
 
-    phong_uniforms: PhongUniforms,
+    phong_uniforms: BlinnPhongUniforms,
     phong_uniforms_buffer: wgpu::Buffer,
 
     diffuse_texture: Rc<Texture>,
@@ -64,7 +64,7 @@ pub struct PhongMaterial {
     back_face_culling: bool,
 }
 
-impl PhongMaterial {
+impl BlinnPhongMaterial {
     pub fn new(name: &str, wgpu_context: &WGPUContext) -> Self {
         let light_uniforms = DirectionalLightUniform::default();
         let light_uniforms_buffer = create_buffer::<DirectionalLightUniform>(&format!("{} DirectionalLight Buffer", name), wgpu_context);
@@ -74,15 +74,15 @@ impl PhongMaterial {
 
         let nb_point_lights_buffer = create_buffer::<u32>(&format!("{} Number of Point Lights Buffer", name), wgpu_context);
 
-        let phong_uniforms = PhongUniforms::default();
-        let phong_uniforms_buffer = create_buffer::<PhongUniforms>(&format!("{} Phong Buffer", name), wgpu_context);
+        let phong_uniforms = BlinnPhongUniforms::default();
+        let phong_uniforms_buffer = create_buffer::<BlinnPhongUniforms>(&format!("{} Phong Buffer", name), wgpu_context);
 
         let diffuse_texture = wgpu_context.empty_texture();
         let ambient_texture = wgpu_context.empty_texture();
         let specular_texture = wgpu_context.empty_texture();
         let normal_map = wgpu_context.empty_texture();
 
-        PhongMaterial {
+        BlinnPhongMaterial {
             name: name.to_string(),
             material_pipeline: None,
 
@@ -107,7 +107,7 @@ impl PhongMaterial {
     }
 
     pub fn compile(&mut self, wgpu_context: &WGPUContext) {
-        self.material_pipeline = Some(MaterialPipeline::new(&format!("{} MaterialPipeline", self.name), "../shader/phong.wgsl", &[
+        self.material_pipeline = Some(MaterialPipeline::new(&format!("{} MaterialPipeline", self.name), "../shader/blinn_phong.wgsl", &[
             &self.light_uniforms_buffer,
             &self.point_light_buffer,
             &self.nb_point_lights_buffer,
