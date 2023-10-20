@@ -1,10 +1,9 @@
 use std::cell::Ref;
 use std::ops::Deref;
-use std::rc::Rc;
 use std::borrow::Borrow;
 use bytemuck::{cast_slice};
 use load_file::load_str;
-use wgpu::{BindGroup, BindGroupLayout, Buffer, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
+use wgpu::{BindGroup, Buffer, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
 use crate::camera::camera::Camera;
 use crate::camera::uniforms::CameraUniforms;
 
@@ -14,28 +13,28 @@ use crate::materials::utils::{create_buffer};
 use crate::texture::Texture;
 use crate::transform::{Transform, TransformUniforms};
 
-pub struct MaterialPipeline {
-    pub name: String,
-    pub shader_module: ShaderModule,
+pub struct Shader {
+    name: String,
+    shader_module: ShaderModule,
 
-    pub transform_uniforms: TransformUniforms,
-    pub transform_uniforms_buffer: Buffer,
+    transform_uniforms: TransformUniforms,
+    transform_uniforms_buffer: Buffer,
 
-    pub camera_uniforms: CameraUniforms,
-    pub camera_uniforms_buffer: Buffer,
+    camera_uniforms: CameraUniforms,
+    camera_uniforms_buffer: Buffer,
 
-    pub required_bind_group: BindGroup,
+    required_bind_group: BindGroup,
 
-    pub uniform_bind_group: BindGroup,
+    uniform_bind_group: BindGroup,
 
-    pub texture_bind_group: BindGroup,
+    texture_bind_group: BindGroup,
 
-    pub pipeline_layout: PipelineLayout,
-    pub pipeline: RenderPipeline,
+    pipeline_layout: PipelineLayout,
+    pipeline: RenderPipeline,
 }
 
-impl MaterialPipeline {
-    pub fn new(name: &str, shader_file: &str, uniforms: &[&Buffer], textures: &[&Texture], polygon_mode: wgpu::PolygonMode, back_face_culling: bool, wgpu_context: &WGPUContext) -> MaterialPipeline {
+impl Shader {
+    pub fn new(name: &str, shader_file: &str, uniforms: &[&Buffer], textures: &[&Texture], polygon_mode: wgpu::PolygonMode, back_face_culling: bool, wgpu_context: &WGPUContext) -> Shader {
         // load shader from file at runtime
         let shader_string = load_str!(shader_file);
         let shader = wgpu_context.device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -179,7 +178,7 @@ impl MaterialPipeline {
             multiview: None,
         });
 
-        MaterialPipeline {
+        Shader {
             name: name.to_string(),
             shader_module: shader,
 

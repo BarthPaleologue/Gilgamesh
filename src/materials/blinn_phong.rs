@@ -6,7 +6,7 @@ use crate::camera::camera::Camera;
 use crate::core::wgpu_context::WGPUContext;
 use crate::lights::directional_light::{DirectionalLight, DirectionalLightUniform};
 use crate::lights::point_light::{PointLight, PointLightUniforms};
-use crate::materials::material_pipeline::MaterialPipeline;
+use crate::materials::shader::Shader;
 use crate::materials::utils::{create_array_buffer, create_buffer};
 use crate::settings::MAX_POINT_LIGHTS;
 use crate::texture::Texture;
@@ -43,7 +43,7 @@ impl Default for BlinnPhongUniforms {
 pub struct BlinnPhongMaterial {
     name: String,
 
-    material_pipeline: Option<MaterialPipeline>,
+    material_pipeline: Option<Shader>,
 
     light_uniforms: DirectionalLightUniform,
     light_uniforms_buffer: wgpu::Buffer,
@@ -107,7 +107,7 @@ impl BlinnPhongMaterial {
     }
 
     pub fn compile(&mut self, wgpu_context: &WGPUContext) {
-        self.material_pipeline = Some(MaterialPipeline::new(&format!("{} MaterialPipeline", self.name), "../shader/blinn_phong.wgsl", &[
+        self.material_pipeline = Some(Shader::new(&format!("{} MaterialPipeline", self.name), "../shader/blinn_phong.wgsl", &[
             &self.light_uniforms_buffer,
             &self.point_light_buffer,
             &self.nb_point_lights_buffer,

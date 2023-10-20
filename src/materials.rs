@@ -1,4 +1,4 @@
-pub mod material_pipeline;
+pub mod shader;
 pub mod blinn_phong;
 pub mod uniform_buffer;
 pub mod material;
