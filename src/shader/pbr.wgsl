@@ -89,7 +89,7 @@ fn vs_main(in: VertexInput) -> VertexOutput {
     return output;
 }
 
-const PI = 3.14159265359;
+const PI: f32 = 3.14159265359;
 
 fn DistributionGGX(N: vec3<f32>, H: vec3<f32>, roughness: f32) -> f32 {
     let a      = roughness*roughness;
@@ -101,7 +101,7 @@ fn DistributionGGX(N: vec3<f32>, H: vec3<f32>, roughness: f32) -> f32 {
     var denom = (NdotH2 * (a2 - 1.0) + 1.0);
     denom = PI * denom * denom;
 
-    return num / denom;
+    return num / max(denom, 0.001);
 }
 
 fn GeometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
@@ -111,7 +111,7 @@ fn GeometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
     let num: f32   = NdotV;
     let denom: f32 = NdotV * (1.0 - k) + k;
 
-    return num / denom;
+    return num / max(denom, 0.001);
 }
 fn GeometrySmith(N: vec3<f32>, V: vec3<f32>, L: vec3<f32>, roughness: f32) -> f32 {
     let NdotV = max(dot(N, V), 0.0);
@@ -123,7 +123,7 @@ fn GeometrySmith(N: vec3<f32>, V: vec3<f32>, L: vec3<f32>, roughness: f32) -> f3
 }
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3<f32>) -> vec3<f32> {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
 fn pbr_radiance(L: vec3<f32>, H: vec3<f32>, V: vec3<f32>, N: vec3<f32>, light_color: vec3<f32>, distance: f32, albedo_color: vec3<f32>, metallic: f32, roughness: f32) -> vec3<f32> {
@@ -132,14 +132,13 @@ fn pbr_radiance(L: vec3<f32>, H: vec3<f32>, V: vec3<f32>, N: vec3<f32>, light_co
 
     var F0: vec3<f32> = vec3(0.04);
     F0      = mix(F0, albedo_color, metallic);
-
     let F: vec3<f32>  = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
     let NDF: f32 = DistributionGGX(N, H, roughness);
     let G: f32   = GeometrySmith(N, V, L, roughness);
 
     let numerator: vec3<f32>    = NDF * G * F;
-    let denominator: f32 = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0)  + 0.0001;
+    let denominator: f32 = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0)  + 0.001;
     let specular: vec3<f32>     = numerator / denominator;
 
     let kS: vec3<f32> = F;
@@ -168,7 +167,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     var albedo: vec3<f32> = pbr.albedo_color;
     if(pbr.has_albedo_texture > 0u) {
-        albedo = textureSample(albedo_texture, albedo_sampler, in.vUV).rgb;
+        albedo = pow(textureSample(albedo_texture, albedo_sampler, in.vUV).rgb, vec3(2.2));
     }
 
     var ambient: vec3<f32> = pbr.ambient_color;
@@ -182,12 +181,13 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var Lo: vec3<f32> = vec3(0.0);
 
     let V: vec3<f32> = normalize(camera.position - in.vPositionW);
+    let N: vec3<f32> = normal;
 
     {
         let L: vec3<f32> = -normalize(directionalLight.direction);
         let H: vec3<f32> = normalize(V + L);
 
-        Lo += pbr_radiance(L, H, V, normal, directionalLight.color, 1.0, albedo, metallic, roughness) * directionalLight.intensity;
+        Lo += pbr_radiance(L, H, V, N, directionalLight.color, 1.0, albedo, metallic, roughness) * directionalLight.intensity;
     }
 
     for (var i: u32 = 0u; i < point_lights_count; i = i + 1u) {
@@ -196,10 +196,12 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
         let distance: f32 = 1.0; //length(point_lights[i].position - in.vPositionW);
 
-        Lo += pbr_radiance(L, H, V, normal, point_lights[i].color, distance, albedo, metallic, roughness) * point_lights[i].intensity;
+        Lo += pbr_radiance(L, H, V, N, point_lights[i].color, distance, albedo, metallic, roughness) * point_lights[i].intensity;
     }
 
-    let color = Lo + ambient;
+    var color = Lo + ambient;
+    color = color / (color + vec3(1.0));
+    color = pow(color, vec3(1.0/2.2));
 
     return vec4(color, 1.0);
 }
