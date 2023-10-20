@@ -7,6 +7,8 @@ use crate::geometry::primitive::PrimitiveMesh;
 use crate::lights::debug::show_point_light_debug_mesh;
 use crate::lights::light::Light;
 use crate::lights::point_light::PointLight;
+use crate::materials::blinn_phong::BlinnPhongMaterial;
+use crate::materials::pbr::PbrMaterial;
 use crate::texture::Texture;
 use crate::transform::{Transformable};
 
@@ -51,18 +53,23 @@ pub fn run() {
 
     let mut sun = PrimitiveMesh::sphere("Sun", 32, &engine);
     let sun_texture = Rc::new(Texture::new("Sun texture", "textures/sun.jpg", &engine.wgpu_context));
-    sun.material().set_ambient_texture(sun_texture.clone());
+    let mut sun_material = PbrMaterial::new("SunMaterial", &engine.wgpu_context);
+    sun_material.set_albedo_texture(sun_texture.clone());
+    sun.set_material(Box::new(sun_material));
     let sun_idx = scene.add_mesh(sun);
 
     let mut earth = PrimitiveMesh::sphere("Earth", 32, &engine);
     earth.transform_mut().parent = Some(scene.meshes[sun_idx].transform_rc());
+    let mut earth_material = BlinnPhongMaterial::new("EarthMaterial", &engine.wgpu_context);
     let earth_diffuse_texture = Rc::new(Texture::new("Earth diffuse texture", "textures/2k_earth_daymap.jpg", &engine.wgpu_context));
-    earth.material().set_diffuse_texture(earth_diffuse_texture.clone());
+    earth_material.set_diffuse_texture(earth_diffuse_texture.clone());
     let earth_specular_texture = Rc::new(Texture::new("Earth specular texture", "textures/2k_earth_specular_map.jpg", &engine.wgpu_context));
-    earth.material().set_specular_texture(earth_specular_texture.clone());
+    earth_material.set_specular_texture(earth_specular_texture.clone());
     let earth_normal_map = Rc::new(Texture::new("Earth normal map", "textures/2k_earth_normal_map.jpg", &engine.wgpu_context));
     //earth.material().set_normal_map(earth_normal_map.clone());
     //earth.material().set_polygon_mode(wgpu::PolygonMode::Line);
+    earth.set_material(Box::new(earth_material));
+
     camera.transform_mut().parent = Some(earth.transform_rc());
     let earth_idx = scene.add_mesh(earth);
 

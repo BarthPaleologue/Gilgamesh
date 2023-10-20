@@ -51,7 +51,7 @@ impl ProceduralMesh {
         vertex_data.create_tangents();
 
         let mut mesh = Mesh::from_vertex_data(name, vertex_data, engine);
-        mesh.set_material(BlinnPhongMaterial::new(&format!("{}Material", name), &engine.wgpu_context));
+        mesh.set_material(Box::new(BlinnPhongMaterial::new(&format!("{}Material", name), &engine.wgpu_context)));
 
         mesh
     }
@@ -92,7 +92,7 @@ impl ProceduralMesh {
         vertex_data.create_tangents();
 
         let mut mesh = Mesh::from_vertex_data(name, vertex_data, engine);
-        mesh.set_material(BlinnPhongMaterial::new(&format!("{}Material", name), &engine.wgpu_context));
+        mesh.set_material(Box::new(BlinnPhongMaterial::new(&format!("{}Material", name), &engine.wgpu_context)));
 
         mesh
     }
