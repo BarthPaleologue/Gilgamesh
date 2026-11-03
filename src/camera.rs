@@ -26,7 +26,7 @@ impl<ProjectionType: CameraProjection> Camera<ProjectionType> {
     /// Inverts the camera's world transform, with local -Z as the viewing direction.
     pub fn view_matrix(&self) -> DMat4 {
         self.transform()
-            .compute_world_matrix()
+            .world_matrix()
             .try_inverse()
             .expect("Camera world matrix is not invertible")
     }

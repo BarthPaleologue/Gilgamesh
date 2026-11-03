@@ -28,10 +28,7 @@ fn default_transform_has_identity_orientation() {
     let transform = Transform::new();
     assert_eq!(transform.rotation, DQuat::IDENTITY);
     let point = DVec4::new(1.0, -2.0, 3.0, 1.0);
-    assert_close(
-        (transform.compute_world_matrix() * point).into(),
-        point.into(),
-    );
+    assert_close((transform.world_matrix() * point).into(), point.into());
 }
 
 #[test]
@@ -40,7 +37,7 @@ fn world_transform_keeps_rotation_then_nonuniform_scale_then_translation() {
     transform.position = DVec3::new(3.0, -2.0, 4.0);
     transform.scaling = DVec3::new(2.0, 3.0, 4.0);
     transform.rotation = DQuat::from_rotation_z(FRAC_PI_2) * DQuat::from_rotation_x(FRAC_PI_2);
-    let position = transform.compute_world_matrix() * DVec4::new(1.0, 2.0, 3.0, 1.0);
+    let position = transform.world_matrix() * DVec4::new(1.0, 2.0, 3.0, 1.0);
     assert_close(position.into(), [9.0, 1.0, 12.0, 1.0]);
 }
 
@@ -53,11 +50,11 @@ fn child_transform_follows_changes_to_its_parent() {
     let mut child = Transform::new();
     child.parent = Some(parent.clone());
     child.position = DVec3::new(1.0, 2.0, 3.0);
-    let position = child.compute_world_matrix() * DVec4::new(0.0, 0.0, 0.0, 1.0);
+    let position = child.world_matrix() * DVec4::new(0.0, 0.0, 0.0, 1.0);
     assert_close(position.into(), [1.0, -1.0, 14.0, 1.0]);
 
     parent.borrow_mut().position = DVec3::new(8.0, -4.0, 2.0);
-    let position = child.compute_world_matrix() * DVec4::new(0.0, 0.0, 0.0, 1.0);
+    let position = child.world_matrix() * DVec4::new(0.0, 0.0, 0.0, 1.0);
     assert_close(position.into(), [4.0, -1.0, 14.0, 1.0]);
 }
 
@@ -66,7 +63,7 @@ fn normal_transform_accounts_for_nonuniform_scale_and_rotation() {
     let mut transform = Transform::new();
     transform.scaling = DVec3::new(2.0, 4.0, 8.0);
     transform.rotation = DQuat::from_rotation_z(FRAC_PI_2);
-    let normal = transform.compute_normal_matrix() * DVec4::new(1.0, 0.0, 0.0, 0.0);
+    let normal = transform.normal_matrix() * DVec4::new(1.0, 0.0, 0.0, 0.0);
     assert_close(normal.into(), [0.0, 0.25, 0.0, 0.0]);
 }
 
@@ -127,7 +124,7 @@ fn orbit_control_keeps_looking_at_the_target_under_a_parent_transform() {
     parent.borrow_mut().position = DVec3::new(2.0, -1.0, 3.0);
     parent.borrow_mut().scaling = DVec3::new(2.0, 3.0, 4.0);
     parent.borrow_mut().rotation = DQuat::from_rotation_y(0.4);
-    let target = parent.borrow().compute_world_matrix() * DVec4::new(0.0, 0.0, 0.0, 1.0);
+    let target = parent.borrow().world_matrix() * DVec4::new(0.0, 0.0, 0.0, 1.0);
     let mut camera: Camera = Camera::default();
     camera.transform_mut().parent = Some(parent);
     let mut control = OrbitControl::default();
@@ -161,7 +158,7 @@ fn orbit_control_keeps_looking_at_the_target_under_a_parent_transform() {
 fn singular_transform_cannot_produce_a_normal_matrix() {
     let mut transform = Transform::new();
     transform.scaling = DVec3::new(0.0, 1.0, 1.0);
-    transform.compute_normal_matrix();
+    transform.normal_matrix();
 }
 
 #[test]
@@ -243,7 +240,7 @@ fn parented_transforms_and_camera_keep_small_offsets_at_large_coordinates() {
     let mut child = Transform::new();
     child.parent = Some(parent.clone());
     child.position = DVec3::new(0.125, 0.25, -0.5);
-    let world_position = child.compute_world_matrix().transform_point3(DVec3::ZERO);
+    let world_position = child.world_matrix().transform_point3(DVec3::ZERO);
     assert_eq!(
         world_position,
         DVec3::new(origin + 0.125, -origin + 0.25, origin - 0.5)

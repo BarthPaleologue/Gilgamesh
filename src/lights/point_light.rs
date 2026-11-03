@@ -27,7 +27,7 @@ impl PointLightUniforms {
         self.intensity = point_light.intensity;
         self.position = point_light
             .transform()
-            .compute_world_position()
+            .world_position()
             .as_vec3()
             .to_array();
     }

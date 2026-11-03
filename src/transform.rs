@@ -24,13 +24,10 @@ pub struct TransformUniforms {
 
 impl TransformUniforms {
     pub fn update(&mut self, transform: &Transform) {
-        let world_matrix = transform.compute_world_matrix();
+        let world_matrix = transform.world_matrix();
         self.position = world_matrix.w_axis.truncate().as_vec3().to_array();
         self.world_matrix = world_matrix.as_mat4().to_cols_array_2d();
-        self.normal_matrix = transform
-            .compute_normal_matrix()
-            .as_mat4()
-            .to_cols_array_2d();
+        self.normal_matrix = transform.normal_matrix().as_mat4().to_cols_array_2d();
     }
 }
 
@@ -57,7 +54,7 @@ impl Transform {
         Transform::default()
     }
 
-    pub fn compute_world_matrix(&self) -> DMat4 {
+    pub fn world_matrix(&self) -> DMat4 {
         let position = DMat4::from_translation(self.position);
         let rotation = DMat4::from_quat(self.rotation);
         let scaling = DMat4::from_scale(self.scaling);
@@ -65,26 +62,26 @@ impl Transform {
         let mut world_matrix = position * scaling * rotation;
 
         if let Some(parent) = &self.parent {
-            let parent_world_matrix = parent.borrow().compute_world_matrix();
+            let parent_world_matrix = parent.borrow().world_matrix();
             world_matrix = parent_world_matrix * world_matrix;
         }
 
         world_matrix
     }
 
-    pub fn compute_normal_matrix(&self) -> DMat4 {
-        let world_matrix = self.compute_world_matrix();
+    pub fn normal_matrix(&self) -> DMat4 {
+        let world_matrix = self.world_matrix();
         world_matrix
             .try_inverse()
             .expect("Transform matrix is not invertible")
             .transpose()
     }
 
-    pub fn compute_world_position(&self) -> DVec3 {
+    pub fn world_position(&self) -> DVec3 {
         if let Some(parent) = &self.parent {
             parent
                 .borrow()
-                .compute_world_matrix()
+                .world_matrix()
                 .transform_point3(self.position)
         } else {
             self.position
