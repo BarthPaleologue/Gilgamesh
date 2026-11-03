@@ -23,6 +23,8 @@ fn assert_indexed_geometry(buffers: &CpuMeshBuffers) {
             .vertices
             .positions
             .iter()
+            .chain(&buffers.vertices.normals)
+            .chain(&buffers.vertices.tangents)
             .flatten()
             .all(|value| value.is_finite())
     );

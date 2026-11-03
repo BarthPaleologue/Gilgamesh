@@ -28,6 +28,8 @@ impl CpuMeshBuffers {
             .collect();
     }
 
+    /// Builds tangents from UVs and per-vertex normals.
+    /// Degenerate UVs use an arbitrary tangent orthogonal to the normal.
     pub fn create_tangents(&mut self) {
         let positions = &self.vertices.positions;
         let uvs = &self.vertices.uvs;
@@ -39,7 +41,11 @@ impl CpuMeshBuffers {
             let [uv_a, uv_b, uv_c] = [i0, i1, i2].map(|index| Vec2::from_array(uvs[index]));
             let delta_uv1 = uv_b - uv_a;
             let delta_uv2 = uv_c - uv_a;
-            let inverse_determinant = 1.0 / (delta_uv1.x * delta_uv2.y - delta_uv2.x * delta_uv1.y);
+            let determinant = delta_uv1.x * delta_uv2.y - delta_uv2.x * delta_uv1.y;
+            if determinant == 0.0 {
+                continue;
+            }
+            let inverse_determinant = 1.0 / determinant;
             let tangent = inverse_determinant * (delta_uv2.y * (b - a) - delta_uv1.y * (c - a));
             for index in [i0, i1, i2] {
                 tangents[index] += tangent;
@@ -48,7 +54,15 @@ impl CpuMeshBuffers {
 
         self.vertices.tangents = tangents
             .into_iter()
-            .map(|tangent| tangent.normalize().to_array())
+            .enumerate()
+            .map(|(index, tangent)| {
+                let normal = Vec3::from_array(self.vertices.normals[index]).normalize();
+                let tangent = tangent - normal * normal.dot(tangent);
+                tangent
+                    .try_normalize()
+                    .unwrap_or_else(|| normal.any_orthonormal_vector())
+                    .to_array()
+            })
             .collect();
     }
 }

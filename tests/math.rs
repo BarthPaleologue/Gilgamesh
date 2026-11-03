@@ -281,6 +281,34 @@ fn normals_and_tangents_follow_geometry_and_uvs() {
 }
 
 #[test]
+fn degenerate_uvs_do_not_poison_tangents_on_adjacent_triangles() {
+    let mut buffers = CpuMeshBuffers {
+        vertices: CpuVertexBuffers {
+            positions: vec![
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0],
+                [1.0, 0.0, 1.0],
+                [1.0, 0.0, 0.0],
+            ],
+            normals: vec![[0.0, 1.0, 0.0]; 4],
+            uvs: vec![[0.0, 0.0], [0.0, 0.0], [0.0, 1.0], [1.0, 0.0]],
+            ..CpuVertexBuffers::default()
+        },
+        indices: vec![0, 1, 2, 0, 2, 3],
+    };
+    buffers.create_tangents();
+    for tangent in &buffers.vertices.tangents {
+        let tangent = glam::Vec3::from_array(*tangent);
+        assert!(tangent.is_finite());
+        assert!((tangent.length() - 1.0).abs() < 1e-6);
+        assert!(tangent.dot(glam::Vec3::Y).abs() < 1e-6);
+    }
+    for index in [0, 2, 3] {
+        assert_eq!(buffers.vertices.tangents[index], [1.0, 0.0, 0.0]);
+    }
+}
+
+#[test]
 fn gpu_vertex_layout_and_attributes_are_preserved() {
     let vertices = CpuVertexBuffers {
         positions: vec![[1.25, 2.0, 3.0]],
