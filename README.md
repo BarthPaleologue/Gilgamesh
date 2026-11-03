@@ -49,7 +49,7 @@ Vectors and matrices use `glam::Vec3` and `glam::Mat4`. Transform rotations are
 Euler angles in radians; the camera's `fov` is expressed in degrees.
 
 ```rust,no_run
-use gilgamesh::camera::camera::Camera;
+use gilgamesh::camera::Camera;
 use gilgamesh::core::app::{App, FrameContext};
 use gilgamesh::core::engine::Engine;
 use gilgamesh::core::render_context::RenderContext;

@@ -1,4 +1,4 @@
-use crate::camera::camera::Camera;
+use crate::camera::Camera;
 use crate::core::wgpu_context::WGPUContext;
 use crate::lights::directional_light::{DirectionalLight, DirectionalLightUniform};
 use crate::lights::point_light::{PointLight, PointLightUniforms};
@@ -202,8 +202,8 @@ impl Material for BlinnPhongMaterial {
             cast_slice(&[self.directional_light_uniforms]),
         );
 
-        for i in 0..point_lights.len() {
-            self.point_light_uniforms[i].update(&point_lights[i]);
+        for (i, point_light) in point_lights.iter().enumerate() {
+            self.point_light_uniforms[i].update(point_light);
         }
         wgpu_context.queue.write_buffer(
             &self.point_light_buffer,

@@ -1,4 +1,4 @@
-use gilgamesh::camera::camera::Camera;
+use gilgamesh::camera::Camera;
 use gilgamesh::camera::uniforms::CameraUniforms;
 use gilgamesh::transform::{Transform, TransformUniforms, Transformable};
 use glam::{Vec3, Vec4};

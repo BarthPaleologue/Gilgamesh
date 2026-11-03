@@ -1,4 +1,4 @@
-use crate::camera::camera::Camera;
+use crate::camera::Camera;
 use crate::core::app::{App, FrameContext};
 use crate::core::engine::Engine;
 use crate::core::render_context::RenderContext;

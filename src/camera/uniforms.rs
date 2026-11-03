@@ -1,4 +1,4 @@
-use crate::camera::camera::Camera;
+use crate::camera::Camera;
 use crate::transform::Transformable;
 use bytemuck::{Pod, Zeroable};
 

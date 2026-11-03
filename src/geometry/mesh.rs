@@ -2,7 +2,7 @@ use std::cell::{Ref, RefCell, RefMut};
 use std::mem;
 use std::rc::Rc;
 
-use crate::camera::camera::Camera;
+use crate::camera::Camera;
 use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::vertex_data::VertexData;
 use crate::lights::directional_light::DirectionalLight;
@@ -37,7 +37,6 @@ impl Vertex {
 }
 
 pub struct Mesh {
-    name: String,
     transform: Rc<RefCell<Transform>>,
     vertex_data: VertexData,
     index_buffer: Buffer,
@@ -81,7 +80,6 @@ impl Mesh {
                 });
 
         Mesh {
-            name: name.to_string(),
             transform: Rc::new(RefCell::new(Transform::new())),
             vertex_data,
             vertex_buffer,

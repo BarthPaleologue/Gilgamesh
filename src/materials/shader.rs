@@ -1,10 +1,10 @@
-use crate::camera::camera::Camera;
+use crate::camera::Camera;
 use crate::camera::uniforms::CameraUniforms;
 use bytemuck::cast_slice;
 use load_file::load_str;
 use std::cell::Ref;
 use std::ops::Deref;
-use wgpu::{BindGroup, Buffer, PipelineLayout, RenderPass, RenderPipeline, ShaderModule};
+use wgpu::{BindGroup, Buffer, RenderPass, RenderPipeline};
 
 use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::mesh::Vertex;
@@ -13,9 +13,6 @@ use crate::texture::Texture;
 use crate::transform::{Transform, TransformUniforms};
 
 pub struct Shader {
-    name: String,
-    shader_module: ShaderModule,
-
     transform_uniforms: TransformUniforms,
     transform_uniforms_buffer: Buffer,
 
@@ -28,7 +25,6 @@ pub struct Shader {
 
     texture_bind_group: BindGroup,
 
-    pipeline_layout: PipelineLayout,
     pipeline: RenderPipeline,
 }
 
@@ -237,9 +233,6 @@ impl Shader {
                 });
 
         Shader {
-            name: name.to_string(),
-            shader_module: shader,
-
             transform_uniforms,
             transform_uniforms_buffer,
 
@@ -252,7 +245,6 @@ impl Shader {
 
             texture_bind_group,
 
-            pipeline_layout,
             pipeline,
         }
     }

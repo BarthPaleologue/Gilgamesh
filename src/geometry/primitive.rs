@@ -183,7 +183,6 @@ impl PrimitiveMesh {
         let mut normals = Vec::new();
         let mut tangents = Vec::new();
         let mut uvs = Vec::new();
-        let mut indices: Vec<u32> = Vec::new();
         let mut colors = Vec::new();
 
         let t = (1.0 + 5.0_f32.sqrt()) / 2.0;
@@ -251,8 +250,7 @@ impl PrimitiveMesh {
             base_indices = new_indices;
         }
 
-        for i in 0..base_positions.len() {
-            let v = base_positions[i];
+        for v in base_positions {
             positions.push(v.into());
             normals.push(v.into());
 
@@ -269,16 +267,12 @@ impl PrimitiveMesh {
             colors.push([1.0, 1.0, 1.0]);
         }
 
-        for i in 0..base_indices.len() {
-            indices.push(base_indices[i]);
-        }
-
         let vertex_data = VertexData {
             positions,
             normals,
             tangents,
             uvs,
-            indices,
+            indices: base_indices,
             colors,
         };
 

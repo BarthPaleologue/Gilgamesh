@@ -1,4 +1,4 @@
-use crate::camera::camera::Camera;
+use crate::camera::Camera;
 use crate::core::wgpu_context::WGPUContext;
 use crate::lights::directional_light::DirectionalLight;
 use crate::lights::point_light::PointLight;

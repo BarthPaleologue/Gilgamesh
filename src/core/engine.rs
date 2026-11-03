@@ -144,7 +144,7 @@ impl<TApp: App> Engine<TApp> {
 enum ApplicationState<TApp: App, TFactory> {
     New(TFactory),
     Initializing,
-    Running(Engine<TApp>),
+    Running(Box<Engine<TApp>>),
 }
 
 struct EngineApplication<TApp: App + 'static, TFactory> {
@@ -192,7 +192,7 @@ where
         let size = engine.window.inner_size();
         engine.resize(size);
         engine.window.request_redraw();
-        self.state = ApplicationState::Running(engine);
+        self.state = ApplicationState::Running(Box::new(engine));
     }
 
     fn window_event(
