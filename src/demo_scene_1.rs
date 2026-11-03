@@ -57,14 +57,11 @@ impl StarSystemDemo {
             .each_ref()
             .map(|light| create_point_light_debug_mesh(light, ctx));
 
-        let mut sun = Mesh::from_cpu_buffers("Sun", primitive::sphere(32), ctx);
         let sun_texture = Rc::new(Texture::new("Sun texture", "textures/sun.jpg", ctx));
         let mut sun_material = PbrMaterial::new("SunMaterial", ctx);
         sun_material.set_albedo_texture(sun_texture);
-        sun.set_material(Box::new(sun_material));
+        let sun = Mesh::from_cpu_buffers("Sun", primitive::sphere(32), Rc::new(sun_material), ctx);
 
-        let mut earth = Mesh::from_cpu_buffers("Earth", primitive::sphere(32), ctx);
-        earth.transform_mut().parent = Some(sun.transform_rc());
         let mut earth_material = BlinnPhongMaterial::new("EarthMaterial", ctx);
         let earth_diffuse_texture = Rc::new(Texture::new(
             "Earth diffuse texture",
@@ -78,11 +75,18 @@ impl StarSystemDemo {
             ctx,
         ));
         earth_material.set_specular_texture(earth_specular_texture);
-        earth.set_material(Box::new(earth_material));
+        let earth =
+            Mesh::from_cpu_buffers("Earth", primitive::sphere(32), Rc::new(earth_material), ctx);
+        earth.transform_mut().parent = Some(sun.transform_rc());
 
         camera.transform_mut().parent = Some(earth.transform_rc());
 
-        let plane = Mesh::from_cpu_buffers("Plane", primitive::plane(10, 10.0), ctx);
+        let plane = Mesh::from_cpu_buffers(
+            "Plane",
+            primitive::plane(10, 10.0),
+            Rc::new(BlinnPhongMaterial::new("PlaneMaterial", ctx)),
+            ctx,
+        );
         plane.transform_mut().position = DVec3::new(0.0, -5.0, 0.0);
 
         Self {

@@ -8,7 +8,6 @@ use crate::geometry::cpu_mesh_buffers::CpuMeshBuffers;
 use crate::geometry::gpu_mesh_buffers::GpuMeshBuffers;
 use wgpu::RenderPass;
 
-use crate::materials::blinn_phong::BlinnPhongMaterial;
 use crate::materials::material::Material;
 use crate::transform::{Transform, Transformable};
 
@@ -16,7 +15,7 @@ pub struct Mesh {
     transform: Rc<RefCell<Transform>>,
     gpu_buffers: GpuMeshBuffers,
     object_bindings: ObjectBindings,
-    material: Box<dyn Material>,
+    material: Rc<dyn Material>,
 }
 
 impl Transformable for Mesh {
@@ -36,6 +35,7 @@ impl Mesh {
     pub fn from_cpu_buffers(
         name: &str,
         cpu_buffers: CpuMeshBuffers,
+        material: Rc<dyn Material>,
         wgpu_context: &WGPUContext,
     ) -> Mesh {
         let gpu_buffers = GpuMeshBuffers::from_cpu_buffers(&cpu_buffers, wgpu_context);
@@ -44,14 +44,11 @@ impl Mesh {
             transform: Rc::new(RefCell::new(Transform::new())),
             gpu_buffers,
             object_bindings: ObjectBindings::new(name, wgpu_context),
-            material: Box::new(BlinnPhongMaterial::new(
-                &format!("{}Material", name),
-                wgpu_context,
-            )),
+            material,
         }
     }
 
-    pub fn set_material(&mut self, material: Box<dyn Material>) {
+    pub fn set_material(&mut self, material: Rc<dyn Material>) {
         self.material = material;
     }
 
@@ -63,7 +60,7 @@ impl Mesh {
     ) {
         self.object_bindings
             .update(&self.transform.borrow(), &ctx.queue);
-        self.material.bind(render_pass, renderer, ctx);
+        self.material.prepare(renderer, ctx).bind(render_pass);
         self.object_bindings.bind(render_pass);
         self.gpu_buffers.draw(render_pass);
     }

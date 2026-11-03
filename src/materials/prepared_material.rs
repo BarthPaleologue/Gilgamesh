@@ -12,12 +12,12 @@ pub struct PipelineConfig {
     pub back_face_culling: bool,
 }
 
-pub struct Shader {
+pub struct PreparedMaterial {
     material_bind_group: BindGroup,
     pipeline: RenderPipeline,
 }
 
-impl Shader {
+impl PreparedMaterial {
     pub fn new(
         name: &str,
         config: PipelineConfig,

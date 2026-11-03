@@ -8,6 +8,7 @@ use crate::geometry::procedural;
 use crate::input::transform_control::OrbitControl;
 use crate::lights::directional_light::DirectionalLight;
 use crate::materials::blinn_phong::BlinnPhongMaterial;
+use std::rc::Rc;
 
 pub fn run() {
     Engine::run("Sinc function", 1000, 800, TerrainView::new);
@@ -30,10 +31,9 @@ impl TerrainView {
             let d = 5.0 * (x * x + z * z).sqrt();
             3.0 * (d.sin() / d).min(1.0)
         });
-        let mut terrain = Mesh::from_cpu_buffers("sinc", cpu_buffers, ctx);
         let mut material = BlinnPhongMaterial::new("sincMaterial", ctx);
         material.set_diffuse_color(0.5, 0.2, 1.0);
-        terrain.set_material(Box::new(material));
+        let terrain = Mesh::from_cpu_buffers("sinc", cpu_buffers, Rc::new(material), ctx);
 
         Self {
             camera,

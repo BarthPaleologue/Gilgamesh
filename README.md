@@ -58,10 +58,39 @@ The `geometry::primitive` and `geometry::procedural` functions return
 `CpuMeshBuffers`, containing per-vertex attribute arrays in `CpuVertexBuffers`
 and a separate array of triangle indices. Both are editable before upload.
 They do not need a GPU context. Pass these buffers to
-`Mesh::from_cpu_buffers(name, buffers, ctx)` to create a renderable mesh.
+`Mesh::from_cpu_buffers(name, buffers, material, ctx)` to create a renderable mesh.
 `Mesh` consumes the CPU data and retains only `GpuMeshBuffers`, which hold the
 GPU buffers and index count. `GpuMeshBuffers::from_cpu_buffers(&buffers, ctx)`
 can also upload geometry while leaving the CPU data with its caller.
+
+Materials are configured before sharing them as `Rc<dyn Material>`. Rendering
+only borrows them through `&self`: no `RefCell` is required. A private `OnceCell`
+initializes each material's GPU bindings on first use. Setters invalidate these
+bindings when the material is exclusively owned; shared materials are replaced
+rather than modified in place. Each mesh owns its transform buffer, while the
+renderer uploads camera and lighting data once per frame.
+
+The same material can be used by meshes with independent transforms:
+
+```rust,no_run
+use gilgamesh::core::wgpu_context::WGPUContext;
+use gilgamesh::geometry::{mesh::Mesh, primitive};
+use gilgamesh::materials::blinn_phong::BlinnPhongMaterial;
+use gilgamesh::transform::Transformable;
+use glam::DVec3;
+use std::rc::Rc;
+
+fn spheres(ctx: &WGPUContext) -> (Mesh, Mesh) {
+    let mut material = BlinnPhongMaterial::new("shared", ctx);
+    material.set_diffuse_color(0.2, 0.5, 1.0);
+    let material = Rc::new(material);
+    let left = Mesh::from_cpu_buffers("left", primitive::sphere(32), material.clone(), ctx);
+    let right = Mesh::from_cpu_buffers("right", primitive::sphere(32), material, ctx);
+    left.transform_mut().position = DVec3::new(-2.0, 0.0, 0.0);
+    right.transform_mut().position = DVec3::new(2.0, 0.0, 0.0);
+    (left, right)
+}
+```
 
 The camera's `fov` is expressed in degrees.
 The camera looks along its local -Z axis, with its quaternion determining its
@@ -79,6 +108,7 @@ use gilgamesh::lights::directional_light::DirectionalLight;
 use gilgamesh::materials::blinn_phong::BlinnPhongMaterial;
 use gilgamesh::transform::Transformable;
 use glam::DQuat;
+use std::rc::Rc;
 
 struct TerrainApp {
     camera: Camera,
@@ -108,10 +138,9 @@ fn main() {
             let d = 5.0 * (x * x + z * z).sqrt();
             3.0 * (d.sin() / d).min(1.0)
         });
-        let mut terrain = Mesh::from_cpu_buffers("sinc", cpu_buffers, ctx);
         let mut material = BlinnPhongMaterial::new("sincMaterial", ctx);
         material.set_diffuse_color(0.5, 0.2, 1.0);
-        terrain.set_material(Box::new(material));
+        let terrain = Mesh::from_cpu_buffers("sinc", cpu_buffers, Rc::new(material), ctx);
 
         TerrainApp { camera, terrain, directional_light: DirectionalLight::default() }
     });
