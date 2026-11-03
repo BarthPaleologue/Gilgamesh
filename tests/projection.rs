@@ -1,5 +1,5 @@
 use gilgamesh::camera::uniforms::CameraUniforms;
-use gilgamesh::camera::{Camera, CameraProjection, OffAxis, Orthographic, Perspective, Projection};
+use gilgamesh::camera::{Camera, CameraProjection, OffAxis, Orthographic, Perspective};
 use glam::{DMat4, DVec3};
 use std::f64::consts::FRAC_PI_3;
 
@@ -158,18 +158,12 @@ fn typed_and_runtime_projection_cameras_share_the_uniform_interface() {
         far: 500.0,
     });
     let cameras = [
-        (
-            camera_uniforms(&perspective),
-            Projection::Perspective(perspective.projection),
-        ),
+        (camera_uniforms(&perspective), perspective.projection.into()),
         (
             camera_uniforms(&orthographic),
-            Projection::Orthographic(orthographic.projection),
+            orthographic.projection.into(),
         ),
-        (
-            camera_uniforms(&off_axis),
-            Projection::OffAxis(off_axis.projection),
-        ),
+        (camera_uniforms(&off_axis), off_axis.projection.into()),
     ];
     let mut runtime_camera: Camera = Camera::default();
     for (typed_uniforms, projection) in cameras {

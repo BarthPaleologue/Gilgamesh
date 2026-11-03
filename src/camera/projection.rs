@@ -94,6 +94,24 @@ impl Default for Projection {
     }
 }
 
+impl From<Perspective> for Projection {
+    fn from(projection: Perspective) -> Self {
+        Self::Perspective(projection)
+    }
+}
+
+impl From<Orthographic> for Projection {
+    fn from(projection: Orthographic) -> Self {
+        Self::Orthographic(projection)
+    }
+}
+
+impl From<OffAxis> for Projection {
+    fn from(projection: OffAxis) -> Self {
+        Self::OffAxis(projection)
+    }
+}
+
 impl CameraProjection for Projection {
     fn matrix(&self) -> DMat4 {
         match self {
