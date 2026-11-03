@@ -1,9 +1,13 @@
 use crate::camera::camera::Camera;
+use crate::core::app::{App, FrameContext};
 use crate::core::engine::Engine;
-use crate::core::scene::Scene;
+use crate::core::render_context::RenderContext;
+use crate::core::wgpu_context::WGPUContext;
+use crate::geometry::mesh::Mesh;
 use crate::geometry::primitive::PrimitiveMesh;
 use crate::input::transform_control::OrbitControl;
-use crate::lights::debug::show_point_light_debug_mesh;
+use crate::lights::debug::create_point_light_debug_mesh;
+use crate::lights::directional_light::DirectionalLight;
 use crate::lights::light::Light;
 use crate::lights::point_light::PointLight;
 use crate::materials::blinn_phong::BlinnPhongMaterial;
@@ -13,132 +17,127 @@ use crate::transform::Transformable;
 use std::rc::Rc;
 
 pub fn run() {
-    Engine::run("Gilgamesh", 1000, 800, create_scene);
+    Engine::run("Gilgamesh", 1000, 800, StarSystemDemo::new);
 }
 
-fn create_scene(engine: &Engine) -> Scene {
-    let mut scene = Scene::new(engine);
+pub struct StarSystemDemo {
+    camera: Camera,
+    sun: Mesh,
+    earth: Mesh,
+    plane: Mesh,
+    directional_light: DirectionalLight,
+    point_lights: [PointLight; 4],
+    point_light_meshes: [Mesh; 4],
+}
 
-    let mut camera = Camera::new(engine);
-    let mut camera_control = OrbitControl::default();
-    camera_control.set_radius(2.0);
-    camera.control = Some(Box::new(camera_control));
+impl StarSystemDemo {
+    pub fn new(ctx: &WGPUContext) -> Self {
+        let mut camera = Camera::new(ctx.config.width as f32 / ctx.config.height as f32);
+        let mut camera_control = OrbitControl::default();
+        camera_control.set_radius(2.0);
+        camera.control = Some(Box::new(camera_control));
 
-    scene.directional_light.set_intensity(0.0);
+        let mut directional_light = DirectionalLight::default();
+        directional_light.set_intensity(0.0);
 
-    let light_intensity = 0.2;
+        let point_lights = [
+            (1.0, 0.0, 0.0),
+            (0.0, 0.0, 1.0),
+            (0.0, 1.0, 0.0),
+            (1.0, 1.0, 0.0),
+        ]
+        .map(|(r, g, b)| {
+            let mut light = PointLight::default();
+            light.set_color(r, g, b);
+            light.set_intensity(0.2);
+            light
+        });
+        let point_light_meshes = point_lights
+            .each_ref()
+            .map(|light| create_point_light_debug_mesh(light, ctx));
 
-    let mut point_light = PointLight::default();
-    point_light.set_color(1.0, 0.0, 0.0);
-    point_light.set_intensity(light_intensity);
-    show_point_light_debug_mesh(&point_light, &mut scene, engine);
-    let point_light1_idx = scene.add_point_light(point_light);
+        let mut sun = PrimitiveMesh::sphere("Sun", 32, ctx);
+        let sun_texture = Rc::new(Texture::new("Sun texture", "textures/sun.jpg", ctx));
+        let mut sun_material = PbrMaterial::new("SunMaterial", ctx);
+        sun_material.set_albedo_texture(sun_texture);
+        sun.set_material(Box::new(sun_material));
 
-    let mut point_light2 = PointLight::default();
-    point_light2.set_color(0.0, 0.0, 1.0);
-    point_light2.set_intensity(light_intensity);
-    show_point_light_debug_mesh(&point_light2, &mut scene, engine);
-    let point_light2_idx = scene.add_point_light(point_light2);
+        let mut earth = PrimitiveMesh::sphere("Earth", 32, ctx);
+        earth.transform_mut().parent = Some(sun.transform_rc());
+        let mut earth_material = BlinnPhongMaterial::new("EarthMaterial", ctx);
+        let earth_diffuse_texture = Rc::new(Texture::new(
+            "Earth diffuse texture",
+            "textures/2k_earth_daymap.jpg",
+            ctx,
+        ));
+        earth_material.set_diffuse_texture(earth_diffuse_texture);
+        let earth_specular_texture = Rc::new(Texture::new(
+            "Earth specular texture",
+            "textures/2k_earth_specular_map.jpg",
+            ctx,
+        ));
+        earth_material.set_specular_texture(earth_specular_texture);
+        earth.set_material(Box::new(earth_material));
 
-    let mut point_light3 = PointLight::default();
-    point_light3.set_color(0.0, 1.0, 0.0);
-    point_light3.set_intensity(light_intensity);
-    show_point_light_debug_mesh(&point_light3, &mut scene, engine);
-    let point_light3_idx = scene.add_point_light(point_light3);
+        camera.transform_mut().parent = Some(earth.transform_rc());
 
-    let mut point_light4 = PointLight::default();
-    point_light4.set_color(1.0, 1.0, 0.0);
-    point_light4.set_intensity(light_intensity);
-    show_point_light_debug_mesh(&point_light4, &mut scene, engine);
-    let point_light4_idx = scene.add_point_light(point_light4);
+        let plane = PrimitiveMesh::plane("Plane", 10, 10.0, ctx);
+        plane.transform_mut().set_position(0.0, -5.0, 0.0);
 
-    let mut sun = PrimitiveMesh::sphere("Sun", 32, engine);
-    let sun_texture = Rc::new(Texture::new(
-        "Sun texture",
-        "textures/sun.jpg",
-        &engine.wgpu_context,
-    ));
-    let mut sun_material = PbrMaterial::new("SunMaterial", &engine.wgpu_context);
-    sun_material.set_albedo_texture(sun_texture.clone());
-    sun.set_material(Box::new(sun_material));
-    let sun_idx = scene.add_mesh(sun);
+        Self {
+            camera,
+            sun,
+            earth,
+            plane,
+            directional_light,
+            point_lights,
+            point_light_meshes,
+        }
+    }
+}
 
-    let mut earth = PrimitiveMesh::sphere("Earth", 32, engine);
-    earth.transform_mut().parent = Some(scene.meshes[sun_idx].transform_rc());
-    let mut earth_material = BlinnPhongMaterial::new("EarthMaterial", &engine.wgpu_context);
-    let earth_diffuse_texture = Rc::new(Texture::new(
-        "Earth diffuse texture",
-        "textures/2k_earth_daymap.jpg",
-        &engine.wgpu_context,
-    ));
-    earth_material.set_diffuse_texture(earth_diffuse_texture.clone());
-    let earth_specular_texture = Rc::new(Texture::new(
-        "Earth specular texture",
-        "textures/2k_earth_specular_map.jpg",
-        &engine.wgpu_context,
-    ));
-    earth_material.set_specular_texture(earth_specular_texture.clone());
-    let _earth_normal_map = Rc::new(Texture::new(
-        "Earth normal map",
-        "textures/2k_earth_normal_map.jpg",
-        &engine.wgpu_context,
-    ));
-    //earth.material().set_normal_map(earth_normal_map.clone());
-    //earth.material().set_polygon_mode(wgpu::PolygonMode::Line);
-    earth.set_material(Box::new(earth_material));
+impl App for StarSystemDemo {
+    fn update_before_render(&mut self, frame: &FrameContext<'_>) {
+        self.camera
+            .listen_to_control(frame.mouse, frame.delta_seconds);
+        self.sun
+            .transform_mut()
+            .set_rotation(0.0, frame.elapsed_seconds, 0.0);
+        self.earth.transform_mut().set_position(6.0, 0.0, 0.0);
 
-    camera.transform_mut().parent = Some(earth.transform_rc());
-    let earth_idx = scene.add_mesh(earth);
+        let [red_light, blue_light, green_light, yellow_light] = &self.point_lights;
+        red_light.transform_mut().set_position(
+            12.0 * f32::cos(2.0 * frame.elapsed_seconds),
+            0.0,
+            12.0 * f32::sin(2.0 * frame.elapsed_seconds),
+        );
+        blue_light.transform_mut().set_position(
+            12.0 * f32::sin(2.0 * frame.elapsed_seconds),
+            12.0 * f32::cos(2.0 * frame.elapsed_seconds),
+            0.0,
+        );
+        green_light.transform_mut().set_position(
+            0.0,
+            12.0 * f32::cos(-2.0 * frame.elapsed_seconds),
+            12.0 * f32::sin(-2.0 * frame.elapsed_seconds),
+        );
+        yellow_light.transform_mut().set_position(
+            15.0 * f32::sin(2.0 * frame.elapsed_seconds),
+            0.0,
+            15.0 * f32::cos(2.0 * frame.elapsed_seconds),
+        );
+    }
 
-    let plane = PrimitiveMesh::plane("Plane", 10, 10.0, engine);
-    plane.transform_mut().set_position(0.0, -5.0, 0.0);
-    let _plane_idx = scene.add_mesh(plane);
-
-    scene.set_active_camera(camera);
-
-    scene.on_before_render.push(Box::new(
-        move |engine, _active_camera, meshes, point_lights, _mouse| {
-            meshes[sun_idx]
-                .transform_mut()
-                .set_rotation(0.0, engine.get_elapsed_time(), 0.0);
-
-            meshes[earth_idx]
-                .transform_mut()
-                .set_position(6.0, 0.0, 0.0);
-
-            /*meshes[earth_idx].transform_mut().set_rotation(
-                0.0,
-                2.0 * engine.get_elapsed_time(),
-                0.0,
-            );*/
-
-            point_lights[point_light1_idx].transform_mut().set_position(
-                12.0 * f32::cos(2.0 * engine.get_elapsed_time()),
-                0.0,
-                12.0 * f32::sin(2.0 * engine.get_elapsed_time()),
-            );
-
-            point_lights[point_light2_idx].transform_mut().set_position(
-                12.0 * f32::sin(2.0 * engine.get_elapsed_time()),
-                12.0 * f32::cos(2.0 * engine.get_elapsed_time()),
-                0.0,
-            );
-
-            point_lights[point_light3_idx].transform_mut().set_position(
-                0.0,
-                12.0 * f32::cos(-2.0 * engine.get_elapsed_time()),
-                12.0 * f32::sin(-2.0 * engine.get_elapsed_time()),
-            );
-
-            point_lights[point_light4_idx].transform_mut().set_position(
-                15.0 * f32::sin(2.0 * engine.get_elapsed_time()),
-                0.0,
-                15.0 * f32::cos(2.0 * engine.get_elapsed_time()),
-            );
-        },
-    ));
-
-    //scene.on_key_pressed.push(Box::new(|engine, active_camera, key| {}));
-
-    scene
+    fn get_render_context(&mut self) -> RenderContext<'_, impl IntoIterator<Item = &mut Mesh>> {
+        RenderContext::new(
+            &mut self.camera,
+            self.point_light_meshes.iter_mut().chain([
+                &mut self.sun,
+                &mut self.earth,
+                &mut self.plane,
+            ]),
+            &self.directional_light,
+            &self.point_lights,
+        )
+    }
 }

@@ -1,4 +1,4 @@
-use crate::core::engine::Engine;
+use crate::core::wgpu_context::WGPUContext;
 use hexasphere::shapes::IcoSphere;
 
 use crate::geometry::mesh::Mesh;
@@ -11,15 +11,13 @@ impl ProceduralMesh {
     /// Creates a new procedural 2D terrain.
     /// It is made of a subdivided plane, with a given `size` and number of subdivisions (`nb_subdivisions`)
     /// The `height_fn` takes x and z as parameters and is used to set the y coordinate of each vertex.
-    /// The `max_height` parameter is used to scale the y coordinate of each vertex in the range [0, 1]
-    /// `engine` is a mutable reference to the Gilgamesh engine.
     /// It returns a Mesh that can be moved with its transform and with a default terrain material.
     pub fn terrain(
         name: &str,
         size: f32,
         nb_subdivisions: u32,
         height_fn: &dyn Fn(f32, f32) -> f32,
-        engine: &Engine,
+        wgpu_context: &WGPUContext,
     ) -> Mesh {
         let mut positions = vec![[0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize];
         let mut indices = vec![0; (6 * (nb_subdivisions - 1) * (nb_subdivisions - 1)) as usize];
@@ -59,10 +57,10 @@ impl ProceduralMesh {
         vertex_data.create_normals();
         vertex_data.create_tangents();
 
-        let mut mesh = Mesh::from_vertex_data(name, vertex_data, engine);
+        let mut mesh = Mesh::from_vertex_data(name, vertex_data, wgpu_context);
         mesh.set_material(Box::new(BlinnPhongMaterial::new(
             &format!("{}Material", name),
-            &engine.wgpu_context,
+            wgpu_context,
         )));
 
         mesh
@@ -71,14 +69,12 @@ impl ProceduralMesh {
     /// Creates a new procedural 3D sphere.
     /// It is made of a subdivided icosahedron, with a given `diameter` and number of subdivisions (`nb_subdivisions`)
     /// The `height_fn` takes x, y and z as parameters and is used to set the height of each vertex above the surface of the sphere.
-    /// The `max_height` parameter is used to scale the height of each vertex in the range [0, 1]
-    /// `engine` is a mutable reference to the Gilgamesh engine.
     pub fn sphere(
         name: &str,
         diameter: f32,
         nb_subdivisions: u32,
         height_fn: &dyn Fn(f32, f32, f32) -> f32,
-        engine: &Engine,
+        wgpu_context: &WGPUContext,
     ) -> Mesh {
         let sphere = IcoSphere::new(nb_subdivisions as usize, |_| ());
         let vertices_raw = sphere.raw_points();
@@ -117,10 +113,10 @@ impl ProceduralMesh {
         vertex_data.create_normals();
         vertex_data.create_tangents();
 
-        let mut mesh = Mesh::from_vertex_data(name, vertex_data, engine);
+        let mut mesh = Mesh::from_vertex_data(name, vertex_data, wgpu_context);
         mesh.set_material(Box::new(BlinnPhongMaterial::new(
             &format!("{}Material", name),
-            &engine.wgpu_context,
+            wgpu_context,
         )));
 
         mesh

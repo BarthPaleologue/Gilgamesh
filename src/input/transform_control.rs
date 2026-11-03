@@ -1,5 +1,4 @@
 use crate::animation::utils::move_towards;
-use crate::core::engine::Engine;
 use crate::input::mouse::Mouse;
 use cgmath::{Point3, Vector3};
 
@@ -7,7 +6,7 @@ pub trait TransformMouseController {
     fn update(
         &mut self,
         mouse: &Mouse,
-        engine: &Engine,
+        delta_seconds: f32,
     ) -> (Vector3<f32>, Point3<f32>, Point3<f32>);
 }
 
@@ -44,11 +43,11 @@ impl TransformMouseController for OrbitControl {
     fn update(
         &mut self,
         mouse: &Mouse,
-        engine: &Engine,
+        delta_seconds: f32,
     ) -> (Vector3<f32>, Point3<f32>, Point3<f32>) {
         if mouse.left_button_pressed {
-            self.phi += mouse.delta[0] as f32 * self.rotation_speed * engine.get_delta_time();
-            self.theta += mouse.delta[1] as f32 * self.rotation_speed * engine.get_delta_time();
+            self.phi += mouse.delta[0] as f32 * self.rotation_speed * delta_seconds;
+            self.theta += mouse.delta[1] as f32 * self.rotation_speed * delta_seconds;
 
             self.theta = self
                 .theta
@@ -56,14 +55,10 @@ impl TransformMouseController for OrbitControl {
                 .min(-self.epsilon);
         }
 
-        self.target_radius -= mouse.scroll_delta * engine.get_delta_time() * 30.0;
+        self.target_radius -= mouse.scroll_delta * delta_seconds * 30.0;
         self.target_radius = self.target_radius.max(1.0);
 
-        self.radius = move_towards(
-            self.radius,
-            self.target_radius,
-            engine.get_delta_time() * 10.0,
-        );
+        self.radius = move_towards(self.radius, self.target_radius, delta_seconds * 10.0);
 
         let x = self.radius * self.theta.sin() * self.phi.cos();
         let y = self.radius * self.theta.cos();

@@ -1,5 +1,6 @@
-use crate::core::scene::Scene;
+use crate::core::app::{App, FrameContext};
 use crate::core::wgpu_context::WGPUContext;
+use crate::input::mouse::Mouse;
 use cgmath::*;
 use std::sync::Arc;
 use std::time::SystemTime;
@@ -14,19 +15,28 @@ pub const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
     1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.5, 1.0,
 );
 
-pub struct Engine {
+pub struct Engine<TApp: App> {
+    pub app: TApp,
     pub window: Arc<Window>,
     pub wgpu_context: WGPUContext,
 
     clock: SystemTime,
-    elapsed_time: f32,
-    delta_time: f32,
+    elapsed_seconds: f32,
+    delta_seconds: f32,
 
-    pub on_window_resize: Vec<Box<dyn FnMut(PhysicalSize<u32>)>>,
+    mouse: Mouse,
 }
 
-impl Engine {
-    pub fn run(name: &str, width: u32, height: u32, create_scene: fn(&Engine) -> Scene) {
+impl<TApp: App> Engine<TApp> {
+    /// Initializes WebGPU, calls the application factory once, then runs the event loop.
+    pub fn run(
+        name: &str,
+        width: u32,
+        height: u32,
+        create_app: impl FnOnce(&WGPUContext) -> TApp + 'static,
+    ) where
+        TApp: 'static,
+    {
         cfg_if::cfg_if! {
             if #[cfg(target_arch = "wasm32")] {
                 std::panic::set_hook(Box::new(console_error_panic_hook::hook));
@@ -36,14 +46,13 @@ impl Engine {
             }
         }
 
-        let event_loop = EventLoop::<Engine>::with_user_event().build().unwrap();
+        let event_loop = EventLoop::<Self>::with_user_event().build().unwrap();
         let attributes = Window::default_attributes()
             .with_inner_size(Size::Physical(PhysicalSize { width, height }))
             .with_title(name);
         let application = EngineApplication {
             attributes,
-            create_scene,
-            state: ApplicationState::New,
+            state: ApplicationState::New(create_app),
             #[cfg(target_arch = "wasm32")]
             proxy: event_loop.create_proxy(),
         };
@@ -61,7 +70,11 @@ impl Engine {
         }
     }
 
-    async fn new(window: Arc<Window>, display: winit::event_loop::OwnedDisplayHandle) -> Self {
+    async fn new(
+        window: Arc<Window>,
+        display: winit::event_loop::OwnedDisplayHandle,
+        create_app: impl FnOnce(&WGPUContext) -> TApp,
+    ) -> Self {
         #[cfg(target_arch = "wasm32")]
         {
             // Winit prevents sizing with CSS, so we have to set
@@ -83,22 +96,17 @@ impl Engine {
 
         let wgpu_context = WGPUContext::new(window.clone(), display).await;
 
+        let app = create_app(&wgpu_context);
+
         Engine {
+            app,
             window,
             wgpu_context,
             clock: SystemTime::now(),
-            elapsed_time: 0.0,
-            delta_time: 0.0,
-            on_window_resize: Vec::new(),
+            elapsed_seconds: 0.0,
+            delta_seconds: 0.0,
+            mouse: Mouse::new(),
         }
-    }
-
-    pub fn get_delta_time(&self) -> f32 {
-        self.delta_time
-    }
-
-    pub fn get_elapsed_time(&self) -> f32 {
-        self.elapsed_time
     }
 
     pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
@@ -108,60 +116,88 @@ impl Engine {
             self.wgpu_context
                 .surface
                 .configure(&self.wgpu_context.device, &self.wgpu_context.config);
+            self.app.get_render_context().camera.aspect_ratio =
+                new_size.width as f32 / new_size.height as f32;
         }
     }
 
-    pub fn manage_event(&mut self, event: &WindowEvent) {
+    fn manage_event(&mut self, event: &WindowEvent) {
+        self.mouse.listen_to_event(event);
+        self.app.on_window_event(event);
         if let WindowEvent::Resized(physical_size) = event {
             self.resize(*physical_size);
         }
     }
+
+    fn render(&mut self, output: wgpu::SurfaceTexture) {
+        let frame = FrameContext {
+            elapsed_seconds: self.elapsed_seconds,
+            delta_seconds: self.delta_seconds,
+            mouse: &self.mouse,
+            wgpu_context: &self.wgpu_context,
+        };
+        self.app.update_before_render(&frame);
+        self.app
+            .get_render_context()
+            .render(&self.wgpu_context, &output);
+        self.mouse.reset();
+        self.window.pre_present_notify();
+        self.wgpu_context.queue.present(output);
+    }
 }
 
-enum ApplicationState {
-    New,
+enum ApplicationState<TApp: App, TFactory> {
+    New(TFactory),
     Initializing,
-    Running { engine: Engine, scene: Scene },
+    Running(Engine<TApp>),
 }
 
-struct EngineApplication {
+struct EngineApplication<TApp: App + 'static, TFactory> {
     attributes: WindowAttributes,
-    create_scene: fn(&Engine) -> Scene,
-    state: ApplicationState,
+    state: ApplicationState<TApp, TFactory>,
     #[cfg(target_arch = "wasm32")]
-    proxy: winit::event_loop::EventLoopProxy<Engine>,
+    proxy: winit::event_loop::EventLoopProxy<Engine<TApp>>,
 }
 
-impl ApplicationHandler<Engine> for EngineApplication {
+impl<TApp, TFactory> ApplicationHandler<Engine<TApp>> for EngineApplication<TApp, TFactory>
+where
+    TApp: App + 'static,
+    TFactory: FnOnce(&WGPUContext) -> TApp + 'static,
+{
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        if !matches!(self.state, ApplicationState::New) {
+        if !matches!(self.state, ApplicationState::New(_)) {
             return;
         }
+        let ApplicationState::New(create_app) =
+            std::mem::replace(&mut self.state, ApplicationState::Initializing)
+        else {
+            unreachable!();
+        };
 
         let window = Arc::new(event_loop.create_window(self.attributes.clone()).unwrap());
         let display = event_loop.owned_display_handle();
-        self.state = ApplicationState::Initializing;
 
         #[cfg(not(target_arch = "wasm32"))]
-        self.user_event(event_loop, pollster::block_on(Engine::new(window, display)));
+        self.user_event(
+            event_loop,
+            pollster::block_on(Engine::new(window, display, create_app)),
+        );
 
         #[cfg(target_arch = "wasm32")]
         {
             let proxy = self.proxy.clone();
             wasm_bindgen_futures::spawn_local(async move {
-                let engine = Engine::new(window, display).await;
+                let engine = Engine::new(window, display, create_app).await;
                 let _ = proxy.send_event(engine);
             });
         }
     }
 
-    fn user_event(&mut self, _event_loop: &ActiveEventLoop, mut engine: Engine) {
-        let mut scene = (self.create_scene)(&engine);
+    fn user_event(&mut self, _event_loop: &ActiveEventLoop, mut engine: Engine<TApp>) {
         let size = engine.window.inner_size();
         engine.resize(size);
-        scene.resize(size);
         engine.window.request_redraw();
-        self.state = ApplicationState::Running { engine, scene };
+        self.state = ApplicationState::Running(engine);
     }
 
     fn window_event(
@@ -175,7 +211,7 @@ impl ApplicationHandler<Engine> for EngineApplication {
             return;
         }
 
-        let ApplicationState::Running { engine, scene } = &mut self.state else {
+        let ApplicationState::Running(engine) = &mut self.state else {
             return;
         };
         if window_id != engine.window.id() {
@@ -183,7 +219,6 @@ impl ApplicationHandler<Engine> for EngineApplication {
         }
 
         engine.manage_event(&event);
-        scene.manage_event(&event, engine);
 
         match event {
             WindowEvent::KeyboardInput { event, .. }
@@ -193,21 +228,19 @@ impl ApplicationHandler<Engine> for EngineApplication {
                 event_loop.exit();
             }
             WindowEvent::RedrawRequested => {
-                let new_elapsed_time = engine.clock.elapsed().unwrap().as_secs_f32();
-                engine.delta_time = new_elapsed_time - engine.elapsed_time;
-                engine.elapsed_time = new_elapsed_time;
+                let new_elapsed_seconds = engine.clock.elapsed().unwrap().as_secs_f32();
+                engine.delta_seconds = new_elapsed_seconds - engine.elapsed_seconds;
+                engine.elapsed_seconds = new_elapsed_seconds;
 
                 use wgpu::CurrentSurfaceTexture;
                 match engine.wgpu_context.surface.get_current_texture() {
-                    CurrentSurfaceTexture::Success(output) => scene.render(engine, output),
+                    CurrentSurfaceTexture::Success(output) => engine.render(output),
                     CurrentSurfaceTexture::Suboptimal(output) => {
-                        scene.render(engine, output);
+                        engine.render(output);
                         engine.resize(engine.window.inner_size());
                     }
                     CurrentSurfaceTexture::Outdated => {
-                        let size = engine.window.inner_size();
-                        scene.resize(size);
-                        engine.resize(size);
+                        engine.resize(engine.window.inner_size());
                     }
                     CurrentSurfaceTexture::Lost => {
                         engine.wgpu_context.recreate_surface(engine.window.clone());

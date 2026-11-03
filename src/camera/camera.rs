@@ -3,7 +3,7 @@ use cgmath::{Deg, EuclideanSpace, Matrix4, Point3, SquareMatrix, Vector3, perspe
 use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
 
-use crate::core::engine::{Engine, OPENGL_TO_WGPU_MATRIX};
+use crate::core::engine::OPENGL_TO_WGPU_MATRIX;
 use crate::input::mouse::Mouse;
 use crate::transform::{Transform, Transformable};
 
@@ -18,11 +18,10 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(engine: &Engine) -> Camera {
+    pub fn new(aspect_ratio: f32) -> Camera {
         Camera {
             transform: Rc::new(RefCell::new(Transform::new())),
-            aspect_ratio: engine.window.inner_size().width as f32
-                / engine.window.inner_size().height as f32,
+            aspect_ratio,
             fov: 70.0,
             z_near: 0.1,
             z_far: 100.0,
@@ -48,9 +47,9 @@ impl Camera {
         self.projection_matrix() * self.view_matrix()
     }
 
-    pub fn listen_to_control(&mut self, mouse: &Mouse, engine: &Engine) {
+    pub fn listen_to_control(&mut self, mouse: &Mouse, delta_seconds: f32) {
         if let Some(control) = &mut self.control {
-            let (position, rotation, scaling) = control.update(mouse, engine);
+            let (position, rotation, scaling) = control.update(mouse, delta_seconds);
             self.transform.borrow_mut().position = position;
             self.transform.borrow_mut().rotation = rotation;
             self.transform.borrow_mut().scaling = scaling;

@@ -3,7 +3,6 @@ use std::mem;
 use std::rc::Rc;
 
 use crate::camera::camera::Camera;
-use crate::core::engine::Engine;
 use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::vertex_data::VertexData;
 use crate::lights::directional_light::DirectionalLight;
@@ -59,10 +58,13 @@ impl Transformable for Mesh {
 }
 
 impl Mesh {
-    pub fn from_vertex_data(name: &str, vertex_data: VertexData, engine: &Engine) -> Mesh {
+    pub fn from_vertex_data(
+        name: &str,
+        vertex_data: VertexData,
+        wgpu_context: &WGPUContext,
+    ) -> Mesh {
         let vertex_buffer =
-            engine
-                .wgpu_context
+            wgpu_context
                 .device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: Some("Vertex Buffer"),
@@ -70,8 +72,7 @@ impl Mesh {
                     usage: wgpu::BufferUsages::VERTEX,
                 });
         let index_buffer =
-            engine
-                .wgpu_context
+            wgpu_context
                 .device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: Some("Index Buffer"),
@@ -87,7 +88,7 @@ impl Mesh {
             index_buffer,
             material: Box::new(BlinnPhongMaterial::new(
                 &format!("{}Material", name),
-                &engine.wgpu_context,
+                wgpu_context,
             )),
         }
     }

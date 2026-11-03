@@ -1,4 +1,4 @@
-use crate::core::engine::Engine;
+use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::mesh::Mesh;
 use crate::geometry::vertex_data::VertexData;
 use cgmath::{InnerSpace, Vector3};
@@ -6,7 +6,7 @@ use cgmath::{InnerSpace, Vector3};
 pub struct PrimitiveMesh {}
 
 impl PrimitiveMesh {
-    pub fn plane(name: &str, nb_subdivisions: u32, size: f32, engine: &Engine) -> Mesh {
+    pub fn plane(name: &str, nb_subdivisions: u32, size: f32, wgpu_context: &WGPUContext) -> Mesh {
         let mut positions = vec![[0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize];
         let mut normals = vec![[0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize];
         let mut tangents = vec![[0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize];
@@ -51,10 +51,10 @@ impl PrimitiveMesh {
             uvs,
         };
 
-        Mesh::from_vertex_data(name, vertex_data, engine)
+        Mesh::from_vertex_data(name, vertex_data, wgpu_context)
     }
 
-    pub fn cube(name: &str, engine: &Engine) -> Mesh {
+    pub fn cube(name: &str, wgpu_context: &WGPUContext) -> Mesh {
         let positions = vec![
             [-0.5, -0.5, -0.5], // 0
             [0.5, -0.5, -0.5],  // 1
@@ -116,10 +116,10 @@ impl PrimitiveMesh {
 
         vertex_data.create_tangents();
 
-        Mesh::from_vertex_data(name, vertex_data, engine)
+        Mesh::from_vertex_data(name, vertex_data, wgpu_context)
     }
 
-    pub fn sphere(name: &str, resolution: u32, engine: &Engine) -> Mesh {
+    pub fn sphere(name: &str, resolution: u32, wgpu_context: &WGPUContext) -> Mesh {
         let mut positions = Vec::new();
         let mut normals = Vec::new();
         let mut tangents = Vec::new();
@@ -175,10 +175,10 @@ impl PrimitiveMesh {
             colors,
         };
 
-        Mesh::from_vertex_data(name, vertex_data, engine)
+        Mesh::from_vertex_data(name, vertex_data, wgpu_context)
     }
 
-    pub fn ico_sphere(name: &str, nb_subdivisions: u32, engine: &Engine) -> Mesh {
+    pub fn ico_sphere(name: &str, nb_subdivisions: u32, wgpu_context: &WGPUContext) -> Mesh {
         let mut positions = Vec::new();
         let mut normals = Vec::new();
         let mut tangents = Vec::new();
@@ -282,6 +282,6 @@ impl PrimitiveMesh {
             colors,
         };
 
-        Mesh::from_vertex_data(name, vertex_data, engine)
+        Mesh::from_vertex_data(name, vertex_data, wgpu_context)
     }
 }

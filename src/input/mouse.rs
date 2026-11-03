@@ -40,17 +40,15 @@ impl Mouse {
             self.new_position[1] - self.position[1],
         ];
 
-        self.scroll_delta = 0.0;
-
         match event {
             WindowEvent::MouseWheel {
                 delta: winit::event::MouseScrollDelta::LineDelta(_, y),
                 ..
             } => {
-                self.scroll_delta = *y;
+                self.scroll_delta += *y;
             }
             WindowEvent::PinchGesture { delta, .. } => {
-                self.scroll_delta = *delta as f32;
+                self.scroll_delta += *delta as f32;
             }
             WindowEvent::MouseInput {
                 state: ElementState::Pressed,
