@@ -115,7 +115,9 @@ impl<Application: App> Engine<Application> {
         };
         self.app.update_before_render(&frame);
         self.renderer
-            .render(self.app.get_render_context(), &self.wgpu_context, &output);
+            .update_frame_bindings(self.app.get_frame_bindings_data(), &self.wgpu_context);
+        self.renderer
+            .render(self.app.get_meshes(), &self.wgpu_context, &output);
         self.mouse.reset();
         self.window.pre_present_notify();
         self.wgpu_context.queue.present(output);

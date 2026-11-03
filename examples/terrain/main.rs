@@ -1,7 +1,7 @@
 use gilgamesh::camera::{Camera, CameraProjection, Perspective};
 use gilgamesh::core::app::{App, FrameContext};
 use gilgamesh::core::engine::Engine;
-use gilgamesh::core::render_context::RenderContext;
+use gilgamesh::core::render_context::FrameBindingsData;
 use gilgamesh::core::wgpu_context::WGPUContext;
 use gilgamesh::geometry::mesh::Mesh;
 use gilgamesh::geometry::procedural;
@@ -50,14 +50,11 @@ impl App for TerrainView {
             .update(&mut self.camera, frame.mouse, frame.delta_seconds);
     }
 
-    fn get_render_context(
-        &mut self,
-    ) -> RenderContext<'_, impl IntoIterator<Item = &mut Mesh>, impl CameraProjection> {
-        RenderContext::new(
-            &self.camera,
-            [&mut self.terrain],
-            &self.directional_light,
-            &[],
-        )
+    fn get_frame_bindings_data(&mut self) -> FrameBindingsData<'_, impl CameraProjection> {
+        FrameBindingsData::new(&self.camera, &self.directional_light, &[])
+    }
+
+    fn get_meshes(&mut self) -> impl IntoIterator<Item = &mut Mesh> {
+        [&mut self.terrain]
     }
 }

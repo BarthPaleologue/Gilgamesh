@@ -1,7 +1,7 @@
 use gilgamesh::camera::{Camera, CameraProjection, Perspective};
 use gilgamesh::core::app::{App, FrameContext};
 use gilgamesh::core::engine::Engine;
-use gilgamesh::core::render_context::RenderContext;
+use gilgamesh::core::render_context::FrameBindingsData;
 use gilgamesh::core::wgpu_context::WGPUContext;
 use gilgamesh::geometry::mesh::Mesh;
 use gilgamesh::geometry::primitive;
@@ -122,18 +122,13 @@ impl App for StarSystemDemo {
         yellow_light.transform_mut().position = DVec3::new(15.0 * orbit_sin, 0.0, 15.0 * orbit_cos);
     }
 
-    fn get_render_context(
-        &mut self,
-    ) -> RenderContext<'_, impl IntoIterator<Item = &mut Mesh>, impl CameraProjection> {
-        RenderContext::new(
-            &self.camera,
-            self.point_light_meshes.iter_mut().chain([
-                &mut self.sun,
-                &mut self.earth,
-                &mut self.plane,
-            ]),
-            &self.directional_light,
-            &self.point_lights,
-        )
+    fn get_frame_bindings_data(&mut self) -> FrameBindingsData<'_, impl CameraProjection> {
+        FrameBindingsData::new(&self.camera, &self.directional_light, &self.point_lights)
+    }
+
+    fn get_meshes(&mut self) -> impl IntoIterator<Item = &mut Mesh> {
+        self.point_light_meshes
+            .iter_mut()
+            .chain([&mut self.sun, &mut self.earth, &mut self.plane])
     }
 }

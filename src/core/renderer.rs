@@ -1,6 +1,6 @@
 use crate::camera::CameraProjection;
 use crate::core::frame_bindings::FrameBindings;
-use crate::core::render_context::RenderContext;
+use crate::core::render_context::FrameBindingsData;
 use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::mesh::Mesh;
 use crate::materials::material_pipeline::{MaterialPipeline, PipelineConfig, PipelineKey};
@@ -47,13 +47,11 @@ impl Renderer {
             .clone()
     }
 
-    pub(crate) fn render<'a, RenderObjects, ProjectionType>(
+    pub(crate) fn update_frame_bindings<'a, ProjectionType>(
         &mut self,
-        context: RenderContext<'a, RenderObjects, ProjectionType>,
+        context: FrameBindingsData<'a, ProjectionType>,
         wgpu_context: &WGPUContext,
-        output: &wgpu::SurfaceTexture,
     ) where
-        RenderObjects: IntoIterator<Item = &'a mut Mesh>,
         ProjectionType: CameraProjection,
     {
         self.frame.update(
@@ -62,6 +60,16 @@ impl Renderer {
             context.point_lights,
             &wgpu_context.queue,
         );
+    }
+
+    pub(crate) fn render<'a, RenderObjects>(
+        &mut self,
+        render_objects: RenderObjects,
+        wgpu_context: &WGPUContext,
+        output: &wgpu::SurfaceTexture,
+    ) where
+        RenderObjects: IntoIterator<Item = &'a mut Mesh>,
+    {
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
@@ -119,7 +127,7 @@ impl Renderer {
             });
 
             self.frame.bind(&mut render_pass);
-            for mesh in context.render_objects {
+            for mesh in render_objects {
                 mesh.render(&mut render_pass, self, wgpu_context);
             }
         }
