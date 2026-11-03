@@ -24,11 +24,9 @@ pub struct TransformUniforms {
 
 impl TransformUniforms {
     pub fn update(&mut self, transform: &Transform) {
-        self.position = transform.position.as_vec3().to_array();
-        self.world_matrix = transform
-            .compute_world_matrix()
-            .as_mat4()
-            .to_cols_array_2d();
+        let world_matrix = transform.compute_world_matrix();
+        self.position = world_matrix.w_axis.truncate().as_vec3().to_array();
+        self.world_matrix = world_matrix.as_mat4().to_cols_array_2d();
         self.normal_matrix = transform
             .compute_normal_matrix()
             .as_mat4()
@@ -80,6 +78,17 @@ impl Transform {
             .try_inverse()
             .expect("Transform matrix is not invertible")
             .transpose()
+    }
+
+    pub fn compute_world_position(&self) -> DVec3 {
+        if let Some(parent) = &self.parent {
+            parent
+                .borrow()
+                .compute_world_matrix()
+                .transform_point3(self.position)
+        } else {
+            self.position
+        }
     }
 
     pub fn local_direction_to_world(&self, local_direction: DVec3) -> DVec3 {

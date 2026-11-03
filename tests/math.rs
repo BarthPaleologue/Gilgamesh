@@ -196,6 +196,46 @@ fn gpu_uniforms_keep_their_layout_and_column_major_matrices() {
 }
 
 #[test]
+fn shader_positions_follow_parent_translation_rotation_and_scale() {
+    let grandparent = Rc::new(RefCell::new(Transform::new()));
+    grandparent.borrow_mut().position = DVec3::new(100.0, 0.0, 0.0);
+    let parent = Rc::new(RefCell::new(Transform::new()));
+    {
+        let mut transform = parent.borrow_mut();
+        transform.parent = Some(grandparent);
+        transform.rotation = DQuat::from_rotation_z(FRAC_PI_2);
+        transform.scaling = DVec3::new(2.0, 3.0, 4.0);
+    }
+    let camera: Camera = Camera::default();
+    let light = PointLight::default();
+    for mut transform in [camera.transform_mut(), light.transform_mut()] {
+        transform.parent = Some(parent.clone());
+        transform.position = DVec3::new(1.0, 2.0, 3.0);
+    }
+
+    for (translation, expected) in [
+        (DVec3::new(10.0, 20.0, 30.0), [106.0, 23.0, 42.0]),
+        (DVec3::new(30.0, 40.0, 50.0), [126.0, 43.0, 62.0]),
+    ] {
+        parent.borrow_mut().position = translation;
+        let mut camera_uniforms = CameraUniforms::default();
+        camera_uniforms.update(&camera);
+        let floats: &[f32] = bytemuck::cast_slice(std::slice::from_ref(&camera_uniforms));
+        assert_eq!(&floats[16..19], &expected);
+
+        let mut light_uniforms = PointLightUniforms::default();
+        light_uniforms.update(&light);
+        let floats: &[f32] = bytemuck::cast_slice(std::slice::from_ref(&light_uniforms));
+        assert_eq!(&floats[4..7], &expected);
+
+        let mut object_uniforms = TransformUniforms::default();
+        object_uniforms.update(&camera.transform());
+        assert_eq!(object_uniforms.position, expected);
+        assert_eq!(&object_uniforms.world_matrix[3][..3], &expected);
+    }
+}
+
+#[test]
 fn parented_transforms_and_camera_keep_small_offsets_at_large_coordinates() {
     let origin = 1e12;
     let parent = Rc::new(RefCell::new(Transform::new()));
