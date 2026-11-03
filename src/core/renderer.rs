@@ -1,3 +1,4 @@
+use crate::camera::CameraProjection;
 use crate::core::frame_bindings::FrameBindings;
 use crate::core::render_context::RenderContext;
 use crate::core::wgpu_context::WGPUContext;
@@ -44,13 +45,14 @@ impl Renderer {
             .clone()
     }
 
-    pub(crate) fn render<'a, T>(
+    pub(crate) fn render<'a, RenderObjects, ProjectionType>(
         &mut self,
-        context: RenderContext<'a, T>,
+        context: RenderContext<'a, RenderObjects, ProjectionType>,
         wgpu_context: &WGPUContext,
         output: &wgpu::SurfaceTexture,
     ) where
-        T: IntoIterator<Item = &'a mut Mesh>,
+        RenderObjects: IntoIterator<Item = &'a mut Mesh>,
+        ProjectionType: CameraProjection,
     {
         self.frame.update(
             context.camera,

@@ -1,4 +1,4 @@
-use gilgamesh::camera::Camera;
+use gilgamesh::camera::{Camera, Perspective};
 use gilgamesh::input::mouse::Mouse;
 use gilgamesh::input::orbit_control::OrbitControl;
 use gilgamesh::transform::Transformable;
@@ -13,7 +13,7 @@ fn radius_after_scroll(delta: MouseScrollDelta) -> f64 {
         delta,
         phase: TouchPhase::Moved,
     });
-    let mut camera = Camera::new(1.0);
+    let mut camera: Camera = Camera::default();
     OrbitControl::default().update(&mut camera, &mouse, 1.0 / 60.0);
     camera.transform().position.length()
 }
@@ -48,7 +48,7 @@ fn native_pinch_zooms_without_wheel_input() {
             delta,
             phase: TouchPhase::Moved,
         });
-        let mut camera = Camera::new(1.0);
+        let mut camera: Camera = Camera::default();
         OrbitControl::default().update(&mut camera, &mouse, 1.0 / 60.0);
         let radius = camera.transform().position.length();
         if delta > 0.0 {
@@ -61,8 +61,8 @@ fn native_pinch_zooms_without_wheel_input() {
 
 #[test]
 fn orbit_input_and_zoom_smoothing_are_independent_of_frame_partitioning() {
-    let mut camera = Camera::new(1.0);
-    let mut fast_camera = Camera::new(1.0);
+    let mut camera: Camera = Camera::default();
+    let mut fast_camera: Camera = Camera::default();
     let mut control = OrbitControl::default();
     let mut fast_control = OrbitControl::default();
     let input = Mouse {
@@ -84,10 +84,12 @@ fn orbit_input_and_zoom_smoothing_are_independent_of_frame_partitioning() {
 
 #[test]
 fn controls_preserve_camera_projection_and_scale() {
-    let mut camera = Camera::new(1.5);
-    camera.fov = 60.0;
-    camera.z_near = 0.5;
-    camera.z_far = 1000.0;
+    let mut camera = Camera::new(Perspective {
+        fov_vertical: std::f64::consts::FRAC_PI_3,
+        aspect_ratio: 1.5,
+        near: 0.5,
+        far: 1000.0,
+    });
     camera.transform_mut().scaling = DVec3::new(2.0, 3.0, 4.0);
     let projection = camera.projection_matrix();
     let input = Mouse {
@@ -105,7 +107,7 @@ fn controls_preserve_camera_projection_and_scale() {
 
 #[test]
 fn zoom_stops_at_the_minimum_radius() {
-    let mut camera = Camera::new(1.0);
+    let mut camera: Camera = Camera::default();
     let input = Mouse {
         scroll_delta_pixels: 40_000.0,
         ..Mouse::default()

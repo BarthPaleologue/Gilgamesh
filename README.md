@@ -39,7 +39,7 @@ Implement `App` to own and update your camera, controls, and meshes.
 Here is a procedural terrain example:
 
 ```rust,no_run
-use gilgamesh::camera::Camera;
+use gilgamesh::camera::{Camera, CameraProjection, Perspective};
 use gilgamesh::core::app::{App, FrameContext};
 use gilgamesh::core::engine::Engine;
 use gilgamesh::core::render_context::RenderContext;
@@ -53,7 +53,7 @@ use glam::DQuat;
 use std::rc::Rc;
 
 struct TerrainApp {
-    camera: Camera,
+    camera: Camera<Perspective>,
     orbit_control: OrbitControl,
     terrain: Mesh,
     directional_light: DirectionalLight,
@@ -61,18 +61,19 @@ struct TerrainApp {
 
 impl App for TerrainApp {
     fn update_before_render(&mut self, frame: &FrameContext<'_>) {
+        self.camera.projection.aspect_ratio = frame.surface_width as f64 / frame.surface_height as f64;
         self.orbit_control.update(&mut self.camera, frame.mouse, frame.delta_seconds);
         self.terrain.transform_mut().rotation = DQuat::from_rotation_y(frame.elapsed_seconds);
     }
 
-    fn get_render_context(&mut self) -> RenderContext<'_, impl IntoIterator<Item = &mut Mesh>> {
-        RenderContext::new(&mut self.camera, [&mut self.terrain], &self.directional_light, &[])
+    fn get_render_context(&mut self) -> RenderContext<'_, impl IntoIterator<Item = &mut Mesh>, impl CameraProjection> {
+        RenderContext::new(&self.camera, [&mut self.terrain], &self.directional_light, &[])
     }
 }
 
 fn main() {
     Engine::run("Sinc function", 1000, 800, |ctx| {
-        let camera = Camera::new(ctx.config.width as f64 / ctx.config.height as f64);
+        let camera = Camera::default();
         let mut orbit_control = OrbitControl::default();
         orbit_control.set_radius(10.0);
 

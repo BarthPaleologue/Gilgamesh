@@ -1,4 +1,4 @@
-use crate::camera::Camera;
+use crate::camera::{Camera, CameraProjection};
 use crate::input::mouse::Mouse;
 use crate::transform::Transformable;
 use glam::{DVec3, dcamera::rh};
@@ -37,7 +37,12 @@ impl OrbitControl {
 
     /// Orbits around the origin in the camera's parent coordinate space.
     /// Changes position and orientation, leaving projection and scale untouched.
-    pub fn update(&mut self, camera: &mut Camera, mouse: &Mouse, delta_seconds: f64) {
+    pub fn update<ProjectionType: CameraProjection>(
+        &mut self,
+        camera: &mut Camera<ProjectionType>,
+        mouse: &Mouse,
+        delta_seconds: f64,
+    ) {
         if mouse.left_button_pressed {
             self.phi += mouse.delta[0] * ROTATION_RADIANS_PER_PIXEL;
             self.theta += mouse.delta[1] * ROTATION_RADIANS_PER_PIXEL;

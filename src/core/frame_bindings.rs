@@ -1,5 +1,5 @@
-use crate::camera::Camera;
 use crate::camera::uniforms::CameraUniforms;
+use crate::camera::{Camera, CameraProjection};
 use crate::core::wgpu_context::WGPUContext;
 use crate::lights::directional_light::{DirectionalLight, DirectionalLightUniform};
 use crate::lights::point_light::{PointLight, PointLightUniforms};
@@ -62,9 +62,9 @@ impl FrameBindings {
         }
     }
 
-    pub(crate) fn update(
+    pub(crate) fn update<ProjectionType: CameraProjection>(
         &self,
-        camera: &Camera,
+        camera: &Camera<ProjectionType>,
         directional_light: &DirectionalLight,
         point_lights: &[PointLight],
         queue: &wgpu::Queue,

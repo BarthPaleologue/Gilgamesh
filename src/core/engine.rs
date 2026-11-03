@@ -11,8 +11,8 @@ use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::{Window, WindowAttributes, WindowId};
 
-pub struct Engine<TApp: App> {
-    pub app: TApp,
+pub struct Engine<Application: App> {
+    pub app: Application,
     pub window: Arc<Window>,
     pub wgpu_context: WGPUContext,
 
@@ -24,15 +24,15 @@ pub struct Engine<TApp: App> {
     mouse: Mouse,
 }
 
-impl<TApp: App> Engine<TApp> {
+impl<Application: App> Engine<Application> {
     /// Initializes WebGPU, calls the application factory once, then runs the event loop.
     pub fn run(
         name: &str,
         width: u32,
         height: u32,
-        create_app: impl FnOnce(&WGPUContext) -> TApp + 'static,
+        create_app: impl FnOnce(&WGPUContext) -> Application + 'static,
     ) where
-        TApp: 'static,
+        Application: 'static,
     {
         cfg_if::cfg_if! {
             if #[cfg(target_arch = "wasm32")] {
@@ -70,7 +70,7 @@ impl<TApp: App> Engine<TApp> {
     async fn new(
         window: Arc<Window>,
         display: winit::event_loop::OwnedDisplayHandle,
-        create_app: impl FnOnce(&WGPUContext) -> TApp,
+        create_app: impl FnOnce(&WGPUContext) -> Application,
     ) -> Self {
         #[cfg(target_arch = "wasm32")]
         {
@@ -115,8 +115,6 @@ impl<TApp: App> Engine<TApp> {
             self.wgpu_context
                 .surface
                 .configure(&self.wgpu_context.device, &self.wgpu_context.config);
-            self.app.get_render_context().camera.aspect_ratio =
-                new_size.width as f64 / new_size.height as f64;
         }
     }
 
@@ -132,6 +130,8 @@ impl<TApp: App> Engine<TApp> {
         let frame = FrameContext {
             elapsed_seconds: self.elapsed_seconds,
             delta_seconds: self.delta_seconds,
+            surface_width: self.wgpu_context.config.width,
+            surface_height: self.wgpu_context.config.height,
             mouse: &self.mouse,
             wgpu_context: &self.wgpu_context,
         };
@@ -144,23 +144,24 @@ impl<TApp: App> Engine<TApp> {
     }
 }
 
-enum ApplicationState<TApp: App, TFactory> {
-    New(TFactory),
+enum ApplicationState<Application: App, Factory> {
+    New(Factory),
     Initializing,
-    Running(Box<Engine<TApp>>),
+    Running(Box<Engine<Application>>),
 }
 
-struct EngineApplication<TApp: App + 'static, TFactory> {
+struct EngineApplication<Application: App + 'static, Factory> {
     attributes: WindowAttributes,
-    state: ApplicationState<TApp, TFactory>,
+    state: ApplicationState<Application, Factory>,
     #[cfg(target_arch = "wasm32")]
-    proxy: winit::event_loop::EventLoopProxy<Engine<TApp>>,
+    proxy: winit::event_loop::EventLoopProxy<Engine<Application>>,
 }
 
-impl<TApp, TFactory> ApplicationHandler<Engine<TApp>> for EngineApplication<TApp, TFactory>
+impl<Application, Factory> ApplicationHandler<Engine<Application>>
+    for EngineApplication<Application, Factory>
 where
-    TApp: App + 'static,
-    TFactory: FnOnce(&WGPUContext) -> TApp + 'static,
+    Application: App + 'static,
+    Factory: FnOnce(&WGPUContext) -> Application + 'static,
 {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if !matches!(self.state, ApplicationState::New(_)) {
@@ -191,7 +192,7 @@ where
         }
     }
 
-    fn user_event(&mut self, _event_loop: &ActiveEventLoop, mut engine: Engine<TApp>) {
+    fn user_event(&mut self, _event_loop: &ActiveEventLoop, mut engine: Engine<Application>) {
         let size = engine.window.inner_size();
         engine.resize(size);
         engine.window.request_redraw();

@@ -1,30 +1,28 @@
+mod projection;
 pub mod uniforms;
 
-use glam::{DMat4, dcamera::rh};
+pub use projection::{CameraProjection, OffAxis, Orthographic, Perspective, Projection};
+
+use glam::DMat4;
 use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
 
 use crate::transform::{Transform, Transformable};
 
-pub struct Camera {
+#[derive(Default)]
+pub struct Camera<ProjectionType: CameraProjection = Projection> {
     transform: Rc<RefCell<Transform>>,
-    pub aspect_ratio: f64,
-    /// Vertical field of view in degrees.
-    pub fov: f64,
-    pub z_near: f64,
-    pub z_far: f64,
+    pub projection: ProjectionType,
 }
 
-impl Camera {
-    pub fn new(aspect_ratio: f64) -> Camera {
-        Camera {
+impl<ProjectionType: CameraProjection> Camera<ProjectionType> {
+    pub fn new(projection: ProjectionType) -> Self {
+        Self {
             transform: Rc::new(RefCell::new(Transform::new())),
-            aspect_ratio,
-            fov: 70.0,
-            z_near: 0.1,
-            z_far: 100.0,
+            projection,
         }
     }
+
     /// Inverts the camera's world transform, with local -Z as the viewing direction.
     pub fn view_matrix(&self) -> DMat4 {
         self.transform()
@@ -33,19 +31,14 @@ impl Camera {
             .expect("Camera world matrix is not invertible")
     }
     pub fn projection_matrix(&self) -> DMat4 {
-        rh::proj::directx::perspective(
-            self.fov.to_radians(),
-            self.aspect_ratio,
-            self.z_near,
-            self.z_far,
-        )
+        self.projection.matrix()
     }
     pub fn projection_view(&self) -> DMat4 {
         self.projection_matrix() * self.view_matrix()
     }
 }
 
-impl Transformable for Camera {
+impl<ProjectionType: CameraProjection> Transformable for Camera<ProjectionType> {
     fn transform(&self) -> Ref<'_, Transform> {
         self.transform.borrow()
     }

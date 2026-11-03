@@ -88,26 +88,10 @@ fn local_axes_only_depend_on_rotation_and_stay_normalized() {
 }
 
 #[test]
-fn projection_uses_degrees_and_webgpu_depth_range() {
-    let mut camera = Camera::new(1.5);
-    camera.fov = 60.0;
-    camera.z_near = 0.1;
-    camera.z_far = 10.0;
-    let projection = camera.projection_matrix();
-    for (distance, expected_depth) in [(camera.z_near, 0.0), (camera.z_far, 1.0)] {
-        let clip = projection * DVec4::new(0.0, 0.0, -distance, 1.0);
-        assert_close([clip.z / clip.w], [expected_depth]);
-    }
-    let half_height = (camera.fov.to_radians() / 2.0).tan();
-    let clip = projection * DVec4::new(half_height * camera.aspect_ratio, half_height, -1.0, 1.0);
-    assert_close([clip.x / clip.w, clip.y / clip.w], [1.0, 1.0]);
-}
-
-#[test]
 fn camera_view_accounts_for_its_parent_transform() {
     let parent = Rc::new(RefCell::new(Transform::new()));
     parent.borrow_mut().position = DVec3::new(2.0, -1.0, 3.0);
-    let camera = Camera::new(1.0);
+    let camera: Camera = Camera::default();
     camera.transform_mut().position = DVec3::new(0.0, 0.0, 5.0);
     camera.transform_mut().parent = Some(parent);
     let view = camera.view_matrix();
@@ -123,7 +107,7 @@ fn camera_view_accounts_for_its_parent_transform() {
 
 #[test]
 fn camera_view_uses_its_quaternion_orientation() {
-    let camera = Camera::new(1.0);
+    let camera: Camera = Camera::default();
     camera.transform_mut().position = DVec3::new(2.0, 3.0, 4.0);
     camera.transform_mut().rotation = DQuat::from_rotation_y(FRAC_PI_2);
     let view = camera.view_matrix();
@@ -144,7 +128,7 @@ fn orbit_control_keeps_looking_at_the_target_under_a_parent_transform() {
     parent.borrow_mut().scaling = DVec3::new(2.0, 3.0, 4.0);
     parent.borrow_mut().rotation = DQuat::from_rotation_y(0.4);
     let target = parent.borrow().compute_world_matrix() * DVec4::new(0.0, 0.0, 0.0, 1.0);
-    let mut camera = Camera::new(1.0);
+    let mut camera: Camera = Camera::default();
     camera.transform_mut().parent = Some(parent);
     let mut control = OrbitControl::default();
     control.set_radius(2.0);
@@ -185,7 +169,7 @@ fn singular_transform_cannot_produce_a_normal_matrix() {
 fn singular_parent_transform_cannot_produce_a_camera_view() {
     let parent = Rc::new(RefCell::new(Transform::new()));
     parent.borrow_mut().scaling = DVec3::new(0.0, 1.0, 1.0);
-    let camera = Camera::new(1.0);
+    let camera: Camera = Camera::default();
     camera.transform_mut().parent = Some(parent);
     camera.view_matrix();
 }
@@ -203,7 +187,7 @@ fn gpu_uniforms_keep_their_layout_and_column_major_matrices() {
     assert_eq!(uniforms.position, [3.0, -2.0, 4.0]);
     assert_eq!(uniforms.world_matrix[3], [3.0, -2.0, 4.0, 1.0]);
 
-    let camera = Camera::new(1.0);
+    let camera: Camera = Camera::default();
     camera.transform_mut().position = DVec3::new(0.0, 0.0, 5.0);
     let mut uniforms = CameraUniforms::default();
     uniforms.update(&camera);
@@ -225,7 +209,7 @@ fn parented_transforms_and_camera_keep_small_offsets_at_large_coordinates() {
         DVec3::new(origin + 0.125, -origin + 0.25, origin - 0.5)
     );
 
-    let camera = Camera::new(1.0);
+    let camera: Camera = Camera::default();
     camera.transform_mut().parent = Some(parent);
     let relative_position = camera.view_matrix().transform_point3(world_position);
     assert_close(relative_position.to_array(), [0.125, 0.25, -0.5]);

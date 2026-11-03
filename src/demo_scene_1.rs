@@ -1,4 +1,4 @@
-use crate::camera::Camera;
+use crate::camera::{Camera, CameraProjection, Perspective};
 use crate::core::app::{App, FrameContext};
 use crate::core::engine::Engine;
 use crate::core::render_context::RenderContext;
@@ -22,7 +22,7 @@ pub fn run() {
 }
 
 pub struct StarSystemDemo {
-    camera: Camera,
+    camera: Camera<Perspective>,
     orbit_control: OrbitControl,
     sun: Mesh,
     earth: Mesh,
@@ -34,7 +34,7 @@ pub struct StarSystemDemo {
 
 impl StarSystemDemo {
     pub fn new(ctx: &WGPUContext) -> Self {
-        let camera = Camera::new(ctx.config.width as f64 / ctx.config.height as f64);
+        let camera = Camera::default();
         let mut orbit_control = OrbitControl::default();
         orbit_control.set_radius(2.0);
 
@@ -104,6 +104,8 @@ impl StarSystemDemo {
 
 impl App for StarSystemDemo {
     fn update_before_render(&mut self, frame: &FrameContext<'_>) {
+        self.camera.projection.aspect_ratio =
+            frame.surface_width as f64 / frame.surface_height as f64;
         self.orbit_control
             .update(&mut self.camera, frame.mouse, frame.delta_seconds);
         self.sun.transform_mut().rotation = DQuat::from_rotation_y(frame.elapsed_seconds);
@@ -118,9 +120,11 @@ impl App for StarSystemDemo {
         yellow_light.transform_mut().position = DVec3::new(15.0 * orbit_sin, 0.0, 15.0 * orbit_cos);
     }
 
-    fn get_render_context(&mut self) -> RenderContext<'_, impl IntoIterator<Item = &mut Mesh>> {
+    fn get_render_context(
+        &mut self,
+    ) -> RenderContext<'_, impl IntoIterator<Item = &mut Mesh>, impl CameraProjection> {
         RenderContext::new(
-            &mut self.camera,
+            &self.camera,
             self.point_light_meshes.iter_mut().chain([
                 &mut self.sun,
                 &mut self.earth,

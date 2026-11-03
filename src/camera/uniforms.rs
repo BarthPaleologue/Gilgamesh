@@ -1,4 +1,4 @@
-use crate::camera::Camera;
+use crate::camera::{Camera, CameraProjection};
 use crate::transform::Transformable;
 use bytemuck::{Pod, Zeroable};
 
@@ -11,7 +11,7 @@ pub struct CameraUniforms {
 }
 
 impl CameraUniforms {
-    pub fn update(&mut self, camera: &Camera) {
+    pub fn update<ProjectionType: CameraProjection>(&mut self, camera: &Camera<ProjectionType>) {
         self.proj_view = camera.projection_view().as_mat4().to_cols_array_2d();
         self.position = camera.transform().position.as_vec3().to_array();
     }
