@@ -1,3 +1,4 @@
+use crate::core::renderer::DEPTH_FORMAT;
 use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::gpu_mesh_buffers::Vertex;
 use crate::materials::utils::uniform_layout_entry;
@@ -88,9 +89,9 @@ impl MaterialPipeline {
                     ..Default::default()
                 },
                 depth_stencil: Some(wgpu::DepthStencilState {
-                    format: wgpu::TextureFormat::Depth24Plus,
+                    format: DEPTH_FORMAT,
                     depth_write_enabled: Some(true),
-                    depth_compare: Some(wgpu::CompareFunction::LessEqual),
+                    depth_compare: Some(wgpu::CompareFunction::GreaterEqual),
                     stencil: wgpu::StencilState::default(),
                     bias: wgpu::DepthBiasState::default(),
                 }),

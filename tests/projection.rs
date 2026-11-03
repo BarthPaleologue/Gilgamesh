@@ -1,6 +1,6 @@
 use gilgamesh::camera::uniforms::CameraUniforms;
 use gilgamesh::camera::{Camera, CameraProjection, OffAxis, Orthographic, Perspective};
-use glam::{DMat4, DVec3};
+use glam::{DMat4, DVec3, Vec3};
 use std::f64::consts::FRAC_PI_3;
 
 fn assert_projected(matrix: DMat4, point: DVec3, expected: DVec3) {
@@ -12,7 +12,7 @@ fn assert_projected(matrix: DMat4, point: DVec3, expected: DVec3) {
 }
 
 #[test]
-fn perspective_uses_radians_and_webgpu_depth_range() {
+fn perspective_uses_radians_and_reverse_depth() {
     let near = 0.1;
     let far = 10.0;
     let aspect_ratio = 1.5;
@@ -23,7 +23,7 @@ fn perspective_uses_radians_and_webgpu_depth_range() {
         far,
     });
     let projection = camera.projection_matrix();
-    for (distance, depth) in [(near, 0.0), (far, 1.0)] {
+    for (distance, depth) in [(near, 1.0), (far, 0.0)] {
         assert_projected(
             projection,
             DVec3::new(0.0, 0.0, -distance),
@@ -38,6 +38,19 @@ fn perspective_uses_radians_and_webgpu_depth_range() {
 }
 
 #[test]
+fn perspective_preserves_distant_depths_after_gpu_conversion() {
+    let matrix = Perspective {
+        far: 1e12,
+        ..Default::default()
+    }
+    .matrix()
+    .as_mat4();
+    let nearer = matrix.project_point3(Vec3::new(0.0, 0.0, -100_000_000.0)).z;
+    let farther = matrix.project_point3(Vec3::new(0.0, 0.0, -100_001_024.0)).z;
+    assert!(0.0 < farther && farther < nearer && nearer < 1.0);
+}
+
+#[test]
 fn orthographic_keeps_visible_size_at_every_depth_and_tracks_parameter_changes() {
     let near = 0.5;
     let far = 100.0;
@@ -48,7 +61,7 @@ fn orthographic_keeps_visible_size_at_every_depth_and_tracks_parameter_changes()
         far,
     });
     let projection = camera.projection_matrix();
-    for (distance, depth) in [(near, 0.0), (far, 1.0)] {
+    for (distance, depth) in [(near, 1.0), (far, 0.0)] {
         for (x, expected_x) in [(-3.0, -1.0), (3.0, 1.0)] {
             for (y, expected_y) in [(-2.0, -1.0), (2.0, 1.0)] {
                 assert_projected(
@@ -64,7 +77,7 @@ fn orthographic_keeps_visible_size_at_every_depth_and_tracks_parameter_changes()
     assert_projected(
         camera.projection_matrix(),
         DVec3::new(8.0, 4.0, -near),
-        DVec3::new(1.0, 1.0, 0.0),
+        DVec3::new(1.0, 1.0, 1.0),
     );
 }
 
@@ -84,7 +97,7 @@ fn off_axis_maps_signed_angular_bounds_to_clip_edges() {
             far,
         };
         let matrix = projection.matrix();
-        for (distance, depth) in [(near, 0.0), (far, 1.0)] {
+        for (distance, depth) in [(near, 1.0), (far, 0.0)] {
             for (angle_x, expected_x) in [(angle_left, -1.0), (angle_right, 1.0)] {
                 for (angle_y, expected_y) in [(angle_bottom, -1.0), (angle_top, 1.0)] {
                     assert_projected(

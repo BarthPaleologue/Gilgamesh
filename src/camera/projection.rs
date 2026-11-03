@@ -1,7 +1,8 @@
 use glam::{DMat4, dcamera::rh::proj::directx};
 
 pub trait CameraProjection {
-    /// Maps camera space (-Z forward, +Y up) to WebGPU clip space (depth 0..1).
+    /// Maps camera space (-Z forward, +Y up) to WebGPU clip space with reverse depth:
+    /// the near plane maps to 1 and the far plane to 0.
     fn matrix(&self) -> DMat4;
 }
 
@@ -27,7 +28,7 @@ impl Default for Perspective {
 
 impl CameraProjection for Perspective {
     fn matrix(&self) -> DMat4 {
-        directx::perspective(self.fov_vertical, self.aspect_ratio, self.near, self.far)
+        directx::perspective(self.fov_vertical, self.aspect_ratio, self.far, self.near)
     }
 }
 
@@ -49,8 +50,8 @@ impl CameraProjection for Orthographic {
             half_width,
             -half_height,
             half_height,
-            self.near,
             self.far,
+            self.near,
         )
     }
 }
@@ -69,13 +70,14 @@ pub struct OffAxis {
 
 impl CameraProjection for OffAxis {
     fn matrix(&self) -> DMat4 {
+        // Bounds lie on the swapped near plane to preserve the angular field of view.
         directx::frustum(
-            self.near * self.angle_left.tan(),
-            self.near * self.angle_right.tan(),
-            self.near * self.angle_bottom.tan(),
-            self.near * self.angle_top.tan(),
-            self.near,
+            self.far * self.angle_left.tan(),
+            self.far * self.angle_right.tan(),
+            self.far * self.angle_bottom.tan(),
+            self.far * self.angle_top.tan(),
             self.far,
+            self.near,
         )
     }
 }

@@ -8,6 +8,8 @@ use std::collections::HashMap;
 use std::iter;
 use std::rc::Rc;
 
+pub(crate) const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
+
 pub struct Renderer {
     pub(crate) frame: FrameBindings,
     pipelines: HashMap<PipelineKey, Rc<MaterialPipeline>>,
@@ -74,7 +76,7 @@ impl Renderer {
                 mip_level_count: 1,
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::Depth24Plus,
+                format: DEPTH_FORMAT,
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
                 label: None,
                 view_formats: &[],
@@ -108,7 +110,7 @@ impl Renderer {
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: &depth_view,
                     depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(1.0),
+                        load: wgpu::LoadOp::Clear(0.0),
                         store: wgpu::StoreOp::Discard,
                     }),
                     stencil_ops: None,
