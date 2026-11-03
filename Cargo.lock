@@ -690,11 +690,9 @@ dependencies = [
  "glam 0.34.2",
  "hexasphere",
  "image",
- "load_file",
  "log",
  "naga",
  "pollster",
- "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
  "web-time",
@@ -1024,12 +1022,6 @@ name = "litrs"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4744e383959f0db86ede514b809b1c53251889093803c05267acc7d4e7030d70"
-
-[[package]]
-name = "load_file"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31da4bce62428941030036a44d0d4b123f031b04080f8aeb44248b41de3e79cd"
 
 [[package]]
 name = "lock_api"

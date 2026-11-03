@@ -18,7 +18,6 @@ bytemuck = { version = "1.25", features = ["derive"] }
 env_logger = "0.11"
 log = "0.4"
 hexasphere = "19"
-load_file = "1.0.1"
 web-time = "1.1"
 
 [dependencies.image]
@@ -30,16 +29,13 @@ features = ["png", "jpeg"]
 console_error_panic_hook = "0.1.6"
 console_log = "1.0"
 wgpu = { version = "30", features = ["webgl"] }
-wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4.30"
 web-sys = { version = "0.3", features = [
     "Document",
     "Window",
     "Element",
+    "HtmlElement",
 ] }
-
-[lib]
-crate-type = ["cdylib", "rlib"]
 
 [dev-dependencies]
 naga = { version = "30", features = ["wgsl-in"] }

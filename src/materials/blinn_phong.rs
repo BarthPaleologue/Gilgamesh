@@ -72,7 +72,7 @@ impl BlinnPhongMaterial {
             normal_map,
 
             pipeline_config: PipelineConfig {
-                shader_file: "../shader/blinn_phong.wgsl",
+                shader_source: include_str!("../shader/blinn_phong.wgsl"),
                 polygon_mode: wgpu::PolygonMode::Fill,
                 back_face_culling: true,
             },

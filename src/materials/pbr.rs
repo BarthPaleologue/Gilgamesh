@@ -82,7 +82,7 @@ impl PbrMaterial {
             roughness_texture,
 
             pipeline_config: PipelineConfig {
-                shader_file: "../shader/pbr.wgsl",
+                shader_source: include_str!("../shader/pbr.wgsl"),
                 polygon_mode: wgpu::PolygonMode::Fill,
                 back_face_culling: true,
             },

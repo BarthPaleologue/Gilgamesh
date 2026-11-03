@@ -35,6 +35,21 @@ cargo test --locked
 cargo build --locked --target wasm32-unknown-unknown
 ```
 
+Run the examples on desktop:
+
+```sh
+cargo demo terrain
+cargo demo starsystem
+```
+
+For the browser, install [wasm-server-runner](https://github.com/jakobhellermann/wasm-server-runner)
+once with `cargo install wasm-server-runner`, then run either example and open the printed URL:
+
+```sh
+cargo demo-wasm terrain
+cargo demo-wasm starsystem
+```
+
 Implement `App` to own and update your camera, controls, and meshes.
 Here is a procedural terrain example:
 

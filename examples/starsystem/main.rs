@@ -1,27 +1,27 @@
-use crate::camera::{Camera, CameraProjection, Perspective};
-use crate::core::app::{App, FrameContext};
-use crate::core::engine::Engine;
-use crate::core::render_context::RenderContext;
-use crate::core::wgpu_context::WGPUContext;
-use crate::geometry::mesh::Mesh;
-use crate::geometry::primitive;
-use crate::input::orbit_control::OrbitControl;
-use crate::lights::debug::create_point_light_debug_mesh;
-use crate::lights::directional_light::DirectionalLight;
-use crate::lights::light::Light;
-use crate::lights::point_light::PointLight;
-use crate::materials::blinn_phong::BlinnPhongMaterial;
-use crate::materials::pbr::PbrMaterial;
-use crate::texture::Texture;
-use crate::transform::Transformable;
+use gilgamesh::camera::{Camera, CameraProjection, Perspective};
+use gilgamesh::core::app::{App, FrameContext};
+use gilgamesh::core::engine::Engine;
+use gilgamesh::core::render_context::RenderContext;
+use gilgamesh::core::wgpu_context::WGPUContext;
+use gilgamesh::geometry::mesh::Mesh;
+use gilgamesh::geometry::primitive;
+use gilgamesh::input::orbit_control::OrbitControl;
+use gilgamesh::lights::debug::create_point_light_debug_mesh;
+use gilgamesh::lights::directional_light::DirectionalLight;
+use gilgamesh::lights::light::Light;
+use gilgamesh::lights::point_light::PointLight;
+use gilgamesh::materials::blinn_phong::BlinnPhongMaterial;
+use gilgamesh::materials::pbr::PbrMaterial;
+use gilgamesh::texture::Texture;
+use gilgamesh::transform::Transformable;
 use glam::{DQuat, DVec3};
 use std::rc::Rc;
 
-pub fn run() {
+fn main() {
     Engine::run("Gilgamesh", 1000, 800, StarSystemDemo::new);
 }
 
-pub struct StarSystemDemo {
+struct StarSystemDemo {
     camera: Camera<Perspective>,
     orbit_control: OrbitControl,
     sun: Mesh,
@@ -33,7 +33,7 @@ pub struct StarSystemDemo {
 }
 
 impl StarSystemDemo {
-    pub fn new(ctx: &WGPUContext) -> Self {
+    fn new(ctx: &WGPUContext) -> Self {
         let camera = Camera::default();
         let mut orbit_control = OrbitControl::default();
         orbit_control.set_radius(2.0);
@@ -57,7 +57,11 @@ impl StarSystemDemo {
             .each_ref()
             .map(|light| create_point_light_debug_mesh(light, ctx));
 
-        let sun_texture = Rc::new(Texture::new("Sun texture", "textures/sun.jpg", ctx));
+        let sun_texture = Rc::new(Texture::new(
+            "Sun texture",
+            include_bytes!("assets/sun.jpg"),
+            ctx,
+        ));
         let mut sun_material = PbrMaterial::new("SunMaterial", ctx);
         sun_material.set_albedo_texture(sun_texture);
         let sun = Mesh::from_cpu_buffers("Sun", primitive::sphere(32), Rc::new(sun_material), ctx);
@@ -65,13 +69,13 @@ impl StarSystemDemo {
         let mut earth_material = BlinnPhongMaterial::new("EarthMaterial", ctx);
         let earth_diffuse_texture = Rc::new(Texture::new(
             "Earth diffuse texture",
-            "textures/2k_earth_daymap.jpg",
+            include_bytes!("assets/2k_earth_daymap.jpg"),
             ctx,
         ));
         earth_material.set_diffuse_texture(earth_diffuse_texture);
         let earth_specular_texture = Rc::new(Texture::new(
             "Earth specular texture",
-            "textures/2k_earth_specular_map.jpg",
+            include_bytes!("assets/2k_earth_specular_map.jpg"),
             ctx,
         ));
         earth_material.set_specular_texture(earth_specular_texture);

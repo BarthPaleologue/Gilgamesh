@@ -1,20 +1,20 @@
-use crate::camera::{Camera, CameraProjection, Perspective};
-use crate::core::app::{App, FrameContext};
-use crate::core::engine::Engine;
-use crate::core::render_context::RenderContext;
-use crate::core::wgpu_context::WGPUContext;
-use crate::geometry::mesh::Mesh;
-use crate::geometry::procedural;
-use crate::input::orbit_control::OrbitControl;
-use crate::lights::directional_light::DirectionalLight;
-use crate::materials::blinn_phong::BlinnPhongMaterial;
+use gilgamesh::camera::{Camera, CameraProjection, Perspective};
+use gilgamesh::core::app::{App, FrameContext};
+use gilgamesh::core::engine::Engine;
+use gilgamesh::core::render_context::RenderContext;
+use gilgamesh::core::wgpu_context::WGPUContext;
+use gilgamesh::geometry::mesh::Mesh;
+use gilgamesh::geometry::procedural;
+use gilgamesh::input::orbit_control::OrbitControl;
+use gilgamesh::lights::directional_light::DirectionalLight;
+use gilgamesh::materials::blinn_phong::BlinnPhongMaterial;
 use std::rc::Rc;
 
-pub fn run() {
+fn main() {
     Engine::run("Sinc function", 1000, 800, TerrainView::new);
 }
 
-pub struct TerrainView {
+struct TerrainView {
     camera: Camera<Perspective>,
     orbit_control: OrbitControl,
     terrain: Mesh,
@@ -22,7 +22,7 @@ pub struct TerrainView {
 }
 
 impl TerrainView {
-    pub fn new(ctx: &WGPUContext) -> Self {
+    fn new(ctx: &WGPUContext) -> Self {
         let camera = Camera::default();
         let mut orbit_control = OrbitControl::default();
         orbit_control.set_radius(10.0);

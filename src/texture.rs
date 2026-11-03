@@ -1,6 +1,5 @@
 use crate::core::wgpu_context::WGPUContext;
 use image::GenericImageView;
-use load_file::load_bytes;
 
 pub struct Texture {
     texture_view: wgpu::TextureView,
@@ -56,8 +55,7 @@ impl Texture {
             sampler,
         }
     }
-    pub fn new(name: &str, path: &str, wgpu_context: &WGPUContext) -> Texture {
-        let bytes = load_bytes!(path);
+    pub fn new(name: &str, bytes: &[u8], wgpu_context: &WGPUContext) -> Texture {
         let image = image::load_from_memory(bytes).unwrap();
         let image_rgba = image.to_rgba8();
 

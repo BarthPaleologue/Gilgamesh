@@ -5,7 +5,7 @@ use crate::texture::Texture;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct PipelineConfig {
-    pub shader_file: &'static str,
+    pub shader_source: &'static str,
     pub polygon_mode: wgpu::PolygonMode,
     pub back_face_culling: bool,
 }
@@ -30,12 +30,11 @@ impl MaterialPipeline {
         frame_layout: &wgpu::BindGroupLayout,
         ctx: &WGPUContext,
     ) -> Self {
-        let shader_string = load_file::load_str!(config.shader_file);
         let shader = ctx
             .device
             .create_shader_module(wgpu::ShaderModuleDescriptor {
-                label: Some(config.shader_file),
-                source: wgpu::ShaderSource::Wgsl(shader_string.into()),
+                label: Some("Material Shader"),
+                source: wgpu::ShaderSource::Wgsl(config.shader_source.into()),
             });
         let material_layout =
             ctx.device
@@ -46,7 +45,7 @@ impl MaterialPipeline {
         let pipeline_layout = ctx
             .device
             .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some(config.shader_file),
+                label: Some("Material Pipeline Layout"),
                 bind_group_layouts: &[
                     Some(frame_layout),
                     Some(&material_layout),
@@ -57,7 +56,7 @@ impl MaterialPipeline {
         let pipeline = ctx
             .device
             .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some(config.shader_file),
+                label: Some("Material Pipeline"),
                 layout: Some(&pipeline_layout),
                 vertex: wgpu::VertexState {
                     module: &shader,
