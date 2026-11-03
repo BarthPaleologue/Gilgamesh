@@ -11,7 +11,7 @@ use gilgamesh::materials::blinn_phong::BlinnPhongMaterial;
 use std::rc::Rc;
 
 fn main() {
-    Engine::run("Sinc function", 1000, 800, TerrainView::new);
+    Engine::<TerrainView>::run("Sinc function", 1000, 800);
 }
 
 struct TerrainView {
@@ -21,7 +21,7 @@ struct TerrainView {
     directional_light: DirectionalLight,
 }
 
-impl TerrainView {
+impl App for TerrainView {
     fn new(ctx: &WGPUContext) -> Self {
         let camera = Camera::default();
         let mut orbit_control = OrbitControl::default();
@@ -42,9 +42,7 @@ impl TerrainView {
             directional_light: DirectionalLight::default(),
         }
     }
-}
 
-impl App for TerrainView {
     fn update_before_render(&mut self, frame: &FrameContext<'_>) {
         self.camera.projection.aspect_ratio =
             frame.surface_width as f64 / frame.surface_height as f64;

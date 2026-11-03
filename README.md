@@ -58,6 +58,7 @@ use gilgamesh::camera::{Camera, CameraProjection, Perspective};
 use gilgamesh::core::app::{App, FrameContext};
 use gilgamesh::core::engine::Engine;
 use gilgamesh::core::render_context::RenderContext;
+use gilgamesh::core::wgpu_context::WGPUContext;
 use gilgamesh::geometry::mesh::Mesh;
 use gilgamesh::geometry::procedural;
 use gilgamesh::input::orbit_control::OrbitControl;
@@ -75,19 +76,7 @@ struct TerrainApp {
 }
 
 impl App for TerrainApp {
-    fn update_before_render(&mut self, frame: &FrameContext<'_>) {
-        self.camera.projection.aspect_ratio = frame.surface_width as f64 / frame.surface_height as f64;
-        self.orbit_control.update(&mut self.camera, frame.mouse, frame.delta_seconds);
-        self.terrain.transform_mut().rotation = DQuat::from_rotation_y(frame.elapsed_seconds);
-    }
-
-    fn get_render_context(&mut self) -> RenderContext<'_, impl IntoIterator<Item = &mut Mesh>, impl CameraProjection> {
-        RenderContext::new(&self.camera, [&mut self.terrain], &self.directional_light, &[])
-    }
-}
-
-fn main() {
-    Engine::run("Sinc function", 1000, 800, |ctx| {
+    fn new(ctx: &WGPUContext) -> Self {
         let camera = Camera::default();
         let mut orbit_control = OrbitControl::default();
         orbit_control.set_radius(10.0);
@@ -100,8 +89,22 @@ fn main() {
         material.set_diffuse_color(0.5, 0.2, 1.0);
         let terrain = Mesh::from_cpu_buffers("sinc", cpu_buffers, Rc::new(material), ctx);
 
-        TerrainApp { camera, orbit_control, terrain, directional_light: DirectionalLight::default() }
-    });
+        Self { camera, orbit_control, terrain, directional_light: DirectionalLight::default() }
+    }
+
+    fn update_before_render(&mut self, frame: &FrameContext<'_>) {
+        self.camera.projection.aspect_ratio = frame.surface_width as f64 / frame.surface_height as f64;
+        self.orbit_control.update(&mut self.camera, frame.mouse, frame.delta_seconds);
+        self.terrain.transform_mut().rotation = DQuat::from_rotation_y(frame.elapsed_seconds);
+    }
+
+    fn get_render_context(&mut self) -> RenderContext<'_, impl IntoIterator<Item = &mut Mesh>, impl CameraProjection> {
+        RenderContext::new(&self.camera, [&mut self.terrain], &self.directional_light, &[])
+    }
+}
+
+fn main() {
+    Engine::<TerrainApp>::run("Sinc function", 1000, 800);
 }
 ```
 

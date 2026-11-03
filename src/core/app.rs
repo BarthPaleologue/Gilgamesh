@@ -16,7 +16,10 @@ pub struct FrameContext<'a> {
     pub wgpu_context: &'a WGPUContext,
 }
 
-pub trait App {
+pub trait App: Sized {
+    /// Creates the application after WebGPU has been initialized.
+    fn new(ctx: &WGPUContext) -> Self;
+
     /// Updates application state before the engine borrows its render context.
     fn update_before_render(&mut self, frame: &FrameContext<'_>);
 

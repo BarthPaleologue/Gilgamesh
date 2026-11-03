@@ -25,13 +25,9 @@ pub struct Engine<Application: App> {
 }
 
 impl<Application: App> Engine<Application> {
-    /// Initializes WebGPU, calls the application factory once, then runs the event loop.
-    pub fn run(
-        name: &str,
-        width: u32,
-        height: u32,
-        create_app: impl FnOnce(&WGPUContext) -> Application + 'static,
-    ) where
+    /// Initializes WebGPU, creates the application once, then runs the event loop.
+    pub fn run(name: &str, width: u32, height: u32)
+    where
         Application: 'static,
     {
         cfg_if::cfg_if! {
@@ -54,7 +50,7 @@ impl<Application: App> Engine<Application> {
         };
         let application = EngineApplication {
             attributes,
-            state: ApplicationState::New(create_app),
+            state: ApplicationState::New,
             #[cfg(target_arch = "wasm32")]
             proxy: event_loop.create_proxy(),
         };
@@ -72,15 +68,11 @@ impl<Application: App> Engine<Application> {
         }
     }
 
-    async fn new(
-        window: Arc<Window>,
-        display: winit::event_loop::OwnedDisplayHandle,
-        create_app: impl FnOnce(&WGPUContext) -> Application,
-    ) -> Self {
+    async fn new(window: Arc<Window>, display: winit::event_loop::OwnedDisplayHandle) -> Self {
         let wgpu_context = WGPUContext::new(window.clone(), display).await;
 
         let renderer = Renderer::new(&wgpu_context);
-        let app = create_app(&wgpu_context);
+        let app = Application::new(&wgpu_context);
 
         Engine {
             app,
@@ -130,49 +122,39 @@ impl<Application: App> Engine<Application> {
     }
 }
 
-enum ApplicationState<Application: App, Factory> {
-    New(Factory),
+enum ApplicationState<Application: App> {
+    New,
     Initializing,
     Running(Box<Engine<Application>>),
 }
 
-struct EngineApplication<Application: App + 'static, Factory> {
+struct EngineApplication<Application: App + 'static> {
     attributes: WindowAttributes,
-    state: ApplicationState<Application, Factory>,
+    state: ApplicationState<Application>,
     #[cfg(target_arch = "wasm32")]
     proxy: winit::event_loop::EventLoopProxy<Engine<Application>>,
 }
 
-impl<Application, Factory> ApplicationHandler<Engine<Application>>
-    for EngineApplication<Application, Factory>
-where
-    Application: App + 'static,
-    Factory: FnOnce(&WGPUContext) -> Application + 'static,
+impl<Application: App + 'static> ApplicationHandler<Engine<Application>>
+    for EngineApplication<Application>
 {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        if !matches!(self.state, ApplicationState::New(_)) {
+        if !matches!(self.state, ApplicationState::New) {
             return;
         }
-        let ApplicationState::New(create_app) =
-            std::mem::replace(&mut self.state, ApplicationState::Initializing)
-        else {
-            unreachable!();
-        };
+        self.state = ApplicationState::Initializing;
 
         let window = Arc::new(event_loop.create_window(self.attributes.clone()).unwrap());
         let display = event_loop.owned_display_handle();
 
         #[cfg(not(target_arch = "wasm32"))]
-        self.user_event(
-            event_loop,
-            pollster::block_on(Engine::new(window, display, create_app)),
-        );
+        self.user_event(event_loop, pollster::block_on(Engine::new(window, display)));
 
         #[cfg(target_arch = "wasm32")]
         {
             let proxy = self.proxy.clone();
             wasm_bindgen_futures::spawn_local(async move {
-                let engine = Engine::new(window, display, create_app).await;
+                let engine = Engine::new(window, display).await;
                 let _ = proxy.send_event(engine);
             });
         }

@@ -18,7 +18,7 @@ use glam::{DQuat, DVec3};
 use std::rc::Rc;
 
 fn main() {
-    Engine::run("Gilgamesh", 1000, 800, StarSystemDemo::new);
+    Engine::<StarSystemDemo>::run("Gilgamesh", 1000, 800);
 }
 
 struct StarSystemDemo {
@@ -32,7 +32,7 @@ struct StarSystemDemo {
     point_light_meshes: [Mesh; 4],
 }
 
-impl StarSystemDemo {
+impl App for StarSystemDemo {
     fn new(ctx: &WGPUContext) -> Self {
         let camera = Camera::default();
         let mut orbit_control = OrbitControl::default();
@@ -104,9 +104,7 @@ impl StarSystemDemo {
             point_light_meshes,
         }
     }
-}
 
-impl App for StarSystemDemo {
     fn update_before_render(&mut self, frame: &FrameContext<'_>) {
         self.camera.projection.aspect_ratio =
             frame.surface_width as f64 / frame.surface_height as f64;
