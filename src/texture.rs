@@ -1,6 +1,14 @@
 use crate::core::wgpu_context::WGPUContext;
 use image::GenericImageView;
 
+#[derive(Debug, Clone, Copy)]
+pub enum ColorSpace {
+    /// Color images encoded in sRGB.
+    Srgb,
+    /// Linear values, including normal maps and material data.
+    Linear,
+}
+
 pub struct Texture {
     texture_view: wgpu::TextureView,
     sampler: wgpu::Sampler,
@@ -21,19 +29,11 @@ impl Texture {
             mip_level_count: 1, // We'll talk about this a little later
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            // Most images are stored using sRGB so we need to reflect that here.
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            format: wgpu::TextureFormat::Rgba8Unorm,
             // TEXTURE_BINDING tells wgpu that we want to use this texture in shaders
             // COPY_DST means that we want to copy data to this texture
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             label: Some(name),
-            // This is the same as with the SurfaceConfig. It
-            // specifies what texture formats can be used to
-            // create TextureViews for this texture. The base
-            // texture format (Rgba8UnormSrgb in this case) is
-            // always supported. Note that using a different
-            // texture format is not supported on the WebGL2
-            // backend.
             view_formats: &[],
         });
 
@@ -55,7 +55,13 @@ impl Texture {
             sampler,
         }
     }
-    pub fn new(name: &str, bytes: &[u8], wgpu_context: &WGPUContext) -> Texture {
+
+    pub fn new(
+        name: &str,
+        bytes: &[u8],
+        color_space: ColorSpace,
+        wgpu_context: &WGPUContext,
+    ) -> Texture {
         let image = image::load_from_memory(bytes).unwrap();
         let image_rgba = image.to_rgba8();
 
@@ -75,19 +81,14 @@ impl Texture {
                 mip_level_count: 1, // We'll talk about this a little later
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
-                // Most images are stored using sRGB so we need to reflect that here.
-                format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                format: match color_space {
+                    ColorSpace::Srgb => wgpu::TextureFormat::Rgba8UnormSrgb,
+                    ColorSpace::Linear => wgpu::TextureFormat::Rgba8Unorm,
+                },
                 // TEXTURE_BINDING tells wgpu that we want to use this texture in shaders
                 // COPY_DST means that we want to copy data to this texture
                 usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
                 label: Some(name),
-                // This is the same as with the SurfaceConfig. It
-                // specifies what texture formats can be used to
-                // create TextureViews for this texture. The base
-                // texture format (Rgba8UnormSrgb in this case) is
-                // always supported. Note that using a different
-                // texture format is not supported on the WebGL2
-                // backend.
                 view_formats: &[],
             });
 

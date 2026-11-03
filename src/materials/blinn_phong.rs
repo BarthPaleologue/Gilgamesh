@@ -101,6 +101,7 @@ impl BlinnPhongMaterial {
         self.blinn_phong_uniforms.ambient_color = [r, g, b];
     }
 
+    /// Expects a texture created with [`crate::texture::ColorSpace::Linear`].
     pub fn set_specular_texture(&mut self, texture: Rc<Texture>) {
         self.prepared.take();
         self.specular_texture = texture;
@@ -112,6 +113,7 @@ impl BlinnPhongMaterial {
         self.blinn_phong_uniforms.specular_color = [r, g, b];
     }
 
+    /// Expects a texture created with [`crate::texture::ColorSpace::Linear`].
     pub fn set_normal_map(&mut self, texture: Rc<Texture>) {
         self.prepared.take();
         self.normal_map = texture;

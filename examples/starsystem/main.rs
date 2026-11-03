@@ -12,7 +12,7 @@ use gilgamesh::lights::light::Light;
 use gilgamesh::lights::point_light::PointLight;
 use gilgamesh::materials::blinn_phong::BlinnPhongMaterial;
 use gilgamesh::materials::pbr::PbrMaterial;
-use gilgamesh::texture::Texture;
+use gilgamesh::texture::{ColorSpace, Texture};
 use gilgamesh::transform::Transformable;
 use glam::{DQuat, DVec3};
 use std::rc::Rc;
@@ -60,6 +60,7 @@ impl App for StarSystemDemo {
         let sun_texture = Rc::new(Texture::new(
             "Sun texture",
             include_bytes!("assets/sun.jpg"),
+            ColorSpace::Srgb,
             ctx,
         ));
         let mut sun_material = PbrMaterial::new("SunMaterial", ctx);
@@ -70,12 +71,14 @@ impl App for StarSystemDemo {
         let earth_diffuse_texture = Rc::new(Texture::new(
             "Earth diffuse texture",
             include_bytes!("assets/2k_earth_daymap.jpg"),
+            ColorSpace::Srgb,
             ctx,
         ));
         earth_material.set_diffuse_texture(earth_diffuse_texture);
         let earth_specular_texture = Rc::new(Texture::new(
             "Earth specular texture",
             include_bytes!("assets/2k_earth_specular_map.jpg"),
+            ColorSpace::Linear,
             ctx,
         ));
         earth_material.set_specular_texture(earth_specular_texture);
