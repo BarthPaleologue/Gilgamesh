@@ -35,6 +35,17 @@ pub struct GpuMeshBuffers {
 }
 
 impl GpuMeshBuffers {
+    /// Uses existing GPU buffers with the interleaved `Vertex` layout and `u32` indices.
+    /// Buffers must support `VERTEX` and `INDEX` usage respectively; compute outputs
+    /// also need `STORAGE` usage.
+    pub fn new(vertex_buffer: Buffer, index_buffer: Buffer, index_count: u32) -> Self {
+        Self {
+            vertex_buffer,
+            index_buffer,
+            index_count,
+        }
+    }
+
     /// Uploads vertex attributes and indices without retaining the CPU data.
     pub fn from_cpu_buffers(cpu_buffers: &CpuMeshBuffers, wgpu_context: &WGPUContext) -> Self {
         let vertex_buffer =
@@ -53,11 +64,11 @@ impl GpuMeshBuffers {
                     contents: cast_slice(&cpu_buffers.indices),
                     usage: wgpu::BufferUsages::INDEX,
                 });
-        Self {
+        Self::new(
             vertex_buffer,
             index_buffer,
-            index_count: cpu_buffers.indices.len() as u32,
-        }
+            cpu_buffers.indices.len() as u32,
+        )
     }
 
     pub fn draw(&self, render_pass: &mut RenderPass<'_>) {

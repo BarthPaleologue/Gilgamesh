@@ -39,7 +39,16 @@ impl Mesh {
         wgpu_context: &WGPUContext,
     ) -> Mesh {
         let gpu_buffers = GpuMeshBuffers::from_cpu_buffers(&cpu_buffers, wgpu_context);
+        Self::from_gpu_buffers(name, gpu_buffers, material, wgpu_context)
+    }
 
+    /// Uses existing GPU geometry without uploading or retaining CPU data.
+    pub fn from_gpu_buffers(
+        name: &str,
+        gpu_buffers: GpuMeshBuffers,
+        material: Rc<dyn Material>,
+        wgpu_context: &WGPUContext,
+    ) -> Mesh {
         Mesh {
             transform: Rc::new(RefCell::new(Transform::new())),
             gpu_buffers,
