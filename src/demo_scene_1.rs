@@ -14,7 +14,7 @@ use crate::materials::blinn_phong::BlinnPhongMaterial;
 use crate::materials::pbr::PbrMaterial;
 use crate::texture::Texture;
 use crate::transform::Transformable;
-use glam::Quat;
+use glam::{DQuat, DVec3};
 use std::rc::Rc;
 
 pub fn run() {
@@ -33,7 +33,7 @@ pub struct StarSystemDemo {
 
 impl StarSystemDemo {
     pub fn new(ctx: &WGPUContext) -> Self {
-        let mut camera = Camera::new(ctx.config.width as f32 / ctx.config.height as f32);
+        let mut camera = Camera::new(ctx.config.width as f64 / ctx.config.height as f64);
         let mut camera_control = OrbitControl::default();
         camera_control.set_radius(2.0);
         camera.control = Some(Box::new(camera_control));
@@ -83,7 +83,7 @@ impl StarSystemDemo {
         camera.transform_mut().parent = Some(earth.transform_rc());
 
         let plane = PrimitiveMesh::plane("Plane", 10, 10.0, ctx);
-        plane.transform_mut().set_position(0.0, -5.0, 0.0);
+        plane.transform_mut().position = DVec3::new(0.0, -5.0, 0.0);
 
         Self {
             camera,
@@ -101,32 +101,16 @@ impl App for StarSystemDemo {
     fn update_before_render(&mut self, frame: &FrameContext<'_>) {
         self.camera
             .listen_to_control(frame.mouse, frame.delta_seconds);
-        self.sun
-            .transform_mut()
-            .set_rotation(Quat::from_rotation_y(frame.elapsed_seconds));
-        self.earth.transform_mut().set_position(6.0, 0.0, 0.0);
+        self.sun.transform_mut().rotation = DQuat::from_rotation_y(frame.elapsed_seconds);
+        self.earth.transform_mut().position = DVec3::new(6.0, 0.0, 0.0);
 
+        let orbit_angle = 2.0 * frame.elapsed_seconds;
+        let (orbit_sin, orbit_cos) = orbit_angle.sin_cos();
         let [red_light, blue_light, green_light, yellow_light] = &self.point_lights;
-        red_light.transform_mut().set_position(
-            12.0 * f32::cos(2.0 * frame.elapsed_seconds),
-            0.0,
-            12.0 * f32::sin(2.0 * frame.elapsed_seconds),
-        );
-        blue_light.transform_mut().set_position(
-            12.0 * f32::sin(2.0 * frame.elapsed_seconds),
-            12.0 * f32::cos(2.0 * frame.elapsed_seconds),
-            0.0,
-        );
-        green_light.transform_mut().set_position(
-            0.0,
-            12.0 * f32::cos(-2.0 * frame.elapsed_seconds),
-            12.0 * f32::sin(-2.0 * frame.elapsed_seconds),
-        );
-        yellow_light.transform_mut().set_position(
-            15.0 * f32::sin(2.0 * frame.elapsed_seconds),
-            0.0,
-            15.0 * f32::cos(2.0 * frame.elapsed_seconds),
-        );
+        red_light.transform_mut().position = DVec3::new(12.0 * orbit_cos, 0.0, 12.0 * orbit_sin);
+        blue_light.transform_mut().position = DVec3::new(12.0 * orbit_sin, 12.0 * orbit_cos, 0.0);
+        green_light.transform_mut().position = DVec3::new(0.0, 12.0 * orbit_cos, -12.0 * orbit_sin);
+        yellow_light.transform_mut().position = DVec3::new(15.0 * orbit_sin, 0.0, 15.0 * orbit_cos);
     }
 
     fn get_render_context(&mut self) -> RenderContext<'_, impl IntoIterator<Item = &mut Mesh>> {

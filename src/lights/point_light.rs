@@ -25,7 +25,7 @@ impl PointLightUniforms {
     pub fn update(&mut self, point_light: &PointLight) {
         self.color = point_light.color;
         self.intensity = point_light.intensity;
-        self.position = point_light.transform.borrow().position.to_array();
+        self.position = point_light.transform.borrow().position.as_vec3().to_array();
     }
 }
 

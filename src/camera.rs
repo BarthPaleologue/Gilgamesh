@@ -1,7 +1,7 @@
 pub mod uniforms;
 
 use crate::input::transform_control::TransformMouseController;
-use glam::{Mat4, camera::rh};
+use glam::{DMat4, dcamera::rh};
 use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
 
@@ -10,17 +10,17 @@ use crate::transform::{Transform, Transformable};
 
 pub struct Camera {
     transform: Rc<RefCell<Transform>>,
-    pub aspect_ratio: f32,
+    pub aspect_ratio: f64,
     /// Vertical field of view in degrees.
-    pub fov: f32,
-    pub z_near: f32,
-    pub z_far: f32,
+    pub fov: f64,
+    pub z_near: f64,
+    pub z_far: f64,
 
     pub control: Option<Box<dyn TransformMouseController>>,
 }
 
 impl Camera {
-    pub fn new(aspect_ratio: f32) -> Camera {
+    pub fn new(aspect_ratio: f64) -> Camera {
         Camera {
             transform: Rc::new(RefCell::new(Transform::new())),
             aspect_ratio,
@@ -31,13 +31,13 @@ impl Camera {
         }
     }
     /// Inverts the camera's world transform, with local -Z as the viewing direction.
-    pub fn view_matrix(&self) -> Mat4 {
+    pub fn view_matrix(&self) -> DMat4 {
         self.transform()
             .compute_world_matrix()
             .try_inverse()
             .expect("Camera world matrix is not invertible")
     }
-    pub fn projection_matrix(&self) -> Mat4 {
+    pub fn projection_matrix(&self) -> DMat4 {
         rh::proj::directx::perspective(
             self.fov.to_radians(),
             self.aspect_ratio,
@@ -45,11 +45,11 @@ impl Camera {
             self.z_far,
         )
     }
-    pub fn projection_view(&self) -> Mat4 {
+    pub fn projection_view(&self) -> DMat4 {
         self.projection_matrix() * self.view_matrix()
     }
 
-    pub fn listen_to_control(&mut self, mouse: &Mouse, delta_seconds: f32) {
+    pub fn listen_to_control(&mut self, mouse: &Mouse, delta_seconds: f64) {
         if let Some(control) = &mut self.control {
             let (position, rotation, scaling) = control.update(mouse, delta_seconds);
             self.transform.borrow_mut().position = position;

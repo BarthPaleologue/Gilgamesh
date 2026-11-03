@@ -21,7 +21,7 @@ pub struct TerrainView {
 
 impl TerrainView {
     pub fn new(ctx: &WGPUContext) -> Self {
-        let mut camera = Camera::new(ctx.config.width as f32 / ctx.config.height as f32);
+        let mut camera = Camera::new(ctx.config.width as f64 / ctx.config.height as f64);
         let mut camera_control = OrbitControl::default();
         camera_control.set_radius(10.0);
         camera.control = Some(Box::new(camera_control));
@@ -32,7 +32,7 @@ impl TerrainView {
             128,
             &|x, z| {
                 let d = 5.0 * (x * x + z * z).sqrt();
-                3.0 * (f32::sin(d) / d).min(1.0)
+                3.0 * (d.sin() / d).min(1.0)
             },
             ctx,
         );

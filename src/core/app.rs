@@ -5,8 +5,8 @@ use crate::input::mouse::Mouse;
 use winit::event::WindowEvent;
 
 pub struct FrameContext<'a> {
-    pub elapsed_seconds: f32,
-    pub delta_seconds: f32,
+    pub elapsed_seconds: f64,
+    pub delta_seconds: f64,
     pub mouse: &'a Mouse,
     pub wgpu_context: &'a WGPUContext,
 }

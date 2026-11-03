@@ -33,7 +33,7 @@ pub struct PbrUniforms {
 
 impl Default for PbrUniforms {
     fn default() -> Self {
-        PbrUniforms {
+        Self {
             albedo_color: [1.0, 1.0, 1.0],
             has_albedo_texture: 0,
             ambient_color: [0.0, 0.0, 0.0],
@@ -93,7 +93,7 @@ impl PbrMaterial {
             wgpu_context,
         );
 
-        let phong_uniforms = PbrUniforms::default();
+        let pbr_uniforms = PbrUniforms::default();
         let phong_uniforms_buffer =
             create_buffer::<PbrUniforms>(&format!("{} Phong Buffer", name), wgpu_context);
 
@@ -114,7 +114,7 @@ impl PbrMaterial {
             point_light_buffer,
             nb_point_lights_buffer,
 
-            pbr_uniforms: phong_uniforms,
+            pbr_uniforms,
             pbr_uniforms_buffer: phong_uniforms_buffer,
 
             diffuse_texture,
@@ -224,5 +224,18 @@ impl Material for PbrMaterial {
             active_camera,
             wgpu_context,
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::PbrUniforms;
+
+    #[test]
+    fn gpu_uniforms_match_shader_layout() {
+        assert_eq!(std::mem::size_of::<PbrUniforms>(), 64);
+        assert_eq!(std::mem::offset_of!(PbrUniforms, ambient_color), 16);
+        assert_eq!(std::mem::offset_of!(PbrUniforms, metallic), 32);
+        assert_eq!(std::mem::offset_of!(PbrUniforms, roughness), 40);
     }
 }

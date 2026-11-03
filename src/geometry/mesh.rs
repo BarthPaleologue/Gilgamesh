@@ -132,5 +132,5 @@ pub fn zip_vertex_data(vertex_data: &VertexData) -> Vec<Vertex> {
             uv: vertex_data.uvs[i],
         });
     }
-    data.to_vec()
+    data
 }

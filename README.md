@@ -45,8 +45,15 @@ it does not store or clone the application's objects. Camera controls can be
 updated from `FrameContext`, and `on_window_event` handles application-specific
 window or keyboard events.
 
-Vectors and matrices use `glam::Vec3` and `glam::Mat4`. Transform rotations use
-unit quaternions (`glam::Quat`), and `set_rotation` accepts a quaternion directly.
+Transforms and camera calculations use `f64`, as do frame times. Vectors and
+matrices use `glam::DVec3` and `glam::DMat4`, and rotations use unit quaternions
+(`glam::DQuat`). Transform fields are public: assign positions with
+`transform.position = DVec3::new(x, y, z)` and uniform scales with
+`transform.scaling = DVec3::splat(scale)`. Colors remain `f32`.
+Vertex attributes use `f32` on both CPU and GPU, with `u32` triangle indices.
+Transform and camera uniforms are converted to `f32` when preparing GPU buffers.
+Shaders use `f32`.
+
 The camera's `fov` is expressed in degrees.
 The camera looks along its local -Z axis, with its quaternion determining its
 orientation. `OrbitControl` supplies the orientation towards the orbit's center.
@@ -62,7 +69,7 @@ use gilgamesh::input::transform_control::OrbitControl;
 use gilgamesh::lights::directional_light::DirectionalLight;
 use gilgamesh::materials::blinn_phong::BlinnPhongMaterial;
 use gilgamesh::transform::Transformable;
-use glam::Quat;
+use glam::DQuat;
 
 struct TerrainApp {
     camera: Camera,
@@ -73,7 +80,7 @@ struct TerrainApp {
 impl App for TerrainApp {
     fn update_before_render(&mut self, frame: &FrameContext<'_>) {
         self.camera.listen_to_control(frame.mouse, frame.delta_seconds);
-        self.terrain.transform_mut().set_rotation(Quat::from_rotation_y(frame.elapsed_seconds));
+        self.terrain.transform_mut().rotation = DQuat::from_rotation_y(frame.elapsed_seconds);
     }
 
     fn get_render_context(&mut self) -> RenderContext<'_, impl IntoIterator<Item = &mut Mesh>> {
@@ -83,14 +90,14 @@ impl App for TerrainApp {
 
 fn main() {
     Engine::run("Sinc function", 1000, 800, |ctx| {
-        let mut camera = Camera::new(ctx.config.width as f32 / ctx.config.height as f32);
+        let mut camera = Camera::new(ctx.config.width as f64 / ctx.config.height as f64);
         let mut camera_control = OrbitControl::default();
         camera_control.set_radius(10.0);
         camera.control = Some(Box::new(camera_control));
 
         let mut terrain = ProceduralMesh::terrain("sinc", 10.0, 128, &|x, z| {
             let d = 5.0 * (x * x + z * z).sqrt();
-            3.0 * (f32::sin(d) / d).min(1.0)
+            3.0 * (d.sin() / d).min(1.0)
         }, ctx);
         let mut material = BlinnPhongMaterial::new("sincMaterial", ctx);
         material.set_diffuse_color(0.5, 0.2, 1.0);

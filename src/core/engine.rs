@@ -16,8 +16,8 @@ pub struct Engine<TApp: App> {
     pub wgpu_context: WGPUContext,
 
     clock: SystemTime,
-    elapsed_seconds: f32,
-    delta_seconds: f32,
+    elapsed_seconds: f64,
+    delta_seconds: f64,
 
     mouse: Mouse,
 }
@@ -112,7 +112,7 @@ impl<TApp: App> Engine<TApp> {
                 .surface
                 .configure(&self.wgpu_context.device, &self.wgpu_context.config);
             self.app.get_render_context().camera.aspect_ratio =
-                new_size.width as f32 / new_size.height as f32;
+                new_size.width as f64 / new_size.height as f64;
         }
     }
 
@@ -223,7 +223,7 @@ where
                 event_loop.exit();
             }
             WindowEvent::RedrawRequested => {
-                let new_elapsed_seconds = engine.clock.elapsed().unwrap().as_secs_f32();
+                let new_elapsed_seconds = engine.clock.elapsed().unwrap().as_secs_f64();
                 engine.delta_seconds = new_elapsed_seconds - engine.elapsed_seconds;
                 engine.elapsed_seconds = new_elapsed_seconds;
 

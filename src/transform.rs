@@ -1,13 +1,13 @@
-use glam::{Mat4, Quat, Vec3};
+use glam::{DMat4, DQuat, DVec3};
 use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Transform {
-    pub position: Vec3,
+    pub position: DVec3,
     /// Local orientation as a unit quaternion.
-    pub rotation: Quat,
-    pub scaling: Vec3,
+    pub rotation: DQuat,
+    pub scaling: DVec3,
 
     pub parent: Option<Rc<RefCell<Transform>>>,
 }
@@ -24,9 +24,15 @@ pub struct TransformUniforms {
 
 impl TransformUniforms {
     pub fn update(&mut self, transform: &Transform) {
-        self.position = transform.position.to_array();
-        self.world_matrix = transform.compute_world_matrix().to_cols_array_2d();
-        self.normal_matrix = transform.compute_normal_matrix().to_cols_array_2d();
+        self.position = transform.position.as_vec3().to_array();
+        self.world_matrix = transform
+            .compute_world_matrix()
+            .as_mat4()
+            .to_cols_array_2d();
+        self.normal_matrix = transform
+            .compute_normal_matrix()
+            .as_mat4()
+            .to_cols_array_2d();
     }
 }
 
@@ -39,9 +45,9 @@ pub trait Transformable {
 impl Default for Transform {
     fn default() -> Self {
         Transform {
-            position: Vec3::ZERO,
-            rotation: Quat::IDENTITY,
-            scaling: Vec3::ONE,
+            position: DVec3::ZERO,
+            rotation: DQuat::IDENTITY,
+            scaling: DVec3::ONE,
 
             parent: None,
         }
@@ -53,27 +59,10 @@ impl Transform {
         Transform::default()
     }
 
-    pub fn set_position(&mut self, x: f32, y: f32, z: f32) {
-        self.position.x = x;
-        self.position.y = y;
-        self.position.z = z;
-    }
-
-    pub fn set_scaling(&mut self, x: f32, y: f32, z: f32) {
-        self.scaling.x = x;
-        self.scaling.y = y;
-        self.scaling.z = z;
-    }
-
-    /// Sets the local orientation from a unit quaternion.
-    pub fn set_rotation(&mut self, rotation: Quat) {
-        self.rotation = rotation;
-    }
-
-    pub fn compute_world_matrix(&self) -> Mat4 {
-        let position = Mat4::from_translation(self.position);
-        let rotation = Mat4::from_quat(self.rotation);
-        let scaling = Mat4::from_scale(self.scaling);
+    pub fn compute_world_matrix(&self) -> DMat4 {
+        let position = DMat4::from_translation(self.position);
+        let rotation = DMat4::from_quat(self.rotation);
+        let scaling = DMat4::from_scale(self.scaling);
 
         let mut world_matrix = position * scaling * rotation;
 
@@ -85,7 +74,7 @@ impl Transform {
         world_matrix
     }
 
-    pub fn compute_normal_matrix(&self) -> Mat4 {
+    pub fn compute_normal_matrix(&self) -> DMat4 {
         let world_matrix = self.compute_world_matrix();
         world_matrix
             .try_inverse()
@@ -93,19 +82,19 @@ impl Transform {
             .transpose()
     }
 
-    pub fn local_direction_to_world(&self, local_direction: Vec3) -> Vec3 {
+    pub fn local_direction_to_world(&self, local_direction: DVec3) -> DVec3 {
         (self.rotation * local_direction).normalize()
     }
 
-    pub fn forward(&self) -> Vec3 {
-        self.local_direction_to_world(Vec3::Z)
+    pub fn forward(&self) -> DVec3 {
+        self.local_direction_to_world(DVec3::Z)
     }
 
-    pub fn right(&self) -> Vec3 {
-        self.local_direction_to_world(Vec3::X)
+    pub fn right(&self) -> DVec3 {
+        self.local_direction_to_world(DVec3::X)
     }
 
-    pub fn up(&self) -> Vec3 {
-        self.local_direction_to_world(Vec3::Y)
+    pub fn up(&self) -> DVec3 {
+        self.local_direction_to_world(DVec3::Y)
     }
 }

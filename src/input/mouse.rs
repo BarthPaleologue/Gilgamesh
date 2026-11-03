@@ -7,7 +7,7 @@ pub struct Mouse {
     pub left_button_pressed: bool,
     pub right_button_pressed: bool,
     pub middle_button_pressed: bool,
-    pub scroll_delta: f32,
+    pub scroll_delta: f64,
 }
 
 impl Default for Mouse {
@@ -45,10 +45,10 @@ impl Mouse {
                 delta: winit::event::MouseScrollDelta::LineDelta(_, y),
                 ..
             } => {
-                self.scroll_delta += *y;
+                self.scroll_delta += f64::from(*y);
             }
             WindowEvent::PinchGesture { delta, .. } => {
-                self.scroll_delta += *delta as f32;
+                self.scroll_delta += *delta;
             }
             WindowEvent::MouseInput {
                 state: ElementState::Pressed,
