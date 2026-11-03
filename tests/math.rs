@@ -1,7 +1,9 @@
 use gilgamesh::camera::Camera;
 use gilgamesh::camera::uniforms::CameraUniforms;
+use gilgamesh::input::mouse::Mouse;
+use gilgamesh::input::transform_control::OrbitControl;
 use gilgamesh::transform::{Transform, TransformUniforms, Transformable};
-use glam::{Vec3, Vec4};
+use glam::{Quat, Vec3, Vec4};
 use std::cell::RefCell;
 use std::f32::consts::FRAC_PI_2;
 use std::rc::Rc;
@@ -16,11 +18,22 @@ fn assert_close<const N: usize>(actual: [f32; N], expected: [f32; N]) {
 }
 
 #[test]
+fn default_transform_has_identity_orientation() {
+    let transform = Transform::new();
+    assert_eq!(transform.rotation, Quat::IDENTITY);
+    let point = Vec4::new(1.0, -2.0, 3.0, 1.0);
+    assert_close(
+        (transform.compute_world_matrix() * point).into(),
+        point.into(),
+    );
+}
+
+#[test]
 fn world_transform_keeps_rotation_then_nonuniform_scale_then_translation() {
     let mut transform = Transform::new();
     transform.set_position(3.0, -2.0, 4.0);
     transform.set_scaling(2.0, 3.0, 4.0);
-    transform.set_rotation(FRAC_PI_2, 0.0, FRAC_PI_2);
+    transform.set_rotation(Quat::from_rotation_z(FRAC_PI_2) * Quat::from_rotation_x(FRAC_PI_2));
     let position = transform.compute_world_matrix() * Vec4::new(1.0, 2.0, 3.0, 1.0);
     assert_close(position.into(), [9.0, 1.0, 12.0, 1.0]);
 }
@@ -30,7 +43,9 @@ fn child_transform_follows_changes_to_its_parent() {
     let parent = Rc::new(RefCell::new(Transform::new()));
     parent.borrow_mut().set_position(5.0, -4.0, 2.0);
     parent.borrow_mut().set_scaling(2.0, 3.0, 4.0);
-    parent.borrow_mut().set_rotation(0.0, 0.0, FRAC_PI_2);
+    parent
+        .borrow_mut()
+        .set_rotation(Quat::from_rotation_z(FRAC_PI_2));
     let mut child = Transform::new();
     child.parent = Some(parent.clone());
     child.set_position(1.0, 2.0, 3.0);
@@ -46,7 +61,7 @@ fn child_transform_follows_changes_to_its_parent() {
 fn normal_transform_accounts_for_nonuniform_scale_and_rotation() {
     let mut transform = Transform::new();
     transform.set_scaling(2.0, 4.0, 8.0);
-    transform.set_rotation(0.0, 0.0, FRAC_PI_2);
+    transform.set_rotation(Quat::from_rotation_z(FRAC_PI_2));
     let normal = transform.compute_normal_matrix() * Vec4::new(1.0, 0.0, 0.0, 0.0);
     assert_close(normal.into(), [0.0, 0.25, 0.0, 0.0]);
 }
@@ -56,7 +71,7 @@ fn local_axes_only_depend_on_rotation_and_stay_normalized() {
     let mut transform = Transform::new();
     transform.set_position(100.0, -20.0, 50.0);
     transform.set_scaling(2.0, 3.0, 4.0);
-    transform.set_rotation(0.0, FRAC_PI_2, 0.0);
+    transform.set_rotation(Quat::from_rotation_y(FRAC_PI_2));
     assert_close(transform.forward().into(), [1.0, 0.0, 0.0]);
     assert_close(transform.right().into(), [0.0, 0.0, -1.0]);
     assert_close(transform.up().into(), [0.0, 1.0, 0.0]);
@@ -100,6 +115,60 @@ fn camera_view_accounts_for_its_parent_transform() {
         (view * Vec4::new(2.0, -1.0, 3.0, 1.0)).into(),
         [0.0, 0.0, -5.0, 1.0],
     );
+}
+
+#[test]
+fn camera_view_uses_its_quaternion_orientation() {
+    let camera = Camera::new(1.0);
+    camera.transform_mut().set_position(2.0, 3.0, 4.0);
+    camera
+        .transform_mut()
+        .set_rotation(Quat::from_rotation_y(FRAC_PI_2));
+    let view = camera.view_matrix();
+    assert_close(
+        (view * Vec4::new(2.0, 3.0, 4.0, 1.0)).into(),
+        [0.0, 0.0, 0.0, 1.0],
+    );
+    assert_close(
+        (view * Vec4::new(-3.0, 3.0, 4.0, 1.0)).into(),
+        [0.0, 0.0, -5.0, 1.0],
+    );
+}
+
+#[test]
+fn orbit_control_keeps_looking_at_the_target_under_a_parent_transform() {
+    let parent = Rc::new(RefCell::new(Transform::new()));
+    parent.borrow_mut().set_position(2.0, -1.0, 3.0);
+    parent.borrow_mut().set_scaling(2.0, 3.0, 4.0);
+    parent.borrow_mut().set_rotation(Quat::from_rotation_y(0.4));
+    let target = parent.borrow().compute_world_matrix() * Vec4::new(0.0, 0.0, 0.0, 1.0);
+    let mut camera = Camera::new(1.0);
+    camera.transform_mut().parent = Some(parent);
+    let mut control = OrbitControl::default();
+    control.set_radius(2.0);
+    camera.control = Some(Box::new(control));
+
+    let inputs = [
+        Mouse::default(),
+        Mouse {
+            left_button_pressed: true,
+            delta: [20.0, -10.0],
+            ..Mouse::default()
+        },
+        Mouse {
+            scroll_delta: 1.0,
+            ..Mouse::default()
+        },
+    ];
+    for mouse in inputs {
+        camera.listen_to_control(&mouse, 0.016);
+        assert!(camera.transform().rotation.is_normalized());
+        let radius = camera.transform().position.length();
+        assert_close(
+            (camera.view_matrix() * target).into(),
+            [0.0, 0.0, -radius, 1.0],
+        );
+    }
 }
 
 #[test]

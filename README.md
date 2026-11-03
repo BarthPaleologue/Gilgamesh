@@ -45,8 +45,11 @@ it does not store or clone the application's objects. Camera controls can be
 updated from `FrameContext`, and `on_window_event` handles application-specific
 window or keyboard events.
 
-Vectors and matrices use `glam::Vec3` and `glam::Mat4`. Transform rotations are
-Euler angles in radians; the camera's `fov` is expressed in degrees.
+Vectors and matrices use `glam::Vec3` and `glam::Mat4`. Transform rotations use
+unit quaternions (`glam::Quat`), and `set_rotation` accepts a quaternion directly.
+The camera's `fov` is expressed in degrees.
+The camera looks along its local -Z axis, with its quaternion determining its
+orientation. `OrbitControl` supplies the orientation towards the orbit's center.
 
 ```rust,no_run
 use gilgamesh::camera::Camera;
@@ -59,6 +62,7 @@ use gilgamesh::input::transform_control::OrbitControl;
 use gilgamesh::lights::directional_light::DirectionalLight;
 use gilgamesh::materials::blinn_phong::BlinnPhongMaterial;
 use gilgamesh::transform::Transformable;
+use glam::Quat;
 
 struct TerrainApp {
     camera: Camera,
@@ -69,7 +73,7 @@ struct TerrainApp {
 impl App for TerrainApp {
     fn update_before_render(&mut self, frame: &FrameContext<'_>) {
         self.camera.listen_to_control(frame.mouse, frame.delta_seconds);
-        self.terrain.transform_mut().set_rotation(0.0, frame.elapsed_seconds, 0.0);
+        self.terrain.transform_mut().set_rotation(Quat::from_rotation_y(frame.elapsed_seconds));
     }
 
     fn get_render_context(&mut self) -> RenderContext<'_, impl IntoIterator<Item = &mut Mesh>> {

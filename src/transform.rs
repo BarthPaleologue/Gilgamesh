@@ -1,12 +1,12 @@
-use glam::{Mat4, Vec3};
+use glam::{Mat4, Quat, Vec3};
 use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Transform {
     pub position: Vec3,
-    /// Euler angles in radians, applied around X, then Y, then Z.
-    pub rotation: Vec3,
+    /// Local orientation as a unit quaternion.
+    pub rotation: Quat,
     pub scaling: Vec3,
 
     pub parent: Option<Rc<RefCell<Transform>>>,
@@ -40,7 +40,7 @@ impl Default for Transform {
     fn default() -> Self {
         Transform {
             position: Vec3::ZERO,
-            rotation: Vec3::ZERO,
+            rotation: Quat::IDENTITY,
             scaling: Vec3::ONE,
 
             parent: None,
@@ -65,20 +65,17 @@ impl Transform {
         self.scaling.z = z;
     }
 
-    pub fn set_rotation(&mut self, x: f32, y: f32, z: f32) {
-        self.rotation.x = x;
-        self.rotation.y = y;
-        self.rotation.z = z;
+    /// Sets the local orientation from a unit quaternion.
+    pub fn set_rotation(&mut self, rotation: Quat) {
+        self.rotation = rotation;
     }
 
     pub fn compute_world_matrix(&self) -> Mat4 {
         let position = Mat4::from_translation(self.position);
-        let rotation_x = Mat4::from_rotation_x(self.rotation.x);
-        let rotation_y = Mat4::from_rotation_y(self.rotation.y);
-        let rotation_z = Mat4::from_rotation_z(self.rotation.z);
+        let rotation = Mat4::from_quat(self.rotation);
         let scaling = Mat4::from_scale(self.scaling);
 
-        let mut world_matrix = position * scaling * rotation_z * rotation_y * rotation_x;
+        let mut world_matrix = position * scaling * rotation;
 
         if let Some(parent) = &self.parent {
             let parent_world_matrix = parent.borrow().compute_world_matrix();
@@ -97,11 +94,7 @@ impl Transform {
     }
 
     pub fn local_direction_to_world(&self, local_direction: Vec3) -> Vec3 {
-        let rotation_x = Mat4::from_rotation_x(self.rotation.x);
-        let rotation_y = Mat4::from_rotation_y(self.rotation.y);
-        let rotation_z = Mat4::from_rotation_z(self.rotation.z);
-        let rotation = rotation_z * rotation_y * rotation_x;
-        rotation.transform_vector3(local_direction).normalize()
+        (self.rotation * local_direction).normalize()
     }
 
     pub fn forward(&self) -> Vec3 {

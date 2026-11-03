@@ -14,6 +14,7 @@ use crate::materials::blinn_phong::BlinnPhongMaterial;
 use crate::materials::pbr::PbrMaterial;
 use crate::texture::Texture;
 use crate::transform::Transformable;
+use glam::Quat;
 use std::rc::Rc;
 
 pub fn run() {
@@ -102,7 +103,7 @@ impl App for StarSystemDemo {
             .listen_to_control(frame.mouse, frame.delta_seconds);
         self.sun
             .transform_mut()
-            .set_rotation(0.0, frame.elapsed_seconds, 0.0);
+            .set_rotation(Quat::from_rotation_y(frame.elapsed_seconds));
         self.earth.transform_mut().set_position(6.0, 0.0, 0.0);
 
         let [red_light, blue_light, green_light, yellow_light] = &self.point_lights;

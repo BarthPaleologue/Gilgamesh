@@ -1,9 +1,9 @@
 use crate::animation::utils::move_towards;
 use crate::input::mouse::Mouse;
-use glam::Vec3;
+use glam::{Quat, Vec3, camera::rh};
 
 pub trait TransformMouseController {
-    fn update(&mut self, mouse: &Mouse, delta_seconds: f32) -> (Vec3, Vec3, Vec3);
+    fn update(&mut self, mouse: &Mouse, delta_seconds: f32) -> (Vec3, Quat, Vec3);
 }
 
 pub struct OrbitControl {
@@ -36,7 +36,7 @@ impl OrbitControl {
 }
 
 impl TransformMouseController for OrbitControl {
-    fn update(&mut self, mouse: &Mouse, delta_seconds: f32) -> (Vec3, Vec3, Vec3) {
+    fn update(&mut self, mouse: &Mouse, delta_seconds: f32) -> (Vec3, Quat, Vec3) {
         if mouse.left_button_pressed {
             self.phi += mouse.delta[0] as f32 * self.rotation_speed * delta_seconds;
             self.theta += mouse.delta[1] as f32 * self.rotation_speed * delta_seconds;
@@ -56,6 +56,8 @@ impl TransformMouseController for OrbitControl {
         let y = self.radius * self.theta.cos();
         let z = self.radius * self.theta.sin() * self.phi.sin();
 
-        (Vec3::new(x, y, z), Vec3::ZERO, Vec3::ONE)
+        let position = Vec3::new(x, y, z);
+        let rotation = rh::view::look_at_quat(position, Vec3::ZERO, Vec3::Y).conjugate();
+        (position, rotation, Vec3::ONE)
     }
 }

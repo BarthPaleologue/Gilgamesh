@@ -1,7 +1,7 @@
 pub mod uniforms;
 
 use crate::input::transform_control::TransformMouseController;
-use glam::{Mat4, Vec3, camera::rh};
+use glam::{Mat4, camera::rh};
 use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
 
@@ -30,17 +30,12 @@ impl Camera {
             control: None,
         }
     }
+    /// Inverts the camera's world transform, with local -Z as the viewing direction.
     pub fn view_matrix(&self) -> Mat4 {
-        let mut view =
-            rh::view::look_at_mat4(self.transform.borrow().position, Vec3::ZERO, Vec3::Y);
-        if let Some(parent) = &self.transform().parent {
-            view *= parent
-                .borrow()
-                .compute_world_matrix()
-                .try_inverse()
-                .expect("Camera parent matrix is not invertible");
-        }
-        view
+        self.transform()
+            .compute_world_matrix()
+            .try_inverse()
+            .expect("Camera world matrix is not invertible")
     }
     pub fn projection_matrix(&self) -> Mat4 {
         rh::proj::directx::perspective(
