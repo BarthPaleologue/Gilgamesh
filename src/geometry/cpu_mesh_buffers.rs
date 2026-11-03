@@ -1,16 +1,15 @@
+use crate::geometry::cpu_vertex_buffers::CpuVertexBuffers;
+
+/// CPU-side vertex attributes and triangle indices, before conversion for GPU upload.
 #[derive(Debug, Default)]
-pub struct VertexData {
-    pub positions: Vec<[f32; 3]>,
-    pub colors: Vec<[f32; 3]>,
-    pub normals: Vec<[f32; 3]>,
-    pub tangents: Vec<[f32; 3]>,
+pub struct CpuMeshBuffers {
+    pub vertices: CpuVertexBuffers,
     pub indices: Vec<u32>,
-    pub uvs: Vec<[f32; 2]>,
 }
 
-impl VertexData {
+impl CpuMeshBuffers {
     pub fn create_normals(&mut self) {
-        let positions = &self.positions;
+        let positions = &self.vertices.positions;
         let indices = &self.indices;
         let mut normals = vec![[0.0, 0.0, 0.0]; positions.len()];
 
@@ -57,12 +56,12 @@ impl VertexData {
             normal[2] /= length;
         }
 
-        self.normals = normals;
+        self.vertices.normals = normals;
     }
 
     pub fn create_tangents(&mut self) {
-        let positions = &self.positions;
-        let uvs = &self.uvs;
+        let positions = &self.vertices.positions;
+        let uvs = &self.vertices.uvs;
         let indices = &self.indices;
         let mut tangents = vec![[0.0, 0.0, 0.0]; positions.len()];
 
@@ -116,6 +115,6 @@ impl VertexData {
             tangent[2] /= length;
         }
 
-        self.tangents = tangents;
+        self.vertices.tangents = tangents;
     }
 }

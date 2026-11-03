@@ -54,6 +54,15 @@ Vertex attributes use `f32` on both CPU and GPU, with `u32` triangle indices.
 Transform and camera uniforms are converted to `f32` when preparing GPU buffers.
 Shaders use `f32`.
 
+The `geometry::primitive` and `geometry::procedural` functions return
+`CpuMeshBuffers`, containing per-vertex attribute arrays in `CpuVertexBuffers`
+and a separate array of triangle indices. Both are editable before upload.
+They do not need a GPU context. Pass these buffers to
+`Mesh::from_cpu_buffers(name, buffers, ctx)` to create a renderable mesh.
+`Mesh` consumes the CPU data and retains only `GpuMeshBuffers`, which hold the
+GPU buffers and index count. `GpuMeshBuffers::from_cpu_buffers(&buffers, ctx)`
+can also upload geometry while leaving the CPU data with its caller.
+
 The camera's `fov` is expressed in degrees.
 The camera looks along its local -Z axis, with its quaternion determining its
 orientation. `OrbitControl` supplies the orientation towards the orbit's center.
@@ -64,7 +73,7 @@ use gilgamesh::core::app::{App, FrameContext};
 use gilgamesh::core::engine::Engine;
 use gilgamesh::core::render_context::RenderContext;
 use gilgamesh::geometry::mesh::Mesh;
-use gilgamesh::geometry::procedural::ProceduralMesh;
+use gilgamesh::geometry::procedural;
 use gilgamesh::input::transform_control::OrbitControl;
 use gilgamesh::lights::directional_light::DirectionalLight;
 use gilgamesh::materials::blinn_phong::BlinnPhongMaterial;
@@ -95,10 +104,11 @@ fn main() {
         camera_control.set_radius(10.0);
         camera.control = Some(Box::new(camera_control));
 
-        let mut terrain = ProceduralMesh::terrain("sinc", 10.0, 128, &|x, z| {
+        let cpu_buffers = procedural::terrain(10.0, 128, &|x, z| {
             let d = 5.0 * (x * x + z * z).sqrt();
             3.0 * (d.sin() / d).min(1.0)
-        }, ctx);
+        });
+        let mut terrain = Mesh::from_cpu_buffers("sinc", cpu_buffers, ctx);
         let mut material = BlinnPhongMaterial::new("sincMaterial", ctx);
         material.set_diffuse_color(0.5, 0.2, 1.0);
         terrain.set_material(Box::new(material));

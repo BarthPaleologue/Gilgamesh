@@ -7,7 +7,7 @@ use std::ops::Deref;
 use wgpu::{BindGroup, Buffer, RenderPass, RenderPipeline};
 
 use crate::core::wgpu_context::WGPUContext;
-use crate::geometry::mesh::Vertex;
+use crate::geometry::gpu_mesh_buffers::Vertex;
 use crate::materials::utils::create_buffer;
 use crate::texture::Texture;
 use crate::transform::{Transform, TransformUniforms};

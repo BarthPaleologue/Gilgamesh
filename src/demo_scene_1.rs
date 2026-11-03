@@ -4,7 +4,7 @@ use crate::core::engine::Engine;
 use crate::core::render_context::RenderContext;
 use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::mesh::Mesh;
-use crate::geometry::primitive::PrimitiveMesh;
+use crate::geometry::primitive;
 use crate::input::transform_control::OrbitControl;
 use crate::lights::debug::create_point_light_debug_mesh;
 use crate::lights::directional_light::DirectionalLight;
@@ -57,13 +57,13 @@ impl StarSystemDemo {
             .each_ref()
             .map(|light| create_point_light_debug_mesh(light, ctx));
 
-        let mut sun = PrimitiveMesh::sphere("Sun", 32, ctx);
+        let mut sun = Mesh::from_cpu_buffers("Sun", primitive::sphere(32), ctx);
         let sun_texture = Rc::new(Texture::new("Sun texture", "textures/sun.jpg", ctx));
         let mut sun_material = PbrMaterial::new("SunMaterial", ctx);
         sun_material.set_albedo_texture(sun_texture);
         sun.set_material(Box::new(sun_material));
 
-        let mut earth = PrimitiveMesh::sphere("Earth", 32, ctx);
+        let mut earth = Mesh::from_cpu_buffers("Earth", primitive::sphere(32), ctx);
         earth.transform_mut().parent = Some(sun.transform_rc());
         let mut earth_material = BlinnPhongMaterial::new("EarthMaterial", ctx);
         let earth_diffuse_texture = Rc::new(Texture::new(
@@ -82,7 +82,7 @@ impl StarSystemDemo {
 
         camera.transform_mut().parent = Some(earth.transform_rc());
 
-        let plane = PrimitiveMesh::plane("Plane", 10, 10.0, ctx);
+        let plane = Mesh::from_cpu_buffers("Plane", primitive::plane(10, 10.0), ctx);
         plane.transform_mut().position = DVec3::new(0.0, -5.0, 0.0);
 
         Self {

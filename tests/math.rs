@@ -1,7 +1,8 @@
 use gilgamesh::camera::Camera;
 use gilgamesh::camera::uniforms::CameraUniforms;
-use gilgamesh::geometry::mesh::{Vertex, zip_vertex_data};
-use gilgamesh::geometry::vertex_data::VertexData;
+use gilgamesh::geometry::cpu_mesh_buffers::CpuMeshBuffers;
+use gilgamesh::geometry::cpu_vertex_buffers::CpuVertexBuffers;
+use gilgamesh::geometry::gpu_mesh_buffers::{Vertex, to_gpu_vertices};
 use gilgamesh::input::mouse::Mouse;
 use gilgamesh::input::transform_control::OrbitControl;
 use gilgamesh::lights::directional_light::{DirectionalLight, DirectionalLightUniform};
@@ -234,37 +235,38 @@ fn parented_transforms_and_camera_keep_small_offsets_at_large_coordinates() {
 #[test]
 fn normals_and_tangents_follow_geometry_and_uvs() {
     let origin = 10.0;
-    let mut buffers = VertexData {
-        positions: vec![
-            [origin, 0.0, origin],
-            [origin, 0.0, origin + 0.25],
-            [origin + 0.5, 0.0, origin],
-        ],
-        uvs: vec![[0.0, 0.0], [0.0, 1.0], [1.0, 0.0]],
+    let mut buffers = CpuMeshBuffers {
+        vertices: CpuVertexBuffers {
+            positions: vec![
+                [origin, 0.0, origin],
+                [origin, 0.0, origin + 0.25],
+                [origin + 0.5, 0.0, origin],
+            ],
+            uvs: vec![[0.0, 0.0], [0.0, 1.0], [1.0, 0.0]],
+            ..CpuVertexBuffers::default()
+        },
         indices: vec![0, 1, 2],
-        ..VertexData::default()
     };
     buffers.create_normals();
     buffers.create_tangents();
-    for normal in &buffers.normals {
+    for normal in &buffers.vertices.normals {
         assert_eq!(*normal, [0.0, 1.0, 0.0]);
     }
-    for tangent in &buffers.tangents {
+    for tangent in &buffers.vertices.tangents {
         assert_eq!(*tangent, [1.0, 0.0, 0.0]);
     }
 }
 
 #[test]
 fn gpu_vertex_layout_and_attributes_are_preserved() {
-    let vertices = VertexData {
+    let vertices = CpuVertexBuffers {
         positions: vec![[1.25, 2.0, 3.0]],
         colors: vec![[1.0, 0.5, 0.25]],
         normals: vec![[0.0, 1.0, 0.0]],
         tangents: vec![[1.0, 0.0, 0.0]],
         uvs: vec![[0.25, 0.5]],
-        ..VertexData::default()
     };
-    let gpu_vertices = zip_vertex_data(&vertices);
+    let gpu_vertices = to_gpu_vertices(&vertices);
     assert_eq!(std::mem::size_of::<Vertex>(), 56);
     assert_eq!(std::mem::offset_of!(Vertex, uv), 48);
     assert_eq!(gpu_vertices[0].position, [1.25, 2.0, 3.0]);

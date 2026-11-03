@@ -4,7 +4,7 @@ use crate::core::engine::Engine;
 use crate::core::render_context::RenderContext;
 use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::mesh::Mesh;
-use crate::geometry::procedural::ProceduralMesh;
+use crate::geometry::procedural;
 use crate::input::transform_control::OrbitControl;
 use crate::lights::directional_light::DirectionalLight;
 use crate::materials::blinn_phong::BlinnPhongMaterial;
@@ -26,16 +26,11 @@ impl TerrainView {
         camera_control.set_radius(10.0);
         camera.control = Some(Box::new(camera_control));
 
-        let mut terrain = ProceduralMesh::terrain(
-            "sinc",
-            10.0,
-            128,
-            &|x, z| {
-                let d = 5.0 * (x * x + z * z).sqrt();
-                3.0 * (d.sin() / d).min(1.0)
-            },
-            ctx,
-        );
+        let cpu_buffers = procedural::terrain(10.0, 128, &|x, z| {
+            let d = 5.0 * (x * x + z * z).sqrt();
+            3.0 * (d.sin() / d).min(1.0)
+        });
+        let mut terrain = Mesh::from_cpu_buffers("sinc", cpu_buffers, ctx);
         let mut material = BlinnPhongMaterial::new("sincMaterial", ctx);
         material.set_diffuse_color(0.5, 0.2, 1.0);
         terrain.set_material(Box::new(material));

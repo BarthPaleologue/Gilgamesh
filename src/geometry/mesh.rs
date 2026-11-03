@@ -1,46 +1,21 @@
 use std::cell::{Ref, RefCell, RefMut};
-use std::mem;
 use std::rc::Rc;
 
 use crate::camera::Camera;
 use crate::core::wgpu_context::WGPUContext;
-use crate::geometry::vertex_data::VertexData;
+use crate::geometry::cpu_mesh_buffers::CpuMeshBuffers;
+use crate::geometry::gpu_mesh_buffers::GpuMeshBuffers;
 use crate::lights::directional_light::DirectionalLight;
 use crate::lights::point_light::PointLight;
-use bytemuck::{Pod, Zeroable, cast_slice};
-use wgpu::util::DeviceExt;
-use wgpu::{Buffer, RenderPass};
+use wgpu::RenderPass;
 
 use crate::materials::blinn_phong::BlinnPhongMaterial;
 use crate::materials::material::Material;
 use crate::transform::{Transform, Transformable};
 
-#[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
-pub struct Vertex {
-    pub position: [f32; 3],
-    pub color: [f32; 3],
-    pub normal: [f32; 3],
-    pub tangent: [f32; 3],
-    pub uv: [f32; 2],
-}
-
-impl Vertex {
-    const ATTRIBUTES: [wgpu::VertexAttribute; 5] = wgpu::vertex_attr_array![0=>Float32x3, 1=>Float32x3, 2=>Float32x3, 3=>Float32x3, 4=>Float32x2];
-    pub(crate) fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
-        wgpu::VertexBufferLayout {
-            array_stride: mem::size_of::<Vertex>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &Self::ATTRIBUTES,
-        }
-    }
-}
-
 pub struct Mesh {
     transform: Rc<RefCell<Transform>>,
-    vertex_data: VertexData,
-    index_buffer: Buffer,
-    vertex_buffer: Buffer,
+    gpu_buffers: GpuMeshBuffers,
     material: Box<dyn Material>,
 }
 
@@ -57,33 +32,17 @@ impl Transformable for Mesh {
 }
 
 impl Mesh {
-    pub fn from_vertex_data(
+    /// Uploads the geometry and releases the CPU buffers after construction.
+    pub fn from_cpu_buffers(
         name: &str,
-        vertex_data: VertexData,
+        cpu_buffers: CpuMeshBuffers,
         wgpu_context: &WGPUContext,
     ) -> Mesh {
-        let vertex_buffer =
-            wgpu_context
-                .device
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Vertex Buffer"),
-                    contents: cast_slice(&zip_vertex_data(&vertex_data)),
-                    usage: wgpu::BufferUsages::VERTEX,
-                });
-        let index_buffer =
-            wgpu_context
-                .device
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Index Buffer"),
-                    contents: cast_slice(&vertex_data.indices),
-                    usage: wgpu::BufferUsages::INDEX,
-                });
+        let gpu_buffers = GpuMeshBuffers::from_cpu_buffers(&cpu_buffers, wgpu_context);
 
         Mesh {
             transform: Rc::new(RefCell::new(Transform::new())),
-            vertex_data,
-            vertex_buffer,
-            index_buffer,
+            gpu_buffers,
             material: Box::new(BlinnPhongMaterial::new(
                 &format!("{}Material", name),
                 wgpu_context,
@@ -114,23 +73,6 @@ impl Mesh {
             wgpu_context,
         );
 
-        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-        render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-        render_pass.draw_indexed(0..self.vertex_data.indices.len() as u32, 0, 0..1);
+        self.gpu_buffers.draw(render_pass);
     }
-}
-
-pub fn zip_vertex_data(vertex_data: &VertexData) -> Vec<Vertex> {
-    let nb_vertices = vertex_data.positions.len();
-    let mut data: Vec<Vertex> = Vec::with_capacity(nb_vertices);
-    for i in 0..nb_vertices {
-        data.push(Vertex {
-            position: vertex_data.positions[i],
-            color: vertex_data.colors[i],
-            normal: vertex_data.normals[i],
-            tangent: vertex_data.tangents[i],
-            uv: vertex_data.uvs[i],
-        });
-    }
-    data
 }
