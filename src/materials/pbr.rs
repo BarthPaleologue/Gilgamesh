@@ -1,7 +1,8 @@
 use crate::core::renderer::Renderer;
 use crate::core::wgpu_context::WGPUContext;
 use crate::materials::material::Material;
-use crate::materials::prepared_material::{PipelineConfig, PreparedMaterial};
+use crate::materials::material_pipeline::PipelineConfig;
+use crate::materials::prepared_material::PreparedMaterial;
 use crate::texture::Texture;
 use std::cell::OnceCell;
 use std::rc::Rc;

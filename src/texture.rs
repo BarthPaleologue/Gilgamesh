@@ -133,10 +133,7 @@ impl Texture {
         }
     }
 
-    pub fn create_bind_group_layout_entries(
-        &self,
-        start_index: u32,
-    ) -> [wgpu::BindGroupLayoutEntry; 2] {
+    pub fn create_bind_group_layout_entries(start_index: u32) -> [wgpu::BindGroupLayoutEntry; 2] {
         [
             wgpu::BindGroupLayoutEntry {
                 binding: start_index,

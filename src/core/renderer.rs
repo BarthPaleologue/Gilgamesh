@@ -2,17 +2,46 @@ use crate::core::frame_bindings::FrameBindings;
 use crate::core::render_context::RenderContext;
 use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::mesh::Mesh;
+use crate::materials::material_pipeline::{MaterialPipeline, PipelineConfig, PipelineKey};
+use std::collections::HashMap;
 use std::iter;
+use std::rc::Rc;
 
 pub struct Renderer {
     pub(crate) frame: FrameBindings,
+    pipelines: HashMap<PipelineKey, Rc<MaterialPipeline>>,
 }
 
 impl Renderer {
     pub fn new(ctx: &WGPUContext) -> Self {
         Self {
             frame: FrameBindings::new(ctx),
+            pipelines: HashMap::new(),
         }
+    }
+
+    pub(crate) fn material_pipeline(
+        &mut self,
+        config: PipelineConfig,
+        texture_count: usize,
+        ctx: &WGPUContext,
+    ) -> Rc<MaterialPipeline> {
+        let key = PipelineKey {
+            config,
+            texture_count,
+            target_format: ctx.config.format,
+        };
+        self.pipelines
+            .entry(key)
+            .or_insert_with(|| {
+                Rc::new(MaterialPipeline::new(
+                    config,
+                    texture_count,
+                    &self.frame.layout,
+                    ctx,
+                ))
+            })
+            .clone()
     }
 
     pub(crate) fn render<'a, T>(

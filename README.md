@@ -68,7 +68,11 @@ only borrows them through `&self`: no `RefCell` is required. A private `OnceCell
 initializes each material's GPU bindings on first use. Setters invalidate these
 bindings when the material is exclusively owned; shared materials are replaced
 rather than modified in place. Each mesh owns its transform buffer, while the
-renderer uploads camera and lighting data once per frame.
+renderer uploads camera and lighting data once per frame. Pipelines and their
+material layouts are cached by the renderer using shader, rasterization options,
+texture binding count, and target format; changing colors or texture handles does
+not create another pipeline. WGSL bind group 0 is frame data, group 1 is material
+data and textures, and group 2 is per-object transform data.
 
 The same material can be used by meshes with independent transforms:
 
