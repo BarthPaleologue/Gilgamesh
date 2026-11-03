@@ -88,7 +88,6 @@ fn controls_preserve_camera_projection_and_scale() {
         fov_vertical: std::f64::consts::FRAC_PI_3,
         aspect_ratio: 1.5,
         near: 0.5,
-        far: 1000.0,
     });
     camera.transform_mut().scaling = DVec3::new(2.0, 3.0, 4.0);
     let projection = camera.projection_matrix();

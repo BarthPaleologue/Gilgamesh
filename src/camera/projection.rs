@@ -1,18 +1,18 @@
-use glam::{DMat4, dcamera::rh::proj::directx};
+use glam::{DMat4, DVec4, dcamera::rh::proj::directx};
 
 pub trait CameraProjection {
     /// Maps camera space (-Z forward, +Y up) to WebGPU clip space with reverse depth:
-    /// the near plane maps to 1 and the far plane to 0.
+    /// the near plane maps to 1; depth reaches 0 at the far plane or approaches it at infinity.
     fn matrix(&self) -> DMat4;
 }
 
-/// Perspective projection, with angles in radians and distances in world units.
+/// Perspective projection with an infinite far plane.
+/// Angles are in radians and distances in world units.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Perspective {
     pub fov_vertical: f64,
     pub aspect_ratio: f64,
     pub near: f64,
-    pub far: f64,
 }
 
 impl Default for Perspective {
@@ -21,14 +21,13 @@ impl Default for Perspective {
             fov_vertical: 70.0_f64.to_radians(),
             aspect_ratio: 1.0,
             near: 0.1,
-            far: 100.0,
         }
     }
 }
 
 impl CameraProjection for Perspective {
     fn matrix(&self) -> DMat4 {
-        directx::perspective(self.fov_vertical, self.aspect_ratio, self.far, self.near)
+        directx::perspective_infinite_reverse(self.fov_vertical, self.aspect_ratio, self.near)
     }
 }
 
@@ -56,7 +55,7 @@ impl CameraProjection for Orthographic {
     }
 }
 
-/// Asymmetric perspective with signed angles from the camera's -Z axis.
+/// Asymmetric perspective with an infinite far plane and signed angles from the camera's -Z axis.
 /// Angles increase toward the right and top, and lie between -π/2 and π/2.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct OffAxis {
@@ -65,19 +64,26 @@ pub struct OffAxis {
     pub angle_bottom: f64,
     pub angle_top: f64,
     pub near: f64,
-    pub far: f64,
 }
 
 impl CameraProjection for OffAxis {
     fn matrix(&self) -> DMat4 {
-        // Bounds lie on the swapped near plane to preserve the angular field of view.
-        directx::frustum(
-            self.far * self.angle_left.tan(),
-            self.far * self.angle_right.tan(),
-            self.far * self.angle_bottom.tan(),
-            self.far * self.angle_top.tan(),
-            self.far,
-            self.near,
+        let left = self.angle_left.tan();
+        let right = self.angle_right.tan();
+        let bottom = self.angle_bottom.tan();
+        let top = self.angle_top.tan();
+        let inverse_width = 1.0 / (right - left);
+        let inverse_height = 1.0 / (top - bottom);
+        DMat4::from_cols(
+            DVec4::new(2.0 * inverse_width, 0.0, 0.0, 0.0),
+            DVec4::new(0.0, 2.0 * inverse_height, 0.0, 0.0),
+            DVec4::new(
+                (right + left) * inverse_width,
+                (top + bottom) * inverse_height,
+                0.0,
+                -1.0,
+            ),
+            DVec4::new(0.0, 0.0, self.near, 0.0),
         )
     }
 }

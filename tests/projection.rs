@@ -14,21 +14,20 @@ fn assert_projected(matrix: DMat4, point: DVec3, expected: DVec3) {
 #[test]
 fn perspective_uses_radians_and_reverse_depth() {
     let near = 0.1;
-    let far = 10.0;
     let aspect_ratio = 1.5;
     let camera = Camera::new(Perspective {
         fov_vertical: FRAC_PI_3,
         aspect_ratio,
         near,
-        far,
     });
     let projection = camera.projection_matrix();
-    for (distance, depth) in [(near, 1.0), (far, 0.0)] {
+    for distance in [near, 2.0 * near, 1e12] {
         assert_projected(
             projection,
             DVec3::new(0.0, 0.0, -distance),
-            DVec3::new(0.0, 0.0, depth),
+            DVec3::new(0.0, 0.0, near / distance),
         );
+        assert!(projection.project_point3(DVec3::new(0.0, 0.0, -distance)).z > 0.0);
     }
     let half_height = (FRAC_PI_3 / 2.0).tan();
     let half_width = half_height * aspect_ratio;
@@ -38,13 +37,9 @@ fn perspective_uses_radians_and_reverse_depth() {
 }
 
 #[test]
-fn perspective_preserves_distant_depths_after_gpu_conversion() {
-    let matrix = Perspective {
-        far: 1e12,
-        ..Default::default()
-    }
-    .matrix()
-    .as_mat4();
+fn default_camera_preserves_distant_depths_after_gpu_conversion() {
+    let camera: Camera = Camera::default();
+    let matrix = camera.projection_matrix().as_mat4();
     let nearer = matrix.project_point3(Vec3::new(0.0, 0.0, -100_000_000.0)).z;
     let farther = matrix.project_point3(Vec3::new(0.0, 0.0, -100_001_024.0)).z;
     assert!(0.0 < farther && farther < nearer && nearer < 1.0);
@@ -84,7 +79,6 @@ fn orthographic_keeps_visible_size_at_every_depth_and_tracks_parameter_changes()
 #[test]
 fn off_axis_maps_signed_angular_bounds_to_clip_edges() {
     let near = 0.25;
-    let far = 500.0;
     for [angle_left, angle_right, angle_bottom, angle_top] in
         [[-0.7_f64, 0.4, -0.3, 0.6], [0.1, 0.6, -0.4, -0.1]]
     {
@@ -94,10 +88,9 @@ fn off_axis_maps_signed_angular_bounds_to_clip_edges() {
             angle_bottom,
             angle_top,
             near,
-            far,
         };
         let matrix = projection.matrix();
-        for (distance, depth) in [(near, 1.0), (far, 0.0)] {
+        for distance in [near, 2.0 * near, 1e12] {
             for (angle_x, expected_x) in [(angle_left, -1.0), (angle_right, 1.0)] {
                 for (angle_y, expected_y) in [(angle_bottom, -1.0), (angle_top, 1.0)] {
                     assert_projected(
@@ -107,11 +100,12 @@ fn off_axis_maps_signed_angular_bounds_to_clip_edges() {
                             distance * angle_y.tan(),
                             -distance,
                         ),
-                        DVec3::new(expected_x, expected_y, depth),
+                        DVec3::new(expected_x, expected_y, near / distance),
                     );
                 }
             }
         }
+        assert!(matrix.project_point3(DVec3::new(0.0, 0.0, -1e12)).z > 0.0);
     }
 }
 
@@ -124,7 +118,6 @@ fn symmetric_off_axis_matches_perspective() {
         fov_vertical: FRAC_PI_3,
         aspect_ratio,
         near: 0.1,
-        far: 100.0,
     }
     .matrix();
     let off_axis = OffAxis {
@@ -133,7 +126,6 @@ fn symmetric_off_axis_matches_perspective() {
         angle_bottom: -vertical_angle,
         angle_top: vertical_angle,
         near: 0.1,
-        far: 100.0,
     }
     .matrix();
     for (actual, expected) in off_axis
@@ -168,7 +160,6 @@ fn typed_and_runtime_projection_cameras_share_the_uniform_interface() {
         angle_bottom: -0.3,
         angle_top: 0.6,
         near: 0.25,
-        far: 500.0,
     });
     let cameras = [
         (camera_uniforms(&perspective), perspective.projection.into()),
