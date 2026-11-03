@@ -1,7 +1,6 @@
 use crate::core::app::{App, FrameContext};
 use crate::core::wgpu_context::WGPUContext;
 use crate::input::mouse::Mouse;
-use cgmath::*;
 use std::sync::Arc;
 use std::time::SystemTime;
 use winit::application::ApplicationHandler;
@@ -10,10 +9,6 @@ use winit::event::{ElementState, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::{Window, WindowAttributes, WindowId};
-
-pub const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
-    1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.5, 1.0,
-);
 
 pub struct Engine<TApp: App> {
     pub app: TApp,

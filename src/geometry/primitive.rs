@@ -1,7 +1,7 @@
 use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::mesh::Mesh;
 use crate::geometry::vertex_data::VertexData;
-use cgmath::{InnerSpace, Vector3};
+use glam::Vec3;
 
 pub struct PrimitiveMesh {}
 
@@ -189,18 +189,18 @@ impl PrimitiveMesh {
         let t = (1.0 + 5.0_f32.sqrt()) / 2.0;
 
         let mut base_positions = vec![
-            Vector3::new(-1.0, t, 0.0).normalize(),
-            Vector3::new(1.0, t, 0.0).normalize(),
-            Vector3::new(-1.0, -t, 0.0).normalize(),
-            Vector3::new(1.0, -t, 0.0).normalize(),
-            Vector3::new(0.0, -1.0, t).normalize(),
-            Vector3::new(0.0, 1.0, t).normalize(),
-            Vector3::new(0.0, -1.0, -t).normalize(),
-            Vector3::new(0.0, 1.0, -t).normalize(),
-            Vector3::new(t, 0.0, -1.0).normalize(),
-            Vector3::new(t, 0.0, 1.0).normalize(),
-            Vector3::new(-t, 0.0, -1.0).normalize(),
-            Vector3::new(-t, 0.0, 1.0).normalize(),
+            Vec3::new(-1.0, t, 0.0).normalize(),
+            Vec3::new(1.0, t, 0.0).normalize(),
+            Vec3::new(-1.0, -t, 0.0).normalize(),
+            Vec3::new(1.0, -t, 0.0).normalize(),
+            Vec3::new(0.0, -1.0, t).normalize(),
+            Vec3::new(0.0, 1.0, t).normalize(),
+            Vec3::new(0.0, -1.0, -t).normalize(),
+            Vec3::new(0.0, 1.0, -t).normalize(),
+            Vec3::new(t, 0.0, -1.0).normalize(),
+            Vec3::new(t, 0.0, 1.0).normalize(),
+            Vec3::new(-t, 0.0, -1.0).normalize(),
+            Vec3::new(-t, 0.0, 1.0).normalize(),
         ];
 
         let mut base_indices = vec![

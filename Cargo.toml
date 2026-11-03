@@ -11,7 +11,7 @@ license = "Apache-2.0"
 [dependencies]
 cfg-if = "1"
 wgpu = "30"
-cgmath = "0.18.0"
+glam = "0.34.2"
 pollster = "1"
 winit = "0.30"
 bytemuck = { version = "1.25", features = ["derive"] }

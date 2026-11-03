@@ -45,6 +45,9 @@ it does not store or clone the application's objects. Camera controls can be
 updated from `FrameContext`, and `on_window_event` handles application-specific
 window or keyboard events.
 
+Vectors and matrices use `glam::Vec3` and `glam::Mat4`. Transform rotations are
+Euler angles in radians; the camera's `fov` is expressed in degrees.
+
 ```rust,no_run
 use gilgamesh::camera::camera::Camera;
 use gilgamesh::core::app::{App, FrameContext};

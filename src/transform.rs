@@ -1,12 +1,13 @@
-use cgmath::{InnerSpace, Matrix, Matrix4, Point3, Rad, SquareMatrix, Vector3, Vector4};
+use glam::{Mat4, Vec3};
 use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Transform {
-    pub position: Vector3<f32>,
-    pub rotation: Point3<f32>,
-    pub scaling: Point3<f32>,
+    pub position: Vec3,
+    /// Euler angles in radians, applied around X, then Y, then Z.
+    pub rotation: Vec3,
+    pub scaling: Vec3,
 
     pub parent: Option<Rc<RefCell<Transform>>>,
 }
@@ -23,9 +24,9 @@ pub struct TransformUniforms {
 
 impl TransformUniforms {
     pub fn update(&mut self, transform: &Transform) {
-        self.position = transform.position.into();
-        self.world_matrix = transform.compute_world_matrix().into();
-        self.normal_matrix = transform.compute_normal_matrix().into();
+        self.position = transform.position.to_array();
+        self.world_matrix = transform.compute_world_matrix().to_cols_array_2d();
+        self.normal_matrix = transform.compute_normal_matrix().to_cols_array_2d();
     }
 }
 
@@ -38,9 +39,9 @@ pub trait Transformable {
 impl Default for Transform {
     fn default() -> Self {
         Transform {
-            position: Vector3::new(0.0, 0.0, 0.0),
-            rotation: Point3::new(0.0, 0.0, 0.0),
-            scaling: Point3::new(1.0, 1.0, 1.0),
+            position: Vec3::ZERO,
+            rotation: Vec3::ZERO,
+            scaling: Vec3::ONE,
 
             parent: None,
         }
@@ -70,17 +71,14 @@ impl Transform {
         self.rotation.z = z;
     }
 
-    pub fn compute_world_matrix(&self) -> Matrix4<f32> {
-        let mut world_matrix = Matrix4::identity();
+    pub fn compute_world_matrix(&self) -> Mat4 {
+        let position = Mat4::from_translation(self.position);
+        let rotation_x = Mat4::from_rotation_x(self.rotation.x);
+        let rotation_y = Mat4::from_rotation_y(self.rotation.y);
+        let rotation_z = Mat4::from_rotation_z(self.rotation.z);
+        let scaling = Mat4::from_scale(self.scaling);
 
-        let position = Matrix4::from_translation(self.position);
-        let rotation_x = Matrix4::from_angle_x(Rad(self.rotation.x));
-        let rotation_y = Matrix4::from_angle_y(Rad(self.rotation.y));
-        let rotation_z = Matrix4::from_angle_z(Rad(self.rotation.z));
-        let scaling =
-            Matrix4::from_nonuniform_scale(self.scaling.x, self.scaling.y, self.scaling.z);
-
-        world_matrix = world_matrix * position * scaling * rotation_z * rotation_y * rotation_x;
+        let mut world_matrix = position * scaling * rotation_z * rotation_y * rotation_x;
 
         if let Some(parent) = &self.parent {
             let parent_world_matrix = parent.borrow().compute_world_matrix();
@@ -90,32 +88,31 @@ impl Transform {
         world_matrix
     }
 
-    pub fn compute_normal_matrix(&self) -> Matrix4<f32> {
+    pub fn compute_normal_matrix(&self) -> Mat4 {
         let world_matrix = self.compute_world_matrix();
-        world_matrix.invert().unwrap().transpose()
+        world_matrix
+            .try_inverse()
+            .expect("Transform matrix is not invertible")
+            .transpose()
     }
 
-    pub fn local_direction_to_world(&self, local_direction: Vector3<f32>) -> Vector3<f32> {
-        let rotation_x = Matrix4::from_angle_x(Rad(self.rotation.x));
-        let rotation_y = Matrix4::from_angle_y(Rad(self.rotation.y));
-        let rotation_z = Matrix4::from_angle_z(Rad(self.rotation.z));
+    pub fn local_direction_to_world(&self, local_direction: Vec3) -> Vec3 {
+        let rotation_x = Mat4::from_rotation_x(self.rotation.x);
+        let rotation_y = Mat4::from_rotation_y(self.rotation.y);
+        let rotation_z = Mat4::from_rotation_z(self.rotation.z);
         let rotation = rotation_z * rotation_y * rotation_x;
-        let world_direction4 =
-            rotation * Vector4::new(local_direction.x, local_direction.y, local_direction.z, 1.0);
-        let world_direction =
-            Vector3::new(world_direction4.x, world_direction4.y, world_direction4.z);
-        world_direction.normalize()
+        rotation.transform_vector3(local_direction).normalize()
     }
 
-    pub fn forward(&self) -> Vector3<f32> {
-        self.local_direction_to_world(Vector3::new(0.0, 0.0, 1.0))
+    pub fn forward(&self) -> Vec3 {
+        self.local_direction_to_world(Vec3::Z)
     }
 
-    pub fn right(&self) -> Vector3<f32> {
-        self.local_direction_to_world(Vector3::new(1.0, 0.0, 0.0))
+    pub fn right(&self) -> Vec3 {
+        self.local_direction_to_world(Vec3::X)
     }
 
-    pub fn up(&self) -> Vector3<f32> {
-        self.local_direction_to_world(Vector3::new(0.0, 1.0, 0.0))
+    pub fn up(&self) -> Vec3 {
+        self.local_direction_to_world(Vec3::Y)
     }
 }

@@ -1,15 +1,15 @@
 use crate::input::transform_control::TransformMouseController;
-use cgmath::{Deg, EuclideanSpace, Matrix4, Point3, SquareMatrix, Vector3, perspective};
+use glam::{Mat4, Vec3, camera::rh};
 use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
 
-use crate::core::engine::OPENGL_TO_WGPU_MATRIX;
 use crate::input::mouse::Mouse;
 use crate::transform::{Transform, Transformable};
 
 pub struct Camera {
     transform: Rc<RefCell<Transform>>,
     pub aspect_ratio: f32,
+    /// Vertical field of view in degrees.
     pub fov: f32,
     pub z_near: f32,
     pub z_far: f32,
@@ -28,22 +28,28 @@ impl Camera {
             control: None,
         }
     }
-    pub fn view_matrix(&self) -> Matrix4<f32> {
-        let mut view = Matrix4::look_at_rh(
-            Point3::from_vec(self.transform.borrow().position),
-            Point3::new(0.0, 0.0, 0.0),
-            Vector3::new(0.0, 1.0, 0.0),
-        );
+    pub fn view_matrix(&self) -> Mat4 {
+        let mut view =
+            rh::view::look_at_mat4(self.transform.borrow().position, Vec3::ZERO, Vec3::Y);
         if let Some(parent) = &self.transform().parent {
-            view = view * parent.borrow().compute_world_matrix().invert().unwrap();
+            view = view
+                * parent
+                    .borrow()
+                    .compute_world_matrix()
+                    .try_inverse()
+                    .expect("Camera parent matrix is not invertible");
         }
         view
     }
-    pub fn projection_matrix(&self) -> Matrix4<f32> {
-        OPENGL_TO_WGPU_MATRIX
-            * perspective(Deg(self.fov), self.aspect_ratio, self.z_near, self.z_far)
+    pub fn projection_matrix(&self) -> Mat4 {
+        rh::proj::directx::perspective(
+            self.fov.to_radians(),
+            self.aspect_ratio,
+            self.z_near,
+            self.z_far,
+        )
     }
-    pub fn projection_view(&self) -> Matrix4<f32> {
+    pub fn projection_view(&self) -> Mat4 {
         self.projection_matrix() * self.view_matrix()
     }
 

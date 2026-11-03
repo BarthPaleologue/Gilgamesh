@@ -1,13 +1,9 @@
 use crate::animation::utils::move_towards;
 use crate::input::mouse::Mouse;
-use cgmath::{Point3, Vector3};
+use glam::Vec3;
 
 pub trait TransformMouseController {
-    fn update(
-        &mut self,
-        mouse: &Mouse,
-        delta_seconds: f32,
-    ) -> (Vector3<f32>, Point3<f32>, Point3<f32>);
+    fn update(&mut self, mouse: &Mouse, delta_seconds: f32) -> (Vec3, Vec3, Vec3);
 }
 
 pub struct OrbitControl {
@@ -40,11 +36,7 @@ impl OrbitControl {
 }
 
 impl TransformMouseController for OrbitControl {
-    fn update(
-        &mut self,
-        mouse: &Mouse,
-        delta_seconds: f32,
-    ) -> (Vector3<f32>, Point3<f32>, Point3<f32>) {
+    fn update(&mut self, mouse: &Mouse, delta_seconds: f32) -> (Vec3, Vec3, Vec3) {
         if mouse.left_button_pressed {
             self.phi += mouse.delta[0] as f32 * self.rotation_speed * delta_seconds;
             self.theta += mouse.delta[1] as f32 * self.rotation_speed * delta_seconds;
@@ -64,10 +56,6 @@ impl TransformMouseController for OrbitControl {
         let y = self.radius * self.theta.cos();
         let z = self.radius * self.theta.sin() * self.phi.sin();
 
-        (
-            Vector3::new(x, y, z),
-            Point3::new(0.0, 0.0, 0.0),
-            Point3::new(1.0, 1.0, 1.0),
-        )
+        (Vec3::new(x, y, z), Vec3::ZERO, Vec3::ONE)
     }
 }
