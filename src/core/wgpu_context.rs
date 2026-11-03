@@ -1,3 +1,4 @@
+use crate::core::object_bindings::ObjectBindings;
 use crate::texture::Texture;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -10,6 +11,7 @@ pub struct WGPUContext {
     pub queue: Queue,
     pub config: SurfaceConfiguration,
     empty_texture: Rc<Texture>,
+    pub(crate) object_bind_group_layout: wgpu::BindGroupLayout,
     instance: wgpu::Instance,
 }
 
@@ -83,12 +85,15 @@ impl WGPUContext {
 
         let empty_texture = Rc::new(Texture::new_empty("Default Texture", &device));
 
+        let object_bind_group_layout = ObjectBindings::create_layout(&device);
+
         WGPUContext {
             surface,
             device,
             queue,
             config,
             empty_texture,
+            object_bind_group_layout,
             instance,
         }
     }

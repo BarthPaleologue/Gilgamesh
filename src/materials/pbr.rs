@@ -1,15 +1,10 @@
-use crate::camera::Camera;
+use crate::core::renderer::Renderer;
 use crate::core::wgpu_context::WGPUContext;
-use crate::lights::directional_light::{DirectionalLight, DirectionalLightUniform};
-use crate::lights::point_light::{PointLight, PointLightUniforms};
 use crate::materials::material::Material;
-use crate::materials::shader::Shader;
-use crate::materials::utils::{create_array_buffer, create_buffer};
-use crate::settings::MAX_POINT_LIGHTS;
+use crate::materials::shader::{PipelineConfig, Shader};
+use crate::materials::utils::create_buffer;
 use crate::texture::Texture;
-use crate::transform::Transform;
 use bytemuck::cast_slice;
-use std::cell::Ref;
 use std::rc::Rc;
 use wgpu::RenderPass;
 
@@ -53,13 +48,6 @@ pub struct PbrMaterial {
 
     material_pipeline: Option<Shader>,
 
-    directional_light_uniforms: DirectionalLightUniform,
-    directional_light_uniforms_buffer: wgpu::Buffer,
-
-    point_light_uniforms: [PointLightUniforms; MAX_POINT_LIGHTS],
-    point_light_buffer: wgpu::Buffer,
-    nb_point_lights_buffer: wgpu::Buffer,
-
     pbr_uniforms: PbrUniforms,
     pbr_uniforms_buffer: wgpu::Buffer,
 
@@ -69,30 +57,11 @@ pub struct PbrMaterial {
     metallic_texture: Rc<Texture>,
     roughness_texture: Rc<Texture>,
 
-    polygon_mode: wgpu::PolygonMode,
-    back_face_culling: bool,
+    pipeline_config: PipelineConfig,
 }
 
 impl PbrMaterial {
     pub fn new(name: &str, wgpu_context: &WGPUContext) -> Self {
-        let light_uniforms = DirectionalLightUniform::default();
-        let light_uniforms_buffer = create_buffer::<DirectionalLightUniform>(
-            &format!("{} DirectionalLight Buffer", name),
-            wgpu_context,
-        );
-
-        let point_light_uniforms = [PointLightUniforms::default(); MAX_POINT_LIGHTS];
-        let point_light_buffer = create_array_buffer::<PointLightUniforms>(
-            &format!("{} PointLights Array Buffer", name),
-            MAX_POINT_LIGHTS,
-            wgpu_context,
-        );
-
-        let nb_point_lights_buffer = create_buffer::<u32>(
-            &format!("{} Number of Point Lights Buffer", name),
-            wgpu_context,
-        );
-
         let pbr_uniforms = PbrUniforms::default();
         let phong_uniforms_buffer =
             create_buffer::<PbrUniforms>(&format!("{} Phong Buffer", name), wgpu_context);
@@ -107,13 +76,6 @@ impl PbrMaterial {
             name: name.to_string(),
             material_pipeline: None,
 
-            directional_light_uniforms: light_uniforms,
-            directional_light_uniforms_buffer: light_uniforms_buffer,
-
-            point_light_uniforms,
-            point_light_buffer,
-            nb_point_lights_buffer,
-
             pbr_uniforms,
             pbr_uniforms_buffer: phong_uniforms_buffer,
 
@@ -123,21 +85,19 @@ impl PbrMaterial {
             metallic_texture,
             roughness_texture,
 
-            polygon_mode: wgpu::PolygonMode::Fill,
-            back_face_culling: true,
+            pipeline_config: PipelineConfig {
+                shader_file: "../shader/pbr.wgsl",
+                polygon_mode: wgpu::PolygonMode::Fill,
+                back_face_culling: true,
+            },
         }
     }
 
-    pub fn compile(&mut self, wgpu_context: &WGPUContext) {
+    pub fn compile(&mut self, renderer: &Renderer, wgpu_context: &WGPUContext) {
         self.material_pipeline = Some(Shader::new(
             &format!("{} MaterialPipeline", self.name),
-            "../shader/pbr.wgsl",
-            &[
-                &self.directional_light_uniforms_buffer,
-                &self.point_light_buffer,
-                &self.nb_point_lights_buffer,
-                &self.pbr_uniforms_buffer,
-            ],
+            self.pipeline_config,
+            &self.pbr_uniforms_buffer,
             &[
                 &self.diffuse_texture,
                 &self.ambient_texture,
@@ -145,8 +105,7 @@ impl PbrMaterial {
                 &self.metallic_texture,
                 &self.roughness_texture,
             ],
-            self.polygon_mode,
-            self.back_face_culling,
+            renderer,
             wgpu_context,
         ));
     }
@@ -170,60 +129,30 @@ impl PbrMaterial {
     }
 
     pub fn set_polygon_mode(&mut self, polygon_mode: wgpu::PolygonMode) {
-        self.polygon_mode = polygon_mode;
+        self.pipeline_config.polygon_mode = polygon_mode;
     }
 
     pub fn set_back_face_culling(&mut self, back_face_culling: bool) {
-        self.back_face_culling = back_face_culling;
+        self.pipeline_config.back_face_culling = back_face_culling;
     }
 }
 
 impl Material for PbrMaterial {
-    fn bind<'a>(
-        &'a mut self,
-        render_pass: &mut RenderPass<'a>,
-        transform: Ref<Transform>,
-        active_camera: &Camera,
-        point_lights: &[PointLight],
-        directional_light: &DirectionalLight,
-        wgpu_context: &WGPUContext,
+    fn bind(
+        &mut self,
+        render_pass: &mut RenderPass<'_>,
+        renderer: &mut Renderer,
+        ctx: &WGPUContext,
     ) {
         if self.material_pipeline.is_none() {
-            self.compile(wgpu_context);
+            self.compile(renderer, ctx);
         }
-
-        self.directional_light_uniforms.update(directional_light);
-        wgpu_context.queue.write_buffer(
-            &self.directional_light_uniforms_buffer,
-            0,
-            cast_slice(&[self.directional_light_uniforms]),
-        );
-
-        for (i, point_light) in point_lights.iter().enumerate() {
-            self.point_light_uniforms[i].update(point_light);
-        }
-        wgpu_context.queue.write_buffer(
-            &self.point_light_buffer,
-            0,
-            cast_slice(&[self.point_light_uniforms]),
-        );
-        wgpu_context.queue.write_buffer(
-            &self.nb_point_lights_buffer,
-            0,
-            cast_slice(&[point_lights.len() as u32]),
-        );
-        wgpu_context.queue.write_buffer(
+        ctx.queue.write_buffer(
             &self.pbr_uniforms_buffer,
             0,
             cast_slice(&[self.pbr_uniforms]),
         );
-
-        self.material_pipeline.as_mut().unwrap().bind(
-            render_pass,
-            transform,
-            active_camera,
-            wgpu_context,
-        );
+        self.material_pipeline.as_ref().unwrap().bind(render_pass);
     }
 }
 

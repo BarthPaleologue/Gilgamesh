@@ -4,14 +4,14 @@ struct TransformUniforms {
     world_matrix: mat4x4<f32>,
     normal_matrix: mat4x4<f32>,
 }
-@group(0) @binding(0)
+@group(2) @binding(0)
 var<uniform> transform: TransformUniforms;
 
 struct CameraUniforms {
     proj_view: mat4x4<f32>,
     position: vec3<f32>
 }
-@group(0) @binding(1)
+@group(0) @binding(0)
 var<uniform> camera: CameraUniforms;
 
 // Additional Uniforms
@@ -20,7 +20,7 @@ struct DirectionalLightUniforms {
     direction: vec3<f32>,
     intensity: f32
 }
-@group(1) @binding(0)
+@group(0) @binding(1)
 var<uniform> directionalLight: DirectionalLightUniforms;
 
 struct PointLightUniforms {
@@ -28,8 +28,8 @@ struct PointLightUniforms {
     position: vec3<f32>,
     intensity: f32
 }
-@group(1) @binding(1) var<uniform> point_lights : array<PointLightUniforms, 64>;
-@group(1) @binding(2) var<uniform> point_lights_count : u32;
+@group(0) @binding(2) var<uniform> point_lights : array<PointLightUniforms, 64>;
+@group(0) @binding(3) var<uniform> point_lights_count : u32;
 
 struct PhongUniforms {
     diffuse_color: vec3<f32>,
@@ -40,20 +40,20 @@ struct PhongUniforms {
     has_specular_texture: u32,
     has_normal_map: u32
 }
-@group(1) @binding(3) var<uniform> phong: PhongUniforms;
+@group(1) @binding(0) var<uniform> phong: PhongUniforms;
 
 // Textures
-@group(2) @binding(0) var diffuse_texture: texture_2d<f32>;
-@group(2) @binding(1) var diffuse_sampler: sampler;
+@group(1) @binding(1) var diffuse_texture: texture_2d<f32>;
+@group(1) @binding(2) var diffuse_sampler: sampler;
 
-@group(2) @binding(2) var ambient_texture: texture_2d<f32>;
-@group(2) @binding(3) var ambient_sampler: sampler;
+@group(1) @binding(3) var ambient_texture: texture_2d<f32>;
+@group(1) @binding(4) var ambient_sampler: sampler;
 
-@group(2) @binding(4) var specular_texture: texture_2d<f32>;
-@group(2) @binding(5) var specular_sampler: sampler;
+@group(1) @binding(5) var specular_texture: texture_2d<f32>;
+@group(1) @binding(6) var specular_sampler: sampler;
 
-@group(2) @binding(6) var normal_texture: texture_2d<f32>;
-@group(2) @binding(7) var normal_sampler: sampler;
+@group(1) @binding(7) var normal_texture: texture_2d<f32>;
+@group(1) @binding(8) var normal_sampler: sampler;
 
 struct VertexInput {
     @location(0) position: vec3<f32>,

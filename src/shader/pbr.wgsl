@@ -4,14 +4,14 @@ struct TransformUniforms {
     world_matrix: mat4x4<f32>,
     normal_matrix: mat4x4<f32>,
 }
-@group(0) @binding(0)
+@group(2) @binding(0)
 var<uniform> transform: TransformUniforms;
 
 struct CameraUniforms {
     proj_view: mat4x4<f32>,
     position: vec3<f32>
 }
-@group(0) @binding(1)
+@group(0) @binding(0)
 var<uniform> camera: CameraUniforms;
 
 // Additional Uniforms
@@ -20,7 +20,7 @@ struct DirectionalLightUniforms {
     direction: vec3<f32>,
     intensity: f32
 }
-@group(1) @binding(0)
+@group(0) @binding(1)
 var<uniform> directionalLight: DirectionalLightUniforms;
 
 struct PointLightUniforms {
@@ -28,8 +28,8 @@ struct PointLightUniforms {
     position: vec3<f32>,
     intensity: f32
 }
-@group(1) @binding(1) var<uniform> point_lights : array<PointLightUniforms, 64>;
-@group(1) @binding(2) var<uniform> point_lights_count : u32;
+@group(0) @binding(2) var<uniform> point_lights : array<PointLightUniforms, 64>;
+@group(0) @binding(3) var<uniform> point_lights_count : u32;
 
 struct PbrUniforms {
     albedo_color: vec3<f32>,
@@ -42,23 +42,23 @@ struct PbrUniforms {
     has_roughness_texture: u32,
     has_normal_map: u32
 }
-@group(1) @binding(3) var<uniform> pbr: PbrUniforms;
+@group(1) @binding(0) var<uniform> pbr: PbrUniforms;
 
 // Textures
-@group(2) @binding(0) var albedo_texture: texture_2d<f32>;
-@group(2) @binding(1) var albedo_sampler: sampler;
+@group(1) @binding(1) var albedo_texture: texture_2d<f32>;
+@group(1) @binding(2) var albedo_sampler: sampler;
 
-@group(2) @binding(2) var ambient_texture: texture_2d<f32>;
-@group(2) @binding(3) var ambient_sampler: sampler;
+@group(1) @binding(3) var ambient_texture: texture_2d<f32>;
+@group(1) @binding(4) var ambient_sampler: sampler;
 
-@group(2) @binding(4) var normal_texture: texture_2d<f32>;
-@group(2) @binding(5) var normal_sampler: sampler;
+@group(1) @binding(5) var normal_texture: texture_2d<f32>;
+@group(1) @binding(6) var normal_sampler: sampler;
 
-@group(2) @binding(6) var metallic_texture: texture_2d<f32>;
-@group(2) @binding(7) var metallic_sampler: sampler;
+@group(1) @binding(7) var metallic_texture: texture_2d<f32>;
+@group(1) @binding(8) var metallic_sampler: sampler;
 
-@group(2) @binding(8) var roughness_texture: texture_2d<f32>;
-@group(2) @binding(9) var roughness_sampler: sampler;
+@group(1) @binding(9) var roughness_texture: texture_2d<f32>;
+@group(1) @binding(10) var roughness_sampler: sampler;
 
 struct VertexInput {
     @location(0) position: vec3<f32>,

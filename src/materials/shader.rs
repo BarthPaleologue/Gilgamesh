@@ -1,278 +1,130 @@
-use crate::camera::Camera;
-use crate::camera::uniforms::CameraUniforms;
-use bytemuck::cast_slice;
-use load_file::load_str;
-use std::cell::Ref;
-use std::ops::Deref;
-use wgpu::{BindGroup, Buffer, RenderPass, RenderPipeline};
-
+use crate::core::renderer::Renderer;
 use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::gpu_mesh_buffers::Vertex;
-use crate::materials::utils::create_buffer;
+use crate::materials::utils::uniform_layout_entry;
 use crate::texture::Texture;
-use crate::transform::{Transform, TransformUniforms};
+use wgpu::{BindGroup, RenderPass, RenderPipeline};
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct PipelineConfig {
+    pub shader_file: &'static str,
+    pub polygon_mode: wgpu::PolygonMode,
+    pub back_face_culling: bool,
+}
 
 pub struct Shader {
-    transform_uniforms: TransformUniforms,
-    transform_uniforms_buffer: Buffer,
-
-    camera_uniforms: CameraUniforms,
-    camera_uniforms_buffer: Buffer,
-
-    required_bind_group: BindGroup,
-
-    uniform_bind_group: BindGroup,
-
-    texture_bind_group: BindGroup,
-
+    material_bind_group: BindGroup,
     pipeline: RenderPipeline,
 }
 
 impl Shader {
     pub fn new(
         name: &str,
-        shader_file: &str,
-        uniforms: &[&Buffer],
+        config: PipelineConfig,
+        uniforms: &wgpu::Buffer,
         textures: &[&Texture],
-        polygon_mode: wgpu::PolygonMode,
-        back_face_culling: bool,
-        wgpu_context: &WGPUContext,
-    ) -> Shader {
-        // load shader from file at runtime
-        let shader_string = load_str!(shader_file);
-        let shader = wgpu_context
+        renderer: &Renderer,
+        ctx: &WGPUContext,
+    ) -> Self {
+        let shader_string = load_file::load_str!(config.shader_file);
+        let shader = ctx
             .device
             .create_shader_module(wgpu::ShaderModuleDescriptor {
-                label: Some(&format!("{name}Shader")),
+                label: Some(name),
                 source: wgpu::ShaderSource::Wgsl(shader_string.into()),
             });
-
-        let transform_uniforms = TransformUniforms::default();
-        let transform_uniforms_buffer =
-            create_buffer::<TransformUniforms>(&format!("{name} Transform Buffer"), wgpu_context);
-
-        let camera_uniforms = CameraUniforms::default();
-        let camera_uniforms_buffer =
-            create_buffer::<CameraUniforms>(&format!("{name }Camera Buffer"), wgpu_context);
-
-        let required_bind_group_layout =
-            wgpu_context
-                .device
+        let mut entries = vec![uniform_layout_entry(0)];
+        entries.extend(
+            textures.iter().enumerate().flat_map(|(i, texture)| {
+                texture.create_bind_group_layout_entries(1 + 2 * i as u32)
+            }),
+        );
+        let material_layout =
+            ctx.device
                 .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                    label: Some(&format!("{name} Required Bind Group Layout")),
-                    entries: &[
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 0,
-                            visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                            ty: wgpu::BindingType::Buffer {
-                                ty: wgpu::BufferBindingType::Uniform,
-                                has_dynamic_offset: false,
-                                min_binding_size: None,
-                            },
-                            count: None,
-                        },
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 1,
-                            visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                            ty: wgpu::BindingType::Buffer {
-                                ty: wgpu::BufferBindingType::Uniform,
-                                has_dynamic_offset: false,
-                                min_binding_size: None,
-                            },
-                            count: None,
-                        },
-                    ],
+                    label: Some("Material Bind Group Layout"),
+                    entries: &entries,
                 });
-
-        let required_bind_group =
-            wgpu_context
-                .device
-                .create_bind_group(&wgpu::BindGroupDescriptor {
-                    label: Some(&format!("{name} Transform Bind Group")),
-                    layout: &required_bind_group_layout,
-                    entries: &[
-                        wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: transform_uniforms_buffer.as_entire_binding(),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 1,
-                            resource: camera_uniforms_buffer.as_entire_binding(),
-                        },
-                    ],
-                });
-
-        let entries: Vec<wgpu::BindGroupLayoutEntry> = uniforms
-            .iter()
-            .enumerate()
-            .map(|(i, _binding_resource)| {
-                wgpu::BindGroupLayoutEntry {
-                    binding: i as u32,
-                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+        let mut entries = vec![wgpu::BindGroupEntry {
+            binding: 0,
+            resource: uniforms.as_entire_binding(),
+        }];
+        entries.extend(
+            textures
+                .iter()
+                .enumerate()
+                .flat_map(|(i, texture)| texture.create_bind_group_entries(1 + 2 * i as u32)),
+        );
+        let material_bind_group = ctx.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some(name),
+            layout: &material_layout,
+            entries: &entries,
+        });
+        let pipeline_layout = ctx
+            .device
+            .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some(name),
+                bind_group_layouts: &[
+                    Some(&renderer.frame.layout),
+                    Some(&material_layout),
+                    Some(&ctx.object_bind_group_layout),
+                ],
+                immediate_size: 0,
+            });
+        let pipeline = ctx
+            .device
+            .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some(&format!("{name} Render Pipeline")),
+                layout: Some(&pipeline_layout),
+                vertex: wgpu::VertexState {
+                    module: &shader,
+                    entry_point: Some("vs_main"),
+                    buffers: &[Some(Vertex::desc())],
+                    compilation_options: Default::default(),
+                },
+                fragment: Some(wgpu::FragmentState {
+                    module: &shader,
+                    entry_point: Some("fs_main"),
+                    compilation_options: Default::default(),
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format: ctx.config.format,
+                        blend: Some(wgpu::BlendState {
+                            color: wgpu::BlendComponent::REPLACE,
+                            alpha: wgpu::BlendComponent::REPLACE,
+                        }),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                }),
+                primitive: wgpu::PrimitiveState {
+                    topology: wgpu::PrimitiveTopology::TriangleList,
+                    polygon_mode: config.polygon_mode,
+                    cull_mode: if config.back_face_culling {
+                        Some(wgpu::Face::Back)
+                    } else {
+                        None
                     },
-                    count: None, //NonZeroU32::new(MAX_POINT_LIGHTS as u32),
-                }
-            })
-            .collect();
+                    ..Default::default()
+                },
+                depth_stencil: Some(wgpu::DepthStencilState {
+                    format: wgpu::TextureFormat::Depth24Plus,
+                    depth_write_enabled: Some(true),
+                    depth_compare: Some(wgpu::CompareFunction::LessEqual),
+                    stencil: wgpu::StencilState::default(),
+                    bias: wgpu::DepthBiasState::default(),
+                }),
+                multisample: wgpu::MultisampleState::default(),
+                multiview_mask: None,
+                cache: None,
+            });
 
-        let uniform_bind_group_layout =
-            wgpu_context
-                .device
-                .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                    entries: &entries,
-                    label: Some(&format!("{name} Uniform Bind Group Layout")),
-                });
-
-        let entries: Vec<wgpu::BindGroupEntry> = uniforms
-            .iter()
-            .enumerate()
-            .map(|(i, binding_resource)| wgpu::BindGroupEntry {
-                binding: i as u32,
-                resource: binding_resource.as_entire_binding(),
-            })
-            .collect();
-
-        let uniform_bind_group =
-            wgpu_context
-                .device
-                .create_bind_group(&wgpu::BindGroupDescriptor {
-                    layout: &uniform_bind_group_layout,
-                    entries: &entries,
-                    label: Some(&format!("{name} Uniform Bind Group")),
-                });
-
-        let entries: Vec<wgpu::BindGroupLayoutEntry> = textures
-            .iter()
-            .enumerate()
-            .flat_map(|(i, texture)| texture.create_bind_group_layout_entries(2 * i as u32))
-            .collect();
-        let texture_bind_group_layout =
-            wgpu_context
-                .device
-                .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                    entries: &entries,
-                    label: Some(&format!("{name} Texture Bind Group Layout")),
-                });
-
-        let entries: Vec<wgpu::BindGroupEntry> = textures
-            .iter()
-            .enumerate()
-            .flat_map(|(i, texture)| texture.create_bind_group_entries(2 * i as u32))
-            .collect();
-        let texture_bind_group =
-            wgpu_context
-                .device
-                .create_bind_group(&wgpu::BindGroupDescriptor {
-                    layout: &texture_bind_group_layout,
-                    entries: &entries,
-                    label: Some(&format!("{name} Texture Bind Group")),
-                });
-
-        let pipeline_layout =
-            wgpu_context
-                .device
-                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    label: Some(&format!("{name} Render Pipeline Layout")),
-                    bind_group_layouts: &[
-                        Some(&required_bind_group_layout),
-                        Some(&uniform_bind_group_layout),
-                        Some(&texture_bind_group_layout),
-                    ],
-                    immediate_size: 0,
-                });
-
-        let pipeline =
-            wgpu_context
-                .device
-                .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                    label: Some(&format!("{name} Render Pipeline")),
-                    layout: Some(&pipeline_layout),
-                    vertex: wgpu::VertexState {
-                        module: &shader,
-                        entry_point: Some("vs_main"),
-                        buffers: &[Some(Vertex::desc())],
-                        compilation_options: Default::default(),
-                    },
-                    fragment: Some(wgpu::FragmentState {
-                        module: &shader,
-                        entry_point: Some("fs_main"),
-                        compilation_options: Default::default(),
-                        targets: &[Some(wgpu::ColorTargetState {
-                            format: wgpu_context.config.format,
-                            blend: Some(wgpu::BlendState {
-                                color: wgpu::BlendComponent::REPLACE,
-                                alpha: wgpu::BlendComponent::REPLACE,
-                            }),
-                            write_mask: wgpu::ColorWrites::ALL,
-                        })],
-                    }),
-                    primitive: wgpu::PrimitiveState {
-                        topology: wgpu::PrimitiveTopology::TriangleList,
-                        polygon_mode,
-                        cull_mode: if back_face_culling {
-                            Some(wgpu::Face::Back)
-                        } else {
-                            None
-                        },
-                        ..Default::default()
-                    },
-                    depth_stencil: Some(wgpu::DepthStencilState {
-                        format: wgpu::TextureFormat::Depth24Plus,
-                        depth_write_enabled: Some(true),
-                        depth_compare: Some(wgpu::CompareFunction::LessEqual),
-                        stencil: wgpu::StencilState::default(),
-                        bias: wgpu::DepthBiasState::default(),
-                    }),
-                    multisample: wgpu::MultisampleState::default(),
-                    multiview_mask: None,
-                    cache: None,
-                });
-
-        Shader {
-            transform_uniforms,
-            transform_uniforms_buffer,
-
-            camera_uniforms,
-            camera_uniforms_buffer,
-
-            required_bind_group,
-
-            uniform_bind_group,
-
-            texture_bind_group,
-
+        Self {
+            material_bind_group,
             pipeline,
         }
     }
 
-    pub fn bind<'a>(
-        &'a mut self,
-        render_pass: &mut RenderPass<'a>,
-        transform: Ref<Transform>,
-        active_camera: &Camera,
-        wgpu_context: &WGPUContext,
-    ) {
-        self.transform_uniforms.update(transform.deref());
-        wgpu_context.queue.write_buffer(
-            &self.transform_uniforms_buffer,
-            0,
-            cast_slice(&[self.transform_uniforms]),
-        );
-
-        self.camera_uniforms.update(active_camera);
-        wgpu_context.queue.write_buffer(
-            &self.camera_uniforms_buffer,
-            0,
-            cast_slice(&[self.camera_uniforms]),
-        );
-
-        render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, &self.required_bind_group, &[]);
-        render_pass.set_bind_group(1, &self.uniform_bind_group, &[]);
-        render_pass.set_bind_group(2, &self.texture_bind_group, &[]);
+    pub fn bind(&self, pass: &mut RenderPass<'_>) {
+        pass.set_pipeline(&self.pipeline);
+        pass.set_bind_group(1, &self.material_bind_group, &[]);
     }
 }

@@ -1,17 +1,15 @@
 use crate::camera::Camera;
-use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::mesh::Mesh;
 use crate::lights::directional_light::DirectionalLight;
 use crate::lights::point_light::PointLight;
 use crate::settings::MAX_POINT_LIGHTS;
-use std::iter;
 
 /// Borrows the application's objects for a render pass without taking ownership.
 pub struct RenderContext<'a, TRenderObjects> {
     pub camera: &'a mut Camera,
-    render_objects: TRenderObjects,
-    directional_light: &'a DirectionalLight,
-    point_lights: &'a [PointLight],
+    pub(crate) render_objects: TRenderObjects,
+    pub(crate) directional_light: &'a DirectionalLight,
+    pub(crate) point_lights: &'a [PointLight],
 }
 
 impl<'a, TRenderObjects> RenderContext<'a, TRenderObjects>
@@ -36,83 +34,13 @@ where
             point_lights,
         }
     }
-
-    pub(crate) fn render(self, wgpu_context: &WGPUContext, output: &wgpu::SurfaceTexture) {
-        let view = output
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
-        let depth_texture = wgpu_context
-            .device
-            .create_texture(&wgpu::TextureDescriptor {
-                size: wgpu::Extent3d {
-                    width: wgpu_context.config.width,
-                    height: wgpu_context.config.height,
-                    depth_or_array_layers: 1,
-                },
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::Depth24Plus,
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                label: None,
-                view_formats: &[],
-            });
-        let depth_view = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
-
-        let mut encoder =
-            wgpu_context
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some("Render Encoder"),
-                });
-
-        {
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    depth_slice: None,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.1,
-                            g: 0.1,
-                            b: 0.2,
-                            a: 1.0,
-                        }),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &depth_view,
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(1.0),
-                        store: wgpu::StoreOp::Discard,
-                    }),
-                    stencil_ops: None,
-                }),
-                ..Default::default()
-            });
-
-            for mesh in self.render_objects {
-                mesh.render(
-                    &mut render_pass,
-                    self.camera,
-                    self.directional_light,
-                    self.point_lights,
-                    wgpu_context,
-                );
-            }
-        }
-
-        wgpu_context.queue.submit(iter::once(encoder.finish()));
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::lights::light::Light;
+    use std::iter;
 
     #[test]
     fn borrows_the_app_camera_and_lights() {

@@ -1,4 +1,5 @@
 use crate::core::app::{App, FrameContext};
+use crate::core::renderer::Renderer;
 use crate::core::wgpu_context::WGPUContext;
 use crate::input::mouse::Mouse;
 use std::sync::Arc;
@@ -15,6 +16,7 @@ pub struct Engine<TApp: App> {
     pub window: Arc<Window>,
     pub wgpu_context: WGPUContext,
 
+    renderer: Renderer,
     clock: SystemTime,
     elapsed_seconds: f64,
     delta_seconds: f64,
@@ -91,10 +93,12 @@ impl<TApp: App> Engine<TApp> {
 
         let wgpu_context = WGPUContext::new(window.clone(), display).await;
 
+        let renderer = Renderer::new(&wgpu_context);
         let app = create_app(&wgpu_context);
 
         Engine {
             app,
+            renderer,
             window,
             wgpu_context,
             clock: SystemTime::now(),
@@ -132,9 +136,8 @@ impl<TApp: App> Engine<TApp> {
             wgpu_context: &self.wgpu_context,
         };
         self.app.update_before_render(&frame);
-        self.app
-            .get_render_context()
-            .render(&self.wgpu_context, &output);
+        self.renderer
+            .render(self.app.get_render_context(), &self.wgpu_context, &output);
         self.mouse.reset();
         self.window.pre_present_notify();
         self.wgpu_context.queue.present(output);
