@@ -1,7 +1,3 @@
-use std::cell::Ref;
-use std::rc::Rc;
-use bytemuck::cast_slice;
-use wgpu::RenderPass;
 use crate::camera::camera::Camera;
 use crate::core::wgpu_context::WGPUContext;
 use crate::lights::directional_light::{DirectionalLight, DirectionalLightUniform};
@@ -12,6 +8,10 @@ use crate::materials::utils::{create_array_buffer, create_buffer};
 use crate::settings::MAX_POINT_LIGHTS;
 use crate::texture::Texture;
 use crate::transform::Transform;
+use bytemuck::cast_slice;
+use std::cell::Ref;
+use std::rc::Rc;
+use wgpu::RenderPass;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -68,15 +68,26 @@ pub struct BlinnPhongMaterial {
 impl BlinnPhongMaterial {
     pub fn new(name: &str, wgpu_context: &WGPUContext) -> Self {
         let light_uniforms = DirectionalLightUniform::default();
-        let light_uniforms_buffer = create_buffer::<DirectionalLightUniform>(&format!("{} DirectionalLight Buffer", name), wgpu_context);
+        let light_uniforms_buffer = create_buffer::<DirectionalLightUniform>(
+            &format!("{} DirectionalLight Buffer", name),
+            wgpu_context,
+        );
 
         let point_light_uniforms = [PointLightUniforms::default(); MAX_POINT_LIGHTS];
-        let point_light_buffer = create_array_buffer::<PointLightUniforms>(&format!("{} PointLights Array Buffer", name), MAX_POINT_LIGHTS, wgpu_context);
+        let point_light_buffer = create_array_buffer::<PointLightUniforms>(
+            &format!("{} PointLights Array Buffer", name),
+            MAX_POINT_LIGHTS,
+            wgpu_context,
+        );
 
-        let nb_point_lights_buffer = create_buffer::<u32>(&format!("{} Number of Point Lights Buffer", name), wgpu_context);
+        let nb_point_lights_buffer = create_buffer::<u32>(
+            &format!("{} Number of Point Lights Buffer", name),
+            wgpu_context,
+        );
 
         let phong_uniforms = BlinnPhongUniforms::default();
-        let phong_uniforms_buffer = create_buffer::<BlinnPhongUniforms>(&format!("{} Phong Buffer", name), wgpu_context);
+        let phong_uniforms_buffer =
+            create_buffer::<BlinnPhongUniforms>(&format!("{} Phong Buffer", name), wgpu_context);
 
         let diffuse_texture = wgpu_context.empty_texture();
         let ambient_texture = wgpu_context.empty_texture();
@@ -108,17 +119,25 @@ impl BlinnPhongMaterial {
     }
 
     pub fn compile(&mut self, wgpu_context: &WGPUContext) {
-        self.material_pipeline = Some(Shader::new(&format!("{} MaterialPipeline", self.name), "../shader/blinn_phong.wgsl", &[
-            &self.directional_light_uniforms_buffer,
-            &self.point_light_buffer,
-            &self.nb_point_lights_buffer,
-            &self.blinn_phong_uniforms_buffer,
-        ], &[
-            &self.diffuse_texture,
-            &self.ambient_texture,
-            &self.specular_texture,
-            &self.normal_map,
-        ], self.polygon_mode, self.back_face_culling, wgpu_context));
+        self.material_pipeline = Some(Shader::new(
+            &format!("{} MaterialPipeline", self.name),
+            "../shader/blinn_phong.wgsl",
+            &[
+                &self.directional_light_uniforms_buffer,
+                &self.point_light_buffer,
+                &self.nb_point_lights_buffer,
+                &self.blinn_phong_uniforms_buffer,
+            ],
+            &[
+                &self.diffuse_texture,
+                &self.ambient_texture,
+                &self.specular_texture,
+                &self.normal_map,
+            ],
+            self.polygon_mode,
+            self.back_face_culling,
+            wgpu_context,
+        ));
     }
 
     pub fn set_diffuse_texture(&mut self, texture: Rc<Texture>) {
@@ -163,21 +182,50 @@ impl BlinnPhongMaterial {
 }
 
 impl Material for BlinnPhongMaterial {
-    fn bind<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, transform: Ref<Transform>, active_camera: &Camera, point_lights: &[PointLight], directional_light: &DirectionalLight, wgpu_context: &WGPUContext) {
+    fn bind<'a>(
+        &'a mut self,
+        render_pass: &mut RenderPass<'a>,
+        transform: Ref<Transform>,
+        active_camera: &Camera,
+        point_lights: &[PointLight],
+        directional_light: &DirectionalLight,
+        wgpu_context: &WGPUContext,
+    ) {
         if self.material_pipeline.is_none() {
             self.compile(wgpu_context);
         }
 
         self.directional_light_uniforms.update(directional_light);
-        wgpu_context.queue.write_buffer(&self.directional_light_uniforms_buffer, 0, cast_slice(&[self.directional_light_uniforms]));
+        wgpu_context.queue.write_buffer(
+            &self.directional_light_uniforms_buffer,
+            0,
+            cast_slice(&[self.directional_light_uniforms]),
+        );
 
         for i in 0..point_lights.len() {
             self.point_light_uniforms[i].update(&point_lights[i]);
         }
-        wgpu_context.queue.write_buffer(&self.point_light_buffer, 0, cast_slice(&[self.point_light_uniforms]));
-        wgpu_context.queue.write_buffer(&self.nb_point_lights_buffer, 0, cast_slice(&[point_lights.len() as u32]));
-        wgpu_context.queue.write_buffer(&self.blinn_phong_uniforms_buffer, 0, cast_slice(&[self.blinn_phong_uniforms]));
+        wgpu_context.queue.write_buffer(
+            &self.point_light_buffer,
+            0,
+            cast_slice(&[self.point_light_uniforms]),
+        );
+        wgpu_context.queue.write_buffer(
+            &self.nb_point_lights_buffer,
+            0,
+            cast_slice(&[point_lights.len() as u32]),
+        );
+        wgpu_context.queue.write_buffer(
+            &self.blinn_phong_uniforms_buffer,
+            0,
+            cast_slice(&[self.blinn_phong_uniforms]),
+        );
 
-        self.material_pipeline.as_mut().unwrap().bind(render_pass, transform, active_camera, wgpu_context);
+        self.material_pipeline.as_mut().unwrap().bind(
+            render_pass,
+            transform,
+            active_camera,
+            wgpu_context,
+        );
     }
 }

@@ -1,7 +1,8 @@
 [package]
 name = "gilgamesh"
-version = "0.4.0"
-edition = "2021"
+version = "2.0.0-alpha"
+edition = "2024"
+rust-version = "1.99"
 description = "A small 3D rendering engine built upon WGPU with the primary goal of visualizing procedural terrains."
 license = "Apache-2.0"
 
@@ -9,25 +10,25 @@ license = "Apache-2.0"
 
 [dependencies]
 cfg-if = "1"
-wgpu = "0.17.0"
+wgpu = "30"
 cgmath = "0.18.0"
-pollster = "0.3.0"
-winit = "0.28.6"
-bytemuck = { version = "1.4.1", features = ["derive"] }
-env_logger = "0.10.0"
+pollster = "1"
+winit = "0.30"
+bytemuck = { version = "1.25", features = ["derive"] }
+env_logger = "0.11"
 log = "0.4"
-hexasphere = "8.1.0"
+hexasphere = "19"
 load_file = "1.0.1"
 
 [dependencies.image]
-version = "0.24"
+version = "0.25"
 default-features = false
 features = ["png", "jpeg"]
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.6"
 console_log = "1.0"
-wgpu = { version = "0.17", features = ["webgl"] }
+wgpu = { version = "30", features = ["webgl"] }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4.30"
 web-sys = { version = "0.3", features = [
@@ -38,3 +39,6 @@ web-sys = { version = "0.3", features = [
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+
+[dev-dependencies]
+naga = { version = "30", features = ["wgsl-in"] }

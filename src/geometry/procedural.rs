@@ -1,5 +1,5 @@
-use hexasphere::shapes::IcoSphere;
 use crate::core::engine::Engine;
+use hexasphere::shapes::IcoSphere;
 
 use crate::geometry::mesh::Mesh;
 use crate::geometry::vertex_data::VertexData;
@@ -14,9 +14,15 @@ impl ProceduralMesh {
     /// The `max_height` parameter is used to scale the y coordinate of each vertex in the range [0, 1]
     /// `engine` is a mutable reference to the Gilgamesh engine.
     /// It returns a Mesh that can be moved with its transform and with a default terrain material.
-    pub fn terrain(name: &str, size: f32, nb_subdivisions: u32, height_fn: &dyn Fn(f32, f32) -> f32, engine: &Engine) -> Mesh {
-        let mut positions = vec!([0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize);
-        let mut indices = vec!(0; (6 * (nb_subdivisions - 1) * (nb_subdivisions - 1)) as usize);
+    pub fn terrain(
+        name: &str,
+        size: f32,
+        nb_subdivisions: u32,
+        height_fn: &dyn Fn(f32, f32) -> f32,
+        engine: &Engine,
+    ) -> Mesh {
+        let mut positions = vec![[0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize];
+        let mut indices = vec![0; (6 * (nb_subdivisions - 1) * (nb_subdivisions - 1)) as usize];
 
         for x in 0..nb_subdivisions {
             let actual_x = (x as f32 / (nb_subdivisions as f32 - 1.0)) * size - size / 2.0;
@@ -24,9 +30,12 @@ impl ProceduralMesh {
             for y in 0..nb_subdivisions {
                 let actual_y = (y as f32 / (nb_subdivisions as f32 - 1.0)) * size - size / 2.0;
 
-                positions[(x * nb_subdivisions + y) as usize] = [actual_x, height_fn(actual_x, actual_y), actual_y];
+                positions[(x * nb_subdivisions + y) as usize] =
+                    [actual_x, height_fn(actual_x, actual_y), actual_y];
 
-                if x == nb_subdivisions - 1 || y == nb_subdivisions - 1 { continue; }
+                if x == nb_subdivisions - 1 || y == nb_subdivisions - 1 {
+                    continue;
+                }
 
                 let index = (6 * (x * (nb_subdivisions - 1) + y)) as usize;
                 indices[index] = (x + 1) * nb_subdivisions + y;
@@ -51,7 +60,10 @@ impl ProceduralMesh {
         vertex_data.create_tangents();
 
         let mut mesh = Mesh::from_vertex_data(name, vertex_data, engine);
-        mesh.set_material(Box::new(BlinnPhongMaterial::new(&format!("{}Material", name), &engine.wgpu_context)));
+        mesh.set_material(Box::new(BlinnPhongMaterial::new(
+            &format!("{}Material", name),
+            &engine.wgpu_context,
+        )));
 
         mesh
     }
@@ -61,7 +73,13 @@ impl ProceduralMesh {
     /// The `height_fn` takes x, y and z as parameters and is used to set the height of each vertex above the surface of the sphere.
     /// The `max_height` parameter is used to scale the height of each vertex in the range [0, 1]
     /// `engine` is a mutable reference to the Gilgamesh engine.
-    pub fn sphere(name: &str, diameter: f32, nb_subdivisions: u32, height_fn: &dyn Fn(f32, f32, f32) -> f32, engine: &Engine) -> Mesh {
+    pub fn sphere(
+        name: &str,
+        diameter: f32,
+        nb_subdivisions: u32,
+        height_fn: &dyn Fn(f32, f32, f32) -> f32,
+        engine: &Engine,
+    ) -> Mesh {
         let sphere = IcoSphere::new(nb_subdivisions as usize, |_| ());
         let vertices_raw = sphere.raw_points();
         let mut vertices: Vec<[f32; 3]> = Vec::with_capacity(vertices_raw.len());
@@ -70,9 +88,17 @@ impl ProceduralMesh {
             let unit_vertex = [vertex[0], vertex[1], vertex[2]];
 
             let height = height_fn(vertex[0], vertex[1], vertex[2]);
-            let original_vertex = [vertex[0] * diameter / 2.0, vertex[1] * diameter / 2.0, vertex[2] * diameter / 2.0];
+            let original_vertex = [
+                vertex[0] * diameter / 2.0,
+                vertex[1] * diameter / 2.0,
+                vertex[2] * diameter / 2.0,
+            ];
 
-            let moved_vertex = [original_vertex[0] + unit_vertex[0] * height, original_vertex[1] + unit_vertex[1] * height, original_vertex[2] + unit_vertex[2] * height];
+            let moved_vertex = [
+                original_vertex[0] + unit_vertex[0] * height,
+                original_vertex[1] + unit_vertex[1] * height,
+                original_vertex[2] + unit_vertex[2] * height,
+            ];
 
             vertices.push([moved_vertex[0], moved_vertex[1], moved_vertex[2]]);
         }
@@ -92,7 +118,10 @@ impl ProceduralMesh {
         vertex_data.create_tangents();
 
         let mut mesh = Mesh::from_vertex_data(name, vertex_data, engine);
-        mesh.set_material(Box::new(BlinnPhongMaterial::new(&format!("{}Material", name), &engine.wgpu_context)));
+        mesh.set_material(Box::new(BlinnPhongMaterial::new(
+            &format!("{}Material", name),
+            &engine.wgpu_context,
+        )));
 
         mesh
     }

@@ -1,7 +1,7 @@
-use std::cell::{Ref, RefCell, RefMut};
-use std::rc::Rc;
 use crate::lights::light::Light;
 use crate::transform::{Transform, Transformable};
+use std::cell::{Ref, RefCell, RefMut};
+use std::rc::Rc;
 
 pub struct PointLight {
     color: [f32; 3],
@@ -55,10 +55,10 @@ impl Light for PointLight {
 }
 
 impl Transformable for PointLight {
-    fn transform(&self) -> Ref<Transform> {
+    fn transform(&self) -> Ref<'_, Transform> {
         self.transform.borrow()
     }
-    fn transform_mut(&self) -> RefMut<Transform> {
+    fn transform_mut(&self) -> RefMut<'_, Transform> {
         self.transform.borrow_mut()
     }
 

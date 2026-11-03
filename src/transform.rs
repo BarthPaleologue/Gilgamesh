@@ -1,6 +1,6 @@
+use cgmath::{InnerSpace, Matrix, Matrix4, Point3, Rad, SquareMatrix, Vector3, Vector4};
 use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
-use cgmath::{InnerSpace, Matrix, Matrix4, Point3, Rad, SquareMatrix, Vector3, Vector4};
 
 #[derive(Debug)]
 pub struct Transform {
@@ -30,8 +30,8 @@ impl TransformUniforms {
 }
 
 pub trait Transformable {
-    fn transform(&self) -> Ref<Transform>;
-    fn transform_mut(&self) -> RefMut<Transform>;
+    fn transform(&self) -> Ref<'_, Transform>;
+    fn transform_mut(&self) -> RefMut<'_, Transform>;
     fn transform_rc(&self) -> Rc<RefCell<Transform>>;
 }
 
@@ -77,7 +77,8 @@ impl Transform {
         let rotation_x = Matrix4::from_angle_x(Rad(self.rotation.x));
         let rotation_y = Matrix4::from_angle_y(Rad(self.rotation.y));
         let rotation_z = Matrix4::from_angle_z(Rad(self.rotation.z));
-        let scaling = Matrix4::from_nonuniform_scale(self.scaling.x, self.scaling.y, self.scaling.z);
+        let scaling =
+            Matrix4::from_nonuniform_scale(self.scaling.x, self.scaling.y, self.scaling.z);
 
         world_matrix = world_matrix * position * scaling * rotation_z * rotation_y * rotation_x;
 
@@ -99,8 +100,10 @@ impl Transform {
         let rotation_y = Matrix4::from_angle_y(Rad(self.rotation.y));
         let rotation_z = Matrix4::from_angle_z(Rad(self.rotation.z));
         let rotation = rotation_z * rotation_y * rotation_x;
-        let world_direction4 = rotation * Vector4::new(local_direction.x, local_direction.y, local_direction.z, 1.0);
-        let world_direction = Vector3::new(world_direction4.x, world_direction4.y, world_direction4.z);
+        let world_direction4 =
+            rotation * Vector4::new(local_direction.x, local_direction.y, local_direction.z, 1.0);
+        let world_direction =
+            Vector3::new(world_direction4.x, world_direction4.y, world_direction4.z);
         world_direction.normalize()
     }
 

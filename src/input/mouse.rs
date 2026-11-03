@@ -31,16 +31,14 @@ impl Mouse {
 
     pub fn listen_to_event(&mut self, event: &WindowEvent) {
         self.new_position = match event {
-            WindowEvent::CursorMoved {
-                position: pos,
-                ..
-            } => {
-                [pos.x, pos.y]
-            }
+            WindowEvent::CursorMoved { position: pos, .. } => [pos.x, pos.y],
             _ => self.new_position,
         };
 
-        self.delta = [self.new_position[0] - self.position[0], self.new_position[1] - self.position[1]];
+        self.delta = [
+            self.new_position[0] - self.position[0],
+            self.new_position[1] - self.position[1],
+        ];
 
         self.scroll_delta = 0.0;
 
@@ -51,10 +49,7 @@ impl Mouse {
             } => {
                 self.scroll_delta = *y;
             }
-            WindowEvent::TouchpadMagnify {
-                delta,
-                ..
-            } => {
+            WindowEvent::PinchGesture { delta, .. } => {
                 self.scroll_delta = *delta as f32;
             }
             WindowEvent::MouseInput {

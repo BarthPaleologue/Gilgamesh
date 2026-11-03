@@ -1,11 +1,11 @@
+use crate::input::transform_control::TransformMouseController;
+use cgmath::{Deg, EuclideanSpace, Matrix4, Point3, SquareMatrix, Vector3, perspective};
 use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
-use cgmath::{Deg, EuclideanSpace, Matrix4, perspective, Point3, SquareMatrix, Vector3};
-use crate::input::transform_control::TransformMouseController;
 
-use crate::transform::{Transform, Transformable};
 use crate::core::engine::{Engine, OPENGL_TO_WGPU_MATRIX};
 use crate::input::mouse::Mouse;
+use crate::transform::{Transform, Transformable};
 
 pub struct Camera {
     transform: Rc<RefCell<Transform>>,
@@ -21,7 +21,8 @@ impl Camera {
     pub fn new(engine: &Engine) -> Camera {
         Camera {
             transform: Rc::new(RefCell::new(Transform::new())),
-            aspect_ratio: engine.window.inner_size().width as f32 / engine.window.inner_size().height as f32,
+            aspect_ratio: engine.window.inner_size().width as f32
+                / engine.window.inner_size().height as f32,
             fov: 70.0,
             z_near: 0.1,
             z_far: 100.0,
@@ -29,14 +30,19 @@ impl Camera {
         }
     }
     pub fn view_matrix(&self) -> Matrix4<f32> {
-        let mut view = Matrix4::look_at_rh(Point3::from_vec(self.transform.borrow().position), Point3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 1.0, 0.0));
+        let mut view = Matrix4::look_at_rh(
+            Point3::from_vec(self.transform.borrow().position),
+            Point3::new(0.0, 0.0, 0.0),
+            Vector3::new(0.0, 1.0, 0.0),
+        );
         if let Some(parent) = &self.transform().parent {
             view = view * parent.borrow().compute_world_matrix().invert().unwrap();
         }
         view
     }
     pub fn projection_matrix(&self) -> Matrix4<f32> {
-        OPENGL_TO_WGPU_MATRIX * perspective(Deg(self.fov), self.aspect_ratio, self.z_near, self.z_far)
+        OPENGL_TO_WGPU_MATRIX
+            * perspective(Deg(self.fov), self.aspect_ratio, self.z_near, self.z_far)
     }
     pub fn projection_view(&self) -> Matrix4<f32> {
         self.projection_matrix() * self.view_matrix()
@@ -53,10 +59,10 @@ impl Camera {
 }
 
 impl Transformable for Camera {
-    fn transform(&self) -> Ref<Transform> {
+    fn transform(&self) -> Ref<'_, Transform> {
         self.transform.borrow()
     }
-    fn transform_mut(&self) -> RefMut<Transform> {
+    fn transform_mut(&self) -> RefMut<'_, Transform> {
         self.transform.borrow_mut()
     }
 

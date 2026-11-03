@@ -2,19 +2,19 @@ use std::cell::{Ref, RefCell, RefMut};
 use std::mem;
 use std::rc::Rc;
 
-use bytemuck::{cast_slice, Pod, Zeroable};
-use wgpu::{Buffer, RenderPass};
-use wgpu::util::DeviceExt;
 use crate::camera::camera::Camera;
 use crate::core::engine::Engine;
 use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::vertex_data::VertexData;
 use crate::lights::directional_light::DirectionalLight;
 use crate::lights::point_light::PointLight;
+use bytemuck::{Pod, Zeroable, cast_slice};
+use wgpu::util::DeviceExt;
+use wgpu::{Buffer, RenderPass};
 
-use crate::transform::{Transform, Transformable};
 use crate::materials::blinn_phong::BlinnPhongMaterial;
 use crate::materials::material::Material;
+use crate::transform::{Transform, Transformable};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
@@ -47,10 +47,10 @@ pub struct Mesh {
 }
 
 impl Transformable for Mesh {
-    fn transform(&self) -> Ref<Transform> {
+    fn transform(&self) -> Ref<'_, Transform> {
         self.transform.borrow()
     }
-    fn transform_mut(&self) -> RefMut<Transform> {
+    fn transform_mut(&self) -> RefMut<'_, Transform> {
         self.transform.borrow_mut()
     }
     fn transform_rc(&self) -> Rc<RefCell<Transform>> {
@@ -60,16 +60,24 @@ impl Transformable for Mesh {
 
 impl Mesh {
     pub fn from_vertex_data(name: &str, vertex_data: VertexData, engine: &Engine) -> Mesh {
-        let vertex_buffer = engine.wgpu_context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: cast_slice(&zip_vertex_data(&vertex_data)),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
-        let index_buffer = engine.wgpu_context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Index Buffer"),
-            contents: cast_slice(&vertex_data.indices),
-            usage: wgpu::BufferUsages::INDEX,
-        });
+        let vertex_buffer =
+            engine
+                .wgpu_context
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Vertex Buffer"),
+                    contents: cast_slice(&zip_vertex_data(&vertex_data)),
+                    usage: wgpu::BufferUsages::VERTEX,
+                });
+        let index_buffer =
+            engine
+                .wgpu_context
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Index Buffer"),
+                    contents: cast_slice(&vertex_data.indices),
+                    usage: wgpu::BufferUsages::INDEX,
+                });
 
         Mesh {
             name: name.to_string(),
@@ -77,7 +85,10 @@ impl Mesh {
             vertex_data,
             vertex_buffer,
             index_buffer,
-            material: Box::new(BlinnPhongMaterial::new(&format!("{}Material", name), &engine.wgpu_context)),
+            material: Box::new(BlinnPhongMaterial::new(
+                &format!("{}Material", name),
+                &engine.wgpu_context,
+            )),
         }
     }
 
@@ -86,9 +97,23 @@ impl Mesh {
     }
 
     /// you may be asking wtf is going on with the lifetimes here, and I don't know either. Dark magic.
-    pub fn render<'a, 'b>(&'a mut self, render_pass: &'b mut RenderPass<'a>, active_camera: &Camera, directional_light: &DirectionalLight, point_lights: &[PointLight], wgpu_context: &WGPUContext) {
+    pub fn render<'a>(
+        &'a mut self,
+        render_pass: &mut RenderPass<'a>,
+        active_camera: &Camera,
+        directional_light: &DirectionalLight,
+        point_lights: &[PointLight],
+        wgpu_context: &WGPUContext,
+    ) {
         let transform = self.transform_rc();
-        self.material.bind(render_pass, transform.borrow(), active_camera, point_lights, directional_light, wgpu_context);
+        self.material.bind(
+            render_pass,
+            transform.borrow(),
+            active_camera,
+            point_lights,
+            directional_light,
+            wgpu_context,
+        );
 
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);

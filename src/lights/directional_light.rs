@@ -1,5 +1,5 @@
-use bytemuck::{Pod, Zeroable};
 use crate::lights::light::Light;
+use bytemuck::{Pod, Zeroable};
 
 pub struct DirectionalLight {
     color: [f32; 3],

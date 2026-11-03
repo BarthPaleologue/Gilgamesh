@@ -1,18 +1,18 @@
-use cgmath::{InnerSpace, Vector3};
 use crate::core::engine::Engine;
 use crate::geometry::mesh::Mesh;
 use crate::geometry::vertex_data::VertexData;
+use cgmath::{InnerSpace, Vector3};
 
 pub struct PrimitiveMesh {}
 
 impl PrimitiveMesh {
     pub fn plane(name: &str, nb_subdivisions: u32, size: f32, engine: &Engine) -> Mesh {
-        let mut positions = vec!([0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize);
-        let mut normals = vec!([0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize);
-        let mut tangents = vec!([0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize);
-        let mut indices = vec!(0; (6 * (nb_subdivisions - 1) * (nb_subdivisions - 1)) as usize);
-        let mut uvs = vec!([0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize);
-        let colors = vec!([1.0, 1.0, 1.0]; (nb_subdivisions * nb_subdivisions) as usize);
+        let mut positions = vec![[0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize];
+        let mut normals = vec![[0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize];
+        let mut tangents = vec![[0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize];
+        let mut indices = vec![0; (6 * (nb_subdivisions - 1) * (nb_subdivisions - 1)) as usize];
+        let mut uvs = vec![[0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize];
+        let colors = vec![[1.0, 1.0, 1.0]; (nb_subdivisions * nb_subdivisions) as usize];
 
         for x in 0..nb_subdivisions {
             let actual_x = (x as f32 / (nb_subdivisions as f32 - 1.0)) * size - size / 2.0;
@@ -28,7 +28,9 @@ impl PrimitiveMesh {
                 normals[(x * nb_subdivisions + y) as usize] = [0.0, 1.0, 0.0];
                 tangents[(x * nb_subdivisions + y) as usize] = [1.0, 0.0, 0.0];
 
-                if x == nb_subdivisions - 1 || y == nb_subdivisions - 1 { continue; }
+                if x == nb_subdivisions - 1 || y == nb_subdivisions - 1 {
+                    continue;
+                }
 
                 let index = (6 * (x * (nb_subdivisions - 1) + y)) as usize;
                 indices[index] = (x + 1) * nb_subdivisions + y;
@@ -53,35 +55,35 @@ impl PrimitiveMesh {
     }
 
     pub fn cube(name: &str, engine: &Engine) -> Mesh {
-        let positions = vec!(
+        let positions = vec![
             [-0.5, -0.5, -0.5], // 0
-            [0.5, -0.5, -0.5], // 1
-            [0.5, 0.5, -0.5], // 2
-            [-0.5, 0.5, -0.5], // 3
-            [-0.5, -0.5, 0.5], // 4
-            [0.5, -0.5, 0.5], // 5
-            [0.5, 0.5, 0.5], // 6
-            [-0.5, 0.5, 0.5], // 7
-        );
-        let normals = vec!(
+            [0.5, -0.5, -0.5],  // 1
+            [0.5, 0.5, -0.5],   // 2
+            [-0.5, 0.5, -0.5],  // 3
+            [-0.5, -0.5, 0.5],  // 4
+            [0.5, -0.5, 0.5],   // 5
+            [0.5, 0.5, 0.5],    // 6
+            [-0.5, 0.5, 0.5],   // 7
+        ];
+        let normals = vec![
             [-0.577, -0.577, -0.577], // 0
-            [0.577, -0.577, -0.577], // 1
-            [0.577, 0.577, -0.577], // 2
-            [-0.577, 0.577, -0.577], // 3
-            [-0.577, -0.577, 0.577], // 4
-            [0.577, -0.577, 0.577], // 5
-            [0.577, 0.577, 0.577], // 6
-            [-0.577, 0.577, 0.577], // 7
-        );
-        let indices = vec!(
+            [0.577, -0.577, -0.577],  // 1
+            [0.577, 0.577, -0.577],   // 2
+            [-0.577, 0.577, -0.577],  // 3
+            [-0.577, -0.577, 0.577],  // 4
+            [0.577, -0.577, 0.577],   // 5
+            [0.577, 0.577, 0.577],    // 6
+            [-0.577, 0.577, 0.577],   // 7
+        ];
+        let indices = vec![
             0, 1, 2, 0, 2, 3, // front
             1, 5, 6, 1, 6, 2, // right
             5, 4, 7, 5, 7, 6, // back
             4, 0, 3, 4, 3, 7, // left
             3, 2, 6, 3, 6, 7, // top
             4, 5, 1, 4, 1, 0, // bottom
-        );
-        let uvs = vec!(
+        ];
+        let uvs = vec![
             [0.0, 0.0], // 0
             [1.0, 0.0], // 1
             [1.0, 1.0], // 2
@@ -90,8 +92,8 @@ impl PrimitiveMesh {
             [1.0, 0.0], // 5
             [1.0, 1.0], // 6
             [0.0, 1.0], // 7
-        );
-        let colors = vec!(
+        ];
+        let colors = vec![
             [1.0, 0.0, 0.0], // 0
             [0.0, 1.0, 0.0], // 1
             [0.0, 0.0, 1.0], // 2
@@ -100,7 +102,7 @@ impl PrimitiveMesh {
             [0.0, 1.0, 1.0], // 5
             [1.0, 1.0, 1.0], // 6
             [0.0, 0.0, 0.0], // 7
-        );
+        ];
 
         let nb_vertices = positions.len();
         let mut vertex_data = VertexData {
@@ -164,7 +166,6 @@ impl PrimitiveMesh {
             }
         }
 
-
         let vertex_data = VertexData {
             positions,
             normals,
@@ -203,26 +204,9 @@ impl PrimitiveMesh {
         ];
 
         let mut base_indices = vec![
-            0, 11, 5,
-            0, 5, 1,
-            0, 1, 7,
-            0, 7, 10,
-            0, 10, 11,
-            1, 5, 9,
-            5, 11, 4,
-            11, 10, 2,
-            10, 7, 6,
-            7, 1, 8,
-            3, 9, 4,
-            3, 4, 2,
-            3, 2, 6,
-            3, 6, 8,
-            3, 8, 9,
-            4, 9, 5,
-            2, 4, 11,
-            6, 2, 10,
-            8, 6, 7,
-            9, 8, 1,
+            0, 11, 5, 0, 5, 1, 0, 1, 7, 0, 7, 10, 0, 10, 11, 1, 5, 9, 5, 11, 4, 11, 10, 2, 10, 7,
+            6, 7, 1, 8, 3, 9, 4, 3, 4, 2, 3, 2, 6, 3, 6, 8, 3, 8, 9, 4, 9, 5, 2, 4, 11, 6, 2, 10,
+            8, 6, 7, 9, 8, 1,
         ];
 
         for _ in 0..nb_subdivisions {

@@ -15,7 +15,7 @@ impl VertexData {
         let mut normals = vec![[0.0, 0.0, 0.0]; positions.len()];
 
         for i in 0..indices.len() / 3 {
-            let i0 = indices[i * 3 + 0] as usize;
+            let i0 = indices[i * 3] as usize;
             let i1 = indices[i * 3 + 1] as usize;
             let i2 = indices[i * 3 + 2] as usize;
 
@@ -50,7 +50,8 @@ impl VertexData {
 
         // Normalize normals
         for normal in normals.iter_mut() {
-            let length = (normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]).sqrt();
+            let length =
+                (normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]).sqrt();
             normal[0] /= length;
             normal[1] /= length;
             normal[2] /= length;
@@ -66,7 +67,7 @@ impl VertexData {
         let mut tangents = vec![[0.0, 0.0, 0.0]; positions.len()];
 
         for i in 0..indices.len() / 3 {
-            let i0 = indices[i * 3 + 0] as usize;
+            let i0 = indices[i * 3] as usize;
             let i1 = indices[i * 3 + 1] as usize;
             let i2 = indices[i * 3 + 2] as usize;
 
@@ -81,14 +82,8 @@ impl VertexData {
                 positions[i2][2] - positions[i0][2],
             ];
 
-            let delta_uv1 = [
-                uvs[i1][0] - uvs[i0][0],
-                uvs[i1][1] - uvs[i0][1],
-            ];
-            let delta_uv2 = [
-                uvs[i2][0] - uvs[i0][0],
-                uvs[i2][1] - uvs[i0][1],
-            ];
+            let delta_uv1 = [uvs[i1][0] - uvs[i0][0], uvs[i1][1] - uvs[i0][1]];
+            let delta_uv2 = [uvs[i2][0] - uvs[i0][0], uvs[i2][1] - uvs[i0][1]];
 
             let f = 1.0 / (delta_uv1[0] * delta_uv2[1] - delta_uv2[0] * delta_uv1[1]);
 
@@ -113,7 +108,9 @@ impl VertexData {
 
         // Normalize tangents
         for tangent in tangents.iter_mut() {
-            let length = (tangent[0] * tangent[0] + tangent[1] * tangent[1] + tangent[2] * tangent[2]).sqrt();
+            let length =
+                (tangent[0] * tangent[0] + tangent[1] * tangent[1] + tangent[2] * tangent[2])
+                    .sqrt();
             tangent[0] /= length;
             tangent[1] /= length;
             tangent[2] /= length;
