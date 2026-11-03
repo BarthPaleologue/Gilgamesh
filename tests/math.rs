@@ -4,7 +4,7 @@ use gilgamesh::geometry::cpu_mesh_buffers::CpuMeshBuffers;
 use gilgamesh::geometry::cpu_vertex_buffers::CpuVertexBuffers;
 use gilgamesh::geometry::gpu_mesh_buffers::{Vertex, to_gpu_vertices};
 use gilgamesh::input::mouse::Mouse;
-use gilgamesh::input::transform_control::OrbitControl;
+use gilgamesh::input::orbit_control::OrbitControl;
 use gilgamesh::lights::directional_light::{DirectionalLight, DirectionalLightUniform};
 use gilgamesh::lights::light::Light;
 use gilgamesh::lights::point_light::{PointLight, PointLightUniforms};
@@ -148,7 +148,6 @@ fn orbit_control_keeps_looking_at_the_target_under_a_parent_transform() {
     camera.transform_mut().parent = Some(parent);
     let mut control = OrbitControl::default();
     control.set_radius(2.0);
-    camera.control = Some(Box::new(control));
 
     let inputs = [
         Mouse::default(),
@@ -158,12 +157,12 @@ fn orbit_control_keeps_looking_at_the_target_under_a_parent_transform() {
             ..Mouse::default()
         },
         Mouse {
-            scroll_delta: 1.0,
+            scroll_delta_lines: 1.0,
             ..Mouse::default()
         },
     ];
     for mouse in inputs {
-        camera.listen_to_control(&mouse, 0.016);
+        control.update(&mut camera, &mouse, 0.016);
         assert!(camera.transform().rotation.is_normalized());
         let radius = camera.transform().position.length();
         assert_close(

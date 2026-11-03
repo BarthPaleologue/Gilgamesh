@@ -35,70 +35,8 @@ cargo test --locked
 cargo build --locked --target wasm32-unknown-unknown
 ```
 
-The application owns its objects as fields. `Engine<TApp>` creates the application
-using a factory with access to `WGPUContext`. Each frame, it calls
-`update_before_render` with the time in seconds, mouse input, and GPU context,
-then obtains borrowed render data through `get_render_context`.
-
-`RenderContext` borrows the camera and lights and accepts an iterator of meshes;
-it does not store or clone the application's objects. Camera controls can be
-updated from `FrameContext`, and `on_window_event` handles application-specific
-window or keyboard events.
-
-Transforms and camera calculations use `f64`, as do frame times. Vectors and
-matrices use `glam::DVec3` and `glam::DMat4`, and rotations use unit quaternions
-(`glam::DQuat`). Transform fields are public: assign positions with
-`transform.position = DVec3::new(x, y, z)` and uniform scales with
-`transform.scaling = DVec3::splat(scale)`. Colors remain `f32`.
-Vertex attributes use `f32` on both CPU and GPU, with `u32` triangle indices.
-Transform and camera uniforms are converted to `f32` when preparing GPU buffers.
-Shaders use `f32`.
-
-The `geometry::primitive` and `geometry::procedural` functions return
-`CpuMeshBuffers`, containing per-vertex attribute arrays in `CpuVertexBuffers`
-and a separate array of triangle indices. Both are editable before upload.
-They do not need a GPU context. Pass these buffers to
-`Mesh::from_cpu_buffers(name, buffers, material, ctx)` to create a renderable mesh.
-`Mesh` consumes the CPU data and retains only `GpuMeshBuffers`, which hold the
-GPU buffers and index count. `GpuMeshBuffers::from_cpu_buffers(&buffers, ctx)`
-can also upload geometry while leaving the CPU data with its caller.
-
-Materials are configured before sharing them as `Rc<dyn Material>`. Rendering
-only borrows them through `&self`: no `RefCell` is required. A private `OnceCell`
-initializes each material's GPU bindings on first use. Setters invalidate these
-bindings when the material is exclusively owned; shared materials are replaced
-rather than modified in place. Each mesh owns its transform buffer, while the
-renderer uploads camera and lighting data once per frame. Pipelines and their
-material layouts are cached by the renderer using shader, rasterization options,
-texture binding count, and target format; changing colors or texture handles does
-not create another pipeline. WGSL bind group 0 is frame data, group 1 is material
-data and textures, and group 2 is per-object transform data.
-
-The same material can be used by meshes with independent transforms:
-
-```rust,no_run
-use gilgamesh::core::wgpu_context::WGPUContext;
-use gilgamesh::geometry::{mesh::Mesh, primitive};
-use gilgamesh::materials::blinn_phong::BlinnPhongMaterial;
-use gilgamesh::transform::Transformable;
-use glam::DVec3;
-use std::rc::Rc;
-
-fn spheres(ctx: &WGPUContext) -> (Mesh, Mesh) {
-    let mut material = BlinnPhongMaterial::new("shared", ctx);
-    material.set_diffuse_color(0.2, 0.5, 1.0);
-    let material = Rc::new(material);
-    let left = Mesh::from_cpu_buffers("left", primitive::sphere(32), material.clone(), ctx);
-    let right = Mesh::from_cpu_buffers("right", primitive::sphere(32), material, ctx);
-    left.transform_mut().position = DVec3::new(-2.0, 0.0, 0.0);
-    right.transform_mut().position = DVec3::new(2.0, 0.0, 0.0);
-    (left, right)
-}
-```
-
-The camera's `fov` is expressed in degrees.
-The camera looks along its local -Z axis, with its quaternion determining its
-orientation. `OrbitControl` supplies the orientation towards the orbit's center.
+Implement `App` to own and update your camera, controls, and meshes.
+Here is a procedural terrain example:
 
 ```rust,no_run
 use gilgamesh::camera::Camera;
@@ -107,7 +45,7 @@ use gilgamesh::core::engine::Engine;
 use gilgamesh::core::render_context::RenderContext;
 use gilgamesh::geometry::mesh::Mesh;
 use gilgamesh::geometry::procedural;
-use gilgamesh::input::transform_control::OrbitControl;
+use gilgamesh::input::orbit_control::OrbitControl;
 use gilgamesh::lights::directional_light::DirectionalLight;
 use gilgamesh::materials::blinn_phong::BlinnPhongMaterial;
 use gilgamesh::transform::Transformable;
@@ -116,13 +54,14 @@ use std::rc::Rc;
 
 struct TerrainApp {
     camera: Camera,
+    orbit_control: OrbitControl,
     terrain: Mesh,
     directional_light: DirectionalLight,
 }
 
 impl App for TerrainApp {
     fn update_before_render(&mut self, frame: &FrameContext<'_>) {
-        self.camera.listen_to_control(frame.mouse, frame.delta_seconds);
+        self.orbit_control.update(&mut self.camera, frame.mouse, frame.delta_seconds);
         self.terrain.transform_mut().rotation = DQuat::from_rotation_y(frame.elapsed_seconds);
     }
 
@@ -133,10 +72,9 @@ impl App for TerrainApp {
 
 fn main() {
     Engine::run("Sinc function", 1000, 800, |ctx| {
-        let mut camera = Camera::new(ctx.config.width as f64 / ctx.config.height as f64);
-        let mut camera_control = OrbitControl::default();
-        camera_control.set_radius(10.0);
-        camera.control = Some(Box::new(camera_control));
+        let camera = Camera::new(ctx.config.width as f64 / ctx.config.height as f64);
+        let mut orbit_control = OrbitControl::default();
+        orbit_control.set_radius(10.0);
 
         let cpu_buffers = procedural::terrain(10.0, 128, &|x, z| {
             let d = 5.0 * (x * x + z * z).sqrt();
@@ -146,7 +84,7 @@ fn main() {
         material.set_diffuse_color(0.5, 0.2, 1.0);
         let terrain = Mesh::from_cpu_buffers("sinc", cpu_buffers, Rc::new(material), ctx);
 
-        TerrainApp { camera, terrain, directional_light: DirectionalLight::default() }
+        TerrainApp { camera, orbit_control, terrain, directional_light: DirectionalLight::default() }
     });
 }
 ```

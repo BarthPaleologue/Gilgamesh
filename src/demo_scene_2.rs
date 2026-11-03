@@ -5,7 +5,7 @@ use crate::core::render_context::RenderContext;
 use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::mesh::Mesh;
 use crate::geometry::procedural;
-use crate::input::transform_control::OrbitControl;
+use crate::input::orbit_control::OrbitControl;
 use crate::lights::directional_light::DirectionalLight;
 use crate::materials::blinn_phong::BlinnPhongMaterial;
 use std::rc::Rc;
@@ -16,16 +16,16 @@ pub fn run() {
 
 pub struct TerrainView {
     camera: Camera,
+    orbit_control: OrbitControl,
     terrain: Mesh,
     directional_light: DirectionalLight,
 }
 
 impl TerrainView {
     pub fn new(ctx: &WGPUContext) -> Self {
-        let mut camera = Camera::new(ctx.config.width as f64 / ctx.config.height as f64);
-        let mut camera_control = OrbitControl::default();
-        camera_control.set_radius(10.0);
-        camera.control = Some(Box::new(camera_control));
+        let camera = Camera::new(ctx.config.width as f64 / ctx.config.height as f64);
+        let mut orbit_control = OrbitControl::default();
+        orbit_control.set_radius(10.0);
 
         let cpu_buffers = procedural::terrain(10.0, 128, &|x, z| {
             let d = 5.0 * (x * x + z * z).sqrt();
@@ -37,6 +37,7 @@ impl TerrainView {
 
         Self {
             camera,
+            orbit_control,
             terrain,
             directional_light: DirectionalLight::default(),
         }
@@ -45,8 +46,8 @@ impl TerrainView {
 
 impl App for TerrainView {
     fn update_before_render(&mut self, frame: &FrameContext<'_>) {
-        self.camera
-            .listen_to_control(frame.mouse, frame.delta_seconds);
+        self.orbit_control
+            .update(&mut self.camera, frame.mouse, frame.delta_seconds);
     }
 
     fn get_render_context(&mut self) -> RenderContext<'_, impl IntoIterator<Item = &mut Mesh>> {

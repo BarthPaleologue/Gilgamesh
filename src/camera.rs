@@ -1,11 +1,9 @@
 pub mod uniforms;
 
-use crate::input::transform_control::TransformMouseController;
 use glam::{DMat4, dcamera::rh};
 use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
 
-use crate::input::mouse::Mouse;
 use crate::transform::{Transform, Transformable};
 
 pub struct Camera {
@@ -15,8 +13,6 @@ pub struct Camera {
     pub fov: f64,
     pub z_near: f64,
     pub z_far: f64,
-
-    pub control: Option<Box<dyn TransformMouseController>>,
 }
 
 impl Camera {
@@ -27,7 +23,6 @@ impl Camera {
             fov: 70.0,
             z_near: 0.1,
             z_far: 100.0,
-            control: None,
         }
     }
     /// Inverts the camera's world transform, with local -Z as the viewing direction.
@@ -47,15 +42,6 @@ impl Camera {
     }
     pub fn projection_view(&self) -> DMat4 {
         self.projection_matrix() * self.view_matrix()
-    }
-
-    pub fn listen_to_control(&mut self, mouse: &Mouse, delta_seconds: f64) {
-        if let Some(control) = &mut self.control {
-            let (position, rotation, scaling) = control.update(mouse, delta_seconds);
-            self.transform.borrow_mut().position = position;
-            self.transform.borrow_mut().rotation = rotation;
-            self.transform.borrow_mut().scaling = scaling;
-        }
     }
 }
 

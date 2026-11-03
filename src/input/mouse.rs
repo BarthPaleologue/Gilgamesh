@@ -1,4 +1,4 @@
-use winit::event::{ElementState, WindowEvent};
+use winit::event::{ElementState, MouseScrollDelta, WindowEvent};
 
 pub struct Mouse {
     pub position: [f64; 2],
@@ -7,7 +7,12 @@ pub struct Mouse {
     pub left_button_pressed: bool,
     pub right_button_pressed: bool,
     pub middle_button_pressed: bool,
-    pub scroll_delta: f64,
+    /// Vertical scrolling measured in wheel lines.
+    pub scroll_delta_lines: f64,
+    /// Vertical scrolling measured in physical pixels, commonly from a trackpad.
+    pub scroll_delta_pixels: f64,
+    /// Native pinch magnification; positive values zoom in.
+    pub pinch_delta: f64,
 }
 
 impl Default for Mouse {
@@ -19,7 +24,9 @@ impl Default for Mouse {
             left_button_pressed: false,
             right_button_pressed: false,
             middle_button_pressed: false,
-            scroll_delta: 0.0,
+            scroll_delta_lines: 0.0,
+            scroll_delta_pixels: 0.0,
+            pinch_delta: 0.0,
         }
     }
 }
@@ -42,13 +49,19 @@ impl Mouse {
 
         match event {
             WindowEvent::MouseWheel {
-                delta: winit::event::MouseScrollDelta::LineDelta(_, y),
+                delta: MouseScrollDelta::LineDelta(_, y),
                 ..
             } => {
-                self.scroll_delta += f64::from(*y);
+                self.scroll_delta_lines += f64::from(*y);
             }
-            WindowEvent::PinchGesture { delta, .. } => {
-                self.scroll_delta += *delta;
+            WindowEvent::MouseWheel {
+                delta: MouseScrollDelta::PixelDelta(delta),
+                ..
+            } => {
+                self.scroll_delta_pixels += delta.y;
+            }
+            WindowEvent::PinchGesture { delta, .. } if delta.is_finite() => {
+                self.pinch_delta += *delta;
             }
             WindowEvent::MouseInput {
                 state: ElementState::Pressed,
@@ -71,6 +84,8 @@ impl Mouse {
     pub fn reset(&mut self) {
         self.position = self.new_position;
         self.delta = [0.0, 0.0];
-        self.scroll_delta = 0.0;
+        self.scroll_delta_lines = 0.0;
+        self.scroll_delta_pixels = 0.0;
+        self.pinch_delta = 0.0;
     }
 }

@@ -5,7 +5,7 @@ use crate::core::render_context::RenderContext;
 use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::mesh::Mesh;
 use crate::geometry::primitive;
-use crate::input::transform_control::OrbitControl;
+use crate::input::orbit_control::OrbitControl;
 use crate::lights::debug::create_point_light_debug_mesh;
 use crate::lights::directional_light::DirectionalLight;
 use crate::lights::light::Light;
@@ -23,6 +23,7 @@ pub fn run() {
 
 pub struct StarSystemDemo {
     camera: Camera,
+    orbit_control: OrbitControl,
     sun: Mesh,
     earth: Mesh,
     plane: Mesh,
@@ -33,10 +34,9 @@ pub struct StarSystemDemo {
 
 impl StarSystemDemo {
     pub fn new(ctx: &WGPUContext) -> Self {
-        let mut camera = Camera::new(ctx.config.width as f64 / ctx.config.height as f64);
-        let mut camera_control = OrbitControl::default();
-        camera_control.set_radius(2.0);
-        camera.control = Some(Box::new(camera_control));
+        let camera = Camera::new(ctx.config.width as f64 / ctx.config.height as f64);
+        let mut orbit_control = OrbitControl::default();
+        orbit_control.set_radius(2.0);
 
         let mut directional_light = DirectionalLight::default();
         directional_light.set_intensity(0.0);
@@ -91,6 +91,7 @@ impl StarSystemDemo {
 
         Self {
             camera,
+            orbit_control,
             sun,
             earth,
             plane,
@@ -103,8 +104,8 @@ impl StarSystemDemo {
 
 impl App for StarSystemDemo {
     fn update_before_render(&mut self, frame: &FrameContext<'_>) {
-        self.camera
-            .listen_to_control(frame.mouse, frame.delta_seconds);
+        self.orbit_control
+            .update(&mut self.camera, frame.mouse, frame.delta_seconds);
         self.sun.transform_mut().rotation = DQuat::from_rotation_y(frame.elapsed_seconds);
         self.earth.transform_mut().position = DVec3::new(6.0, 0.0, 0.0);
 
