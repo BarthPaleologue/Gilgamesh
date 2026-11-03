@@ -29,7 +29,7 @@ struct PointLightUniforms {
     intensity: f32
 }
 @group(0) @binding(2) var<uniform> point_lights : array<PointLightUniforms, 64>;
-@group(0) @binding(3) var<uniform> point_lights_count : u32;
+@group(0) @binding(3) var<uniform> point_lights_count : vec4<u32>;
 
 struct PbrUniforms {
     albedo_color: vec3<f32>,
@@ -190,7 +190,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         Lo += pbr_radiance(L, H, V, N, directionalLight.color, 1.0, albedo, metallic, roughness) * directionalLight.intensity;
     }
 
-    for (var i: u32 = 0u; i < point_lights_count; i = i + 1u) {
+    for (var i: u32 = 0u; i < point_lights_count.x; i = i + 1u) {
         let L: vec3<f32> = normalize(point_lights[i].position - in.vPositionW);
         let H: vec3<f32> = normalize(V + L);
 

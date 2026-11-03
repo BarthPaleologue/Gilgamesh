@@ -29,7 +29,7 @@ struct PointLightUniforms {
     intensity: f32
 }
 @group(0) @binding(2) var<uniform> point_lights : array<PointLightUniforms, 64>;
-@group(0) @binding(3) var<uniform> point_lights_count : u32;
+@group(0) @binding(3) var<uniform> point_lights_count : vec4<u32>;
 
 struct PhongUniforms {
     diffuse_color: vec3<f32>,
@@ -122,7 +122,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var color = diffuse * directionalLight.color * directionalLight.intensity + specular;
     color *= ndl;
 
-    for (var i: u32 = 0u; i < point_lights_count; i = i + 1u) {
+    for (var i: u32 = 0u; i < point_lights_count.x; i = i + 1u) {
         let light_dir: vec3<f32> = normalize(point_lights[i].position - in.vPositionW);
         let ndl = max(0.0, dot(normal, light_dir));
 

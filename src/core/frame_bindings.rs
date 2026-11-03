@@ -33,7 +33,8 @@ impl FrameBindings {
             create_buffer::<DirectionalLightUniform>("Directional Light Buffer", ctx);
         let point_lights =
             create_array_buffer::<PointLightUniforms>("Point Lights Buffer", MAX_POINT_LIGHTS, ctx);
-        let point_light_count = create_buffer::<u32>("Point Light Count Buffer", ctx);
+        // WebGL requires uniform blocks to occupy a multiple of 16 bytes.
+        let point_light_count = create_buffer::<[u32; 4]>("Point Light Count Buffer", ctx);
         let entries: Vec<_> = [
             &camera,
             &directional_light,
@@ -87,7 +88,7 @@ impl FrameBindings {
         queue.write_buffer(
             &self.point_light_count,
             0,
-            bytemuck::bytes_of(&(point_lights.len() as u32)),
+            bytemuck::bytes_of(&[point_lights.len() as u32, 0, 0, 0]),
         );
     }
 

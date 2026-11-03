@@ -20,6 +20,23 @@ fn pbr_shader_is_valid() {
 }
 
 #[test]
+fn uniform_bindings_have_webgl_compatible_sizes() {
+    for source in [
+        include_str!("../src/shader/blinn_phong.wgsl"),
+        include_str!("../src/shader/pbr.wgsl"),
+    ] {
+        let module = validate_shader(source);
+        let mut layouter = naga::proc::Layouter::default();
+        layouter.update(module.to_ctx()).unwrap();
+        for (_, variable) in module.global_variables.iter() {
+            if variable.space == naga::AddressSpace::Uniform {
+                assert_eq!(layouter[variable.ty].size % 16, 0, "{:?}", variable.name);
+            }
+        }
+    }
+}
+
+#[test]
 fn shader_bindings_separate_frame_material_and_object_data() {
     for (source, texture_count) in [
         (include_str!("../src/shader/blinn_phong.wgsl"), 4),
