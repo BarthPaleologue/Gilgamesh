@@ -3,7 +3,7 @@ use crate::core::renderer::Renderer;
 use crate::core::wgpu_context::WGPUContext;
 use crate::input::mouse::Mouse;
 use std::sync::Arc;
-use std::time::SystemTime;
+use web_time::Instant;
 use winit::application::ApplicationHandler;
 use winit::dpi::{PhysicalSize, Size};
 use winit::event::{ElementState, WindowEvent};
@@ -17,7 +17,7 @@ pub struct Engine<Application: App> {
     pub wgpu_context: WGPUContext,
 
     renderer: Renderer,
-    clock: SystemTime,
+    clock: Instant,
     elapsed_seconds: f64,
     delta_seconds: f64,
 
@@ -101,7 +101,7 @@ impl<Application: App> Engine<Application> {
             renderer,
             window,
             wgpu_context,
-            clock: SystemTime::now(),
+            clock: Instant::now(),
             elapsed_seconds: 0.0,
             delta_seconds: 0.0,
             mouse: Mouse::new(),
@@ -227,7 +227,7 @@ where
                 event_loop.exit();
             }
             WindowEvent::RedrawRequested => {
-                let new_elapsed_seconds = engine.clock.elapsed().unwrap().as_secs_f64();
+                let new_elapsed_seconds = engine.clock.elapsed().as_secs_f64();
                 engine.delta_seconds = new_elapsed_seconds - engine.elapsed_seconds;
                 engine.elapsed_seconds = new_elapsed_seconds;
 
