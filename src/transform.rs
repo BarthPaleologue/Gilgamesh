@@ -90,8 +90,9 @@ impl Transform {
         (self.rotation * local_direction).normalize()
     }
 
+    /// Local -Z expressed in the parent's coordinate space.
     pub fn forward(&self) -> DVec3 {
-        self.local_direction_to_world(DVec3::Z)
+        self.local_direction_to_world(DVec3::NEG_Z)
     }
 
     pub fn right(&self) -> DVec3 {

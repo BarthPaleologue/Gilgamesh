@@ -27,6 +27,7 @@ fn assert_close<const N: usize>(actual: [f64; N], expected: [f64; N]) {
 fn default_transform_has_identity_orientation() {
     let transform = Transform::new();
     assert_eq!(transform.rotation, DQuat::IDENTITY);
+    assert_eq!(transform.forward(), DVec3::NEG_Z);
     let point = DVec4::new(1.0, -2.0, 3.0, 1.0);
     assert_close((transform.world_matrix() * point).into(), point.into());
 }
@@ -81,7 +82,7 @@ fn local_axes_only_depend_on_rotation_and_stay_normalized() {
     let mut transform = Transform::new();
     transform.position = DVec3::new(100.0, -20.0, 50.0);
     transform.rotation = DQuat::from_rotation_y(FRAC_PI_2);
-    assert_close(transform.forward().into(), [1.0, 0.0, 0.0]);
+    assert_close(transform.forward().into(), [-1.0, 0.0, 0.0]);
     assert_close(transform.right().into(), [0.0, 0.0, -1.0]);
     assert_close(transform.up().into(), [0.0, 1.0, 0.0]);
     assert_close(
