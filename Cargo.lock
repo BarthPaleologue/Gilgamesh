@@ -2005,6 +2005,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "splitscreen"
+version = "0.1.0"
+dependencies = [
+ "gilgamesh",
+ "glam 0.34.2",
+ "pollster",
+ "winit",
+]
+
+[[package]]
 name = "starsystem"
 version = "0.1.0"
 dependencies = [
