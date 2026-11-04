@@ -8,7 +8,7 @@ use wgpu::util::{DeviceExt, TextureDataOrder};
 
 #[test]
 #[ignore = "GPU end-to-end check; run explicitly with approval"]
-fn hdr_tone_mapping_and_blit_preserve_colors_without_double_gamma() {
+fn khronos_neutral_and_blit_preserve_colors_without_double_gamma() {
     let (device, queue) = pollster::block_on(async {
         let adapter = wgpu::Instance::default()
             .request_adapter(&wgpu::RequestAdapterOptions::default())
@@ -19,24 +19,37 @@ fn hdr_tone_mapping_and_blit_preserve_colors_without_double_gamma() {
             .await
             .unwrap()
     });
-    let hdr_pixel_bits: [[u16; 4]; 6] = [
+    let hdr_pixel_bits: [[u16; 4]; 12] = [
         [0x4400, 0x3c00, 0x3400, 0x3c00],
         [0x0000, 0x3800, 0x4000, 0x3800],
         [0x4800, 0x0000, 0x3c00, 0x3c00],
         [0x1800, 0x1c00, 0x4400, 0x3c00],
         [0x3c00, 0x4000, 0x0000, 0x3c00],
         [0x3400, 0x4800, 0x3800, 0x3c00],
+        [0x0000, 0x0000, 0x0000, 0x3c00],
+        [0xbc00, 0xb800, 0xb400, 0x3400],
+        [0x2400, 0x2400, 0x2400, 0x3800],
+        [0x2800, 0x2800, 0x2800, 0x3c00],
+        [0x3a00, 0x0000, 0x3400, 0x3c00],
+        [0x3a20, 0x0000, 0x3400, 0x3c00],
     ];
-    let expected: [[u8; 4]; 6] = [
-        [231, 188, 124, 255],
-        [0, 156, 213, 128],
-        [242, 0, 188, 255],
-        [6, 13, 231, 255],
-        [188, 213, 0, 255],
-        [124, 242, 156, 255],
+    // Khronos reference results, encoded to sRGB with alpha unchanged.
+    let expected: [[u8; 4]; 12] = [
+        [253, 182, 158, 255],
+        [101, 157, 251, 128],
+        [254, 189, 199, 255],
+        [150, 150, 253, 255],
+        [195, 251, 101, 255],
+        [191, 254, 193, 255],
+        [0, 0, 0, 255],
+        [0, 0, 0, 64],
+        [5, 5, 5, 128],
+        [18, 18, 18, 255],
+        [225, 0, 137, 255],
+        [227, 0, 137, 255],
     ];
     let tone_mapping = ColorPass::tone_mapping(&device, wgpu::TextureFormat::Rgba8UnormSrgb);
-    for (width, height) in [(3, 2), (2, 3)] {
+    for (width, height) in [(4, 3), (3, 4)] {
         let size = wgpu::Extent3d {
             width,
             height,

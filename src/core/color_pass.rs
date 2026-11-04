@@ -6,7 +6,7 @@ pub struct ColorPass {
 }
 
 impl ColorPass {
-    /// Maps linear HDR colors to linear SDR using Reinhard tone mapping.
+    /// Maps linear Rec. 709 HDR colors to linear SDR using Khronos PBR Neutral.
     /// An sRGB destination performs the output encoding automatically.
     pub fn tone_mapping(device: &wgpu::Device, target_format: wgpu::TextureFormat) -> Self {
         Self::new(device, target_format, "tone_mapping")
