@@ -20,6 +20,41 @@ fn pbr_shader_is_valid() {
 }
 
 #[test]
+fn color_passes_translate_to_webgl2_shaders() {
+    use naga::back::glsl;
+
+    let module = validate_shader(include_str!("../src/shader/color.wgsl"));
+    let info = Validator::new(ValidationFlags::all(), Capabilities::empty())
+        .validate(&module)
+        .unwrap();
+    let options = glsl::Options {
+        version: glsl::Version::Embedded {
+            version: 300,
+            is_webgl: true,
+        },
+        ..Default::default()
+    };
+    for entry in &module.entry_points {
+        let pipeline = glsl::PipelineOptions {
+            shader_stage: entry.stage,
+            entry_point: entry.name.clone(),
+            multiview: None,
+        };
+        glsl::Writer::new(
+            String::new(),
+            &module,
+            &info,
+            &options,
+            &pipeline,
+            naga::proc::BoundsCheckPolicies::default(),
+        )
+        .unwrap()
+        .write()
+        .unwrap_or_else(|error| panic!("{}: {error}", entry.name));
+    }
+}
+
+#[test]
 fn uniform_bindings_have_webgl_compatible_sizes() {
     for source in [
         include_str!("../src/shader/blinn_phong.wgsl"),

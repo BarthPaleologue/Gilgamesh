@@ -1,4 +1,5 @@
 pub mod app;
+pub mod color_pass;
 pub mod engine;
 pub mod render_context;
 pub mod render_target;

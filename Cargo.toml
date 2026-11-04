@@ -32,4 +32,4 @@ wgpu = { version = "30", features = ["webgl"] }
 wasm-bindgen-futures = "0.4.30"
 
 [dev-dependencies]
-naga = { version = "30", features = ["wgsl-in"] }
+naga = { version = "30", features = ["wgsl-in", "glsl-out"] }

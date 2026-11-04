@@ -198,9 +198,5 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         Lo += pbr_radiance(L, H, V, N, point_lights[i].color, distance, albedo, metallic, roughness) * point_lights[i].intensity;
     }
 
-    var color = Lo + ambient;
-    color = color / (color + vec3(1.0));
-    color = pow(color, vec3(1.0/2.2));
-
-    return vec4(color, 1.0);
+    return vec4(Lo + ambient, 1.0);
 }
