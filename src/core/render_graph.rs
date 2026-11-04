@@ -5,7 +5,7 @@
 
 use crate::core::wgpu_context::WGPUContext;
 use std::any::{Any, TypeId};
-use std::collections::{HashMap, VecDeque, hash_map::Entry};
+use std::collections::{HashMap, HashSet, VecDeque, hash_map::Entry};
 use std::fmt;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -69,9 +69,12 @@ pub struct ImageDescriptor {
     pub format: wgpu::TextureFormat,
 }
 
+#[derive(Clone)]
 pub(crate) struct GraphImage<'a> {
     pub label: String,
     pub descriptor: ImageDescriptor,
+    pub allocation: usize,
+    pub previous: Option<usize>,
     pub imported: Option<&'a wgpu::Texture>,
 }
 
@@ -110,6 +113,8 @@ impl<'a> RenderGraph<'a> {
         self.images.push(GraphImage {
             label: label.into(),
             descriptor,
+            allocation: image.index,
+            previous: None,
             imported: None,
         });
         image
@@ -118,7 +123,7 @@ impl<'a> RenderGraph<'a> {
     /// Imports a single-mip, single-layer, single-sample 2D texture owned by the caller.
     /// Passes may read or write it according to the texture's creation usages.
     /// Reads depend on its writer, if any; otherwise they see its existing contents.
-    /// Importing the same texture again returns the same handle.
+    /// Importing the same texture again returns its initial handle, not its latest version.
     pub fn import_texture(
         &mut self,
         label: impl Into<String>,
@@ -155,13 +160,36 @@ impl<'a> RenderGraph<'a> {
         image
     }
 
+    /// Creates a new logical version backed by the same physical texture.
+    /// Its writer waits for the previous writer and every reader of the old version.
+    /// Each version may have only one successor. Versions cannot be read and written
+    /// together in one pass; use separate textures for a compute ping-pong step.
+    pub fn next_version(&mut self, image: Image) -> Image {
+        self.check_image(image).expect("Invalid image version");
+        assert!(
+            !self
+                .images
+                .iter()
+                .any(|version| version.previous == Some(image.index)),
+            "Image version already has a successor"
+        );
+        let mut version = self.images[image.index].clone();
+        version.previous = Some(image.index);
+        let next = Image {
+            graph: self.id,
+            index: self.images.len(),
+        };
+        self.images.push(version);
+        next
+    }
+
     pub fn image_descriptor(&self, image: Image) -> ImageDescriptor {
         assert_eq!(image.graph, self.id, "Image belongs to another graph");
         self.images[image.index].descriptor
     }
 
-    /// Adds a custom raster, compute, or copy pass. Each image has at most one writer;
-    /// created images require one, while imported images may keep their existing contents.
+    /// Adds a custom raster, compute, or copy pass. Each logical version has at most one writer;
+    /// created images and successor versions require one; initial imports may retain their contents.
     /// Usages describe how the callback accesses each image; execution order follows
     /// the producers of its reads, independently of pass registration order.
     pub fn add_pass(
@@ -200,12 +228,27 @@ impl<'a> RenderGraph<'a> {
                 "Export a graph-created image, not an imported texture",
             ));
         }
+        if self
+            .images
+            .iter()
+            .any(|image| image.previous == Some(output.index))
+        {
+            return Err(GraphError::new(
+                "Export the final image version, or copy an older version before overwriting it",
+            ));
+        }
         let mut producers = vec![None; self.images.len()];
         let mut usages = vec![wgpu::TextureUsages::empty(); self.images.len()];
         for (index, pass) in self.passes.iter().enumerate() {
+            let mut written_allocations = HashSet::new();
             for &(image, usage) in &pass.writes {
                 self.check_image(image)?;
                 let resource = &self.images[image.index];
+                if !written_allocations.insert(resource.allocation) {
+                    return Err(GraphError::new(
+                        "A pass cannot write multiple versions of the same texture",
+                    ));
+                }
                 let allowed = wgpu::TextureUsages::RENDER_ATTACHMENT
                     | wgpu::TextureUsages::STORAGE_BINDING
                     | wgpu::TextureUsages::COPY_DST;
@@ -235,9 +278,11 @@ impl<'a> RenderGraph<'a> {
                         pass.label, self.images[image.index].label
                     )));
                 }
-                if pass.writes.iter().any(|&(written, _)| written == image) {
+                if pass.writes.iter().any(|&(written, _)| {
+                    self.images[written.index].allocation == self.images[image.index].allocation
+                }) {
                     return Err(GraphError::new(format!(
-                        "{}: reading and writing the same image requires separate image versions",
+                        "{}: a pass cannot read and write the same physical texture",
                         pass.label
                     )));
                 }
@@ -246,7 +291,18 @@ impl<'a> RenderGraph<'a> {
         }
         usages[output.index] |=
             wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_SRC;
+        let mut physical_usages = vec![wgpu::TextureUsages::empty(); self.images.len()];
+        for (image, &usage) in self.images.iter().zip(&usages) {
+            physical_usages[image.allocation] |= usage;
+        }
         for (index, image) in self.images.iter().enumerate() {
+            usages[index] = physical_usages[image.allocation];
+            if image.previous.is_some() && producers[index].is_none() {
+                return Err(GraphError::new(format!(
+                    "Image version {} has no writer",
+                    image.label
+                )));
+            }
             if let Some(texture) = image.imported {
                 if !texture.usage().contains(usages[index]) {
                     return Err(GraphError::new(format!(
@@ -263,13 +319,29 @@ impl<'a> RenderGraph<'a> {
         }
         let mut successors = vec![Vec::new(); self.passes.len()];
         let mut pending = vec![0; self.passes.len()];
+        let mut depend = |before: usize, after: usize| {
+            if !successors[before].contains(&after) {
+                successors[before].push(after);
+                pending[after] += 1;
+            }
+        };
         for (index, pass) in self.passes.iter().enumerate() {
             for &(image, _) in &pass.reads {
-                if let Some(producer) = producers[image.index]
-                    && !successors[producer].contains(&index)
-                {
-                    successors[producer].push(index);
-                    pending[index] += 1;
+                if let Some(producer) = producers[image.index] {
+                    depend(producer, index);
+                }
+            }
+        }
+        for (index, image) in self.images.iter().enumerate() {
+            if let Some(previous) = image.previous {
+                let writer = producers[index].expect("Successor versions require a writer");
+                if let Some(producer) = producers[previous] {
+                    depend(producer, writer);
+                }
+                for (reader, pass) in self.passes.iter().enumerate() {
+                    if pass.reads.iter().any(|&(image, _)| image.index == previous) {
+                        depend(reader, writer);
+                    }
                 }
             }
         }

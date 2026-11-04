@@ -358,7 +358,7 @@ fn imported_textures_keep_written_state_across_ping_pong_frames() {
                 .validate()
                 .unwrap_err()
                 .to_string()
-                .contains("separate image versions")
+                .contains("same physical texture")
         );
     });
 }
@@ -677,4 +677,131 @@ fn assert_pixel(actual: [u8; 4], expected: [u8; 4]) {
     for (actual, expected) in actual.into_iter().zip(expected) {
         assert!(actual.abs_diff(expected) <= 1, "{actual} != {expected}");
     }
+}
+
+#[test]
+#[ignore = "GPU end-to-end check; run explicitly with approval"]
+fn versions_preserve_old_reads_before_ping_pong_overwrites() {
+    pollster::block_on(async {
+        let mut executor = GraphExecutor::new().await;
+        let mut target = executor.create_target(8, 4);
+        let saved = RefCell::new(Vec::new());
+        let mut graph = RenderGraph::new();
+        let a = image("A", Format::Rgba8Unorm, &mut graph);
+        let b = image("B", Format::Rgba8Unorm, &mut graph);
+        let next_a = graph.next_version(a);
+        let next_b = graph.next_version(b);
+        let snapshot = image("Old A", Format::Rgba8Unorm, &mut graph);
+        for (source, destination) in [(next_b, next_a), (a, snapshot), (a, b)] {
+            let saved = &saved;
+            graph.add_pass(
+                "Copy",
+                &[(source, Usage::COPY_SRC)],
+                &[(destination, Usage::COPY_DST)],
+                move |context| {
+                    if destination == next_a {
+                        saved
+                            .borrow_mut()
+                            .push(context.images.get(destination).texture().clone());
+                    }
+                    if destination == snapshot {
+                        saved
+                            .borrow_mut()
+                            .push(context.images.get(source).texture().clone());
+                    }
+                    context.encoder.copy_texture_to_texture(
+                        context.images.get(source).texture().as_image_copy(),
+                        context.images.get(destination).texture().as_image_copy(),
+                        wgpu::Extent3d {
+                            width: 8,
+                            height: 4,
+                            depth_or_array_layers: 1,
+                        },
+                    );
+                },
+            );
+        }
+        for (image, color) in [(a, wgpu::Color::RED), (next_b, wgpu::Color::GREEN)] {
+            graph.add_pass(
+                "Initialize",
+                &[],
+                &[(image, Usage::RENDER_ATTACHMENT)],
+                move |context| {
+                    let _pass = context
+                        .encoder
+                        .begin_render_pass(&wgpu::RenderPassDescriptor {
+                            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                view: context.images.get(image),
+                                depth_slice: None,
+                                resolve_target: None,
+                                ops: wgpu::Operations {
+                                    load: wgpu::LoadOp::Clear(color),
+                                    store: wgpu::StoreOp::Store,
+                                },
+                            })],
+                            ..Default::default()
+                        });
+                },
+            );
+        }
+        let comparison =
+            gilgamesh::blocks::vertical_split_screen(snapshot, next_a, 0.5, &mut graph);
+        graph.export(comparison);
+        executor.execute(graph, &mut target).unwrap();
+        assert_eq!(
+            saved.borrow()[0],
+            saved.borrow()[1],
+            "Logical versions must share their physical texture"
+        );
+        let pixels = target.read_image(executor.wgpu_context()).await.unwrap();
+        for (x, _, pixel) in pixels.enumerate_pixels() {
+            assert_eq!(
+                pixel.0,
+                if x < 4 {
+                    [255, 0, 0, 255]
+                } else {
+                    [0, 255, 0, 255]
+                }
+            );
+        }
+        let mut graph = RenderGraph::new();
+        let initial = image("Versioned output", Format::Rgba8Unorm, &mut graph);
+        let final_version = graph.next_version(initial);
+        for (image, color) in [
+            (final_version, wgpu::Color::GREEN),
+            (initial, wgpu::Color::RED),
+        ] {
+            graph.add_pass(
+                "Write output version",
+                &[],
+                &[(image, Usage::RENDER_ATTACHMENT)],
+                move |context| {
+                    let _pass = context
+                        .encoder
+                        .begin_render_pass(&wgpu::RenderPassDescriptor {
+                            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                view: context.images.get(image),
+                                depth_slice: None,
+                                resolve_target: None,
+                                ops: wgpu::Operations {
+                                    load: wgpu::LoadOp::Clear(color),
+                                    store: wgpu::StoreOp::Store,
+                                },
+                            })],
+                            ..Default::default()
+                        });
+                },
+            );
+        }
+        graph.export(final_version);
+        executor.execute(graph, &mut target).unwrap();
+        assert!(
+            target
+                .read_image(executor.wgpu_context())
+                .await
+                .unwrap()
+                .pixels()
+                .all(|pixel| pixel.0 == [0, 255, 0, 255])
+        );
+    });
 }

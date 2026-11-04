@@ -148,7 +148,7 @@ fn rejects_cycles_and_same_pass_feedback() {
             .validate()
             .unwrap_err()
             .to_string()
-            .contains("separate image versions")
+            .contains("same physical texture")
     );
 }
 
@@ -252,4 +252,123 @@ fn pass_cache_reuses_matching_state_replaces_changed_keys_and_drops_unused_state
     cache.begin_render();
     cache.end_render();
     assert_eq!(drops.get(), 2);
+}
+
+#[test]
+fn versions_wait_for_old_readers_and_reuse_one_allocation() {
+    let mut graph = RenderGraph::new();
+    let a = image("A", &mut graph);
+    let b = image("B", &mut graph);
+    let next = graph.next_version(a);
+    let snapshot = image("Snapshot", &mut graph);
+    graph.add_pass(
+        "Overwrite A",
+        &[(b, Usage::COPY_SRC)],
+        &[(next, Usage::COPY_DST)],
+        |_| {},
+    );
+    graph.add_pass(
+        "Old reader",
+        &[(a, Usage::TEXTURE_BINDING)],
+        &[(snapshot, Usage::RENDER_ATTACHMENT)],
+        |_| {},
+    );
+    graph.add_pass(
+        "A to B",
+        &[(a, Usage::COPY_SRC)],
+        &[(b, Usage::COPY_DST)],
+        |_| {},
+    );
+    graph.add_pass(
+        "Initialize A",
+        &[],
+        &[(a, Usage::RENDER_ATTACHMENT)],
+        |_| {},
+    );
+    graph.export(next);
+    let plan = graph.compile().unwrap();
+    assert_eq!(plan.order, [3, 1, 2, 0]);
+    assert_eq!(
+        graph.images[a.index].allocation,
+        graph.images[next.index].allocation
+    );
+    assert_eq!(plan.usages[a.index], plan.usages[next.index]);
+    assert!(plan.usages[a.index].contains(
+        Usage::COPY_DST | Usage::COPY_SRC | Usage::TEXTURE_BINDING | Usage::RENDER_ATTACHMENT
+    ));
+}
+
+#[test]
+fn versions_require_a_writer_and_reject_physical_feedback_and_old_exports() {
+    let mut graph = RenderGraph::new();
+    let a = image("A", &mut graph);
+    let next = graph.next_version(a);
+    graph.add_pass("Initialize", &[], &[(a, Usage::RENDER_ATTACHMENT)], |_| {});
+    graph.export(next);
+    assert!(
+        graph
+            .validate()
+            .unwrap_err()
+            .to_string()
+            .contains("has no writer")
+    );
+    graph.add_pass("Overwrite", &[], &[(next, Usage::COPY_DST)], |_| {});
+    graph.export(a);
+    assert!(
+        graph
+            .validate()
+            .unwrap_err()
+            .to_string()
+            .contains("final image version")
+    );
+    graph.export(next);
+    graph.validate().unwrap();
+    graph.passes[1].reads.push((a, Usage::COPY_SRC));
+    assert!(
+        graph
+            .validate()
+            .unwrap_err()
+            .to_string()
+            .contains("same physical texture")
+    );
+}
+
+#[test]
+#[should_panic(expected = "already has a successor")]
+fn versions_cannot_branch_over_the_same_physical_texture() {
+    let mut graph = RenderGraph::new();
+    let a = image("A", &mut graph);
+    graph.next_version(a);
+    graph.next_version(a);
+}
+
+#[test]
+fn rejects_an_old_version_read_that_depends_on_its_overwrite() {
+    let mut graph = RenderGraph::new();
+    let initial = image("A", &mut graph);
+    let next = graph.next_version(initial);
+    let output = image("Impossible snapshot", &mut graph);
+    graph.add_pass(
+        "Initialize",
+        &[],
+        &[(initial, Usage::RENDER_ATTACHMENT)],
+        |_| {},
+    );
+    graph.add_pass(
+        "Overwrite",
+        &[],
+        &[(next, Usage::RENDER_ATTACHMENT)],
+        |_| {},
+    );
+    graph.add_pass(
+        "Read both versions",
+        &[
+            (initial, Usage::TEXTURE_BINDING),
+            (next, Usage::TEXTURE_BINDING),
+        ],
+        &[(output, Usage::RENDER_ATTACHMENT)],
+        |_| {},
+    );
+    graph.export(output);
+    assert!(graph.validate().unwrap_err().to_string().contains("cycle"));
 }

@@ -147,9 +147,13 @@ impl GraphExecutor {
                 .iter()
                 .any(|image| image.imported == Some(pooled.view.texture()))
         });
-        let mut views = Vec::with_capacity(graph.images.len());
+        let mut views: Vec<wgpu::TextureView> = Vec::with_capacity(graph.images.len());
         for (index, (image, key)) in graph.images.iter().zip(keys).enumerate() {
-            let view = if index == plan.output.index {
+            if image.allocation != index {
+                views.push(views[image.allocation].clone());
+                continue;
+            }
+            let view = if image.allocation == graph.images[plan.output.index].allocation {
                 target.output().clone()
             } else if let Some(imported) = image.imported {
                 imported.create_view(&Default::default())
