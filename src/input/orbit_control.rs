@@ -1,7 +1,7 @@
 use crate::camera::{Camera, CameraProjection};
 use crate::input::mouse::Mouse;
 use crate::transform::Transformable;
-use glam::{DVec3, dcamera::rh};
+use glam::DVec3;
 
 const MIN_RADIUS: f64 = 1.0;
 const POLE_EPSILON: f64 = 0.0001;
@@ -70,9 +70,8 @@ impl OrbitControl {
             self.radius * self.theta.cos(),
             self.radius * self.theta.sin() * self.phi.sin(),
         );
-        let rotation = rh::view::look_at_quat(position, DVec3::ZERO, DVec3::Y).conjugate();
         let mut transform = camera.transform_mut();
         transform.position = position;
-        transform.rotation = rotation;
+        transform.look_at(DVec3::ZERO, DVec3::Y);
     }
 }

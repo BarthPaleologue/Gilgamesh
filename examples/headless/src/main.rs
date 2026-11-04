@@ -7,7 +7,7 @@ use gilgamesh::geometry::{mesh::Mesh, primitive};
 use gilgamesh::lights::directional_light::DirectionalLight;
 use gilgamesh::materials::blinn_phong::BlinnPhongMaterial;
 use gilgamesh::transform::Transformable;
-use glam::{DVec3, dcamera::rh};
+use glam::DVec3;
 use std::rc::Rc;
 use std::time::Duration;
 
@@ -31,10 +31,10 @@ struct HeadlessScene {
 impl App for HeadlessScene {
     fn new(ctx: &WGPUContext) -> Self {
         let camera = Camera::default();
-        let position = DVec3::new(3.0, 3.0, 5.0);
-        camera.transform_mut().position = position;
-        camera.transform_mut().rotation =
-            rh::view::look_at_quat(position, DVec3::new(0.0, 0.75, 0.0), DVec3::Y).conjugate();
+        camera.transform_mut().position = DVec3::new(3.0, 3.0, 5.0);
+        camera
+            .transform_mut()
+            .look_at(DVec3::new(0.0, 0.75, 0.0), DVec3::Y);
 
         let mut plane_material = BlinnPhongMaterial::new("Ground");
         plane_material.set_diffuse_color(0.3, 0.35, 0.4);

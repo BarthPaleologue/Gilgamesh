@@ -5,6 +5,7 @@ use std::rc::Rc;
 /// A rigid transform composed of a translation and a rotation.
 #[derive(Debug)]
 pub struct Transform {
+    /// Position in the parent's coordinate space.
     pub position: DVec3,
     /// Local orientation as a unit quaternion.
     pub rotation: DQuat,
@@ -49,6 +50,18 @@ impl Default for Transform {
 impl Transform {
     pub fn new() -> Transform {
         Transform::default()
+    }
+
+    /// Orients local -Z toward `target`, using `up` to determine the roll.
+    /// Both arguments are in the parent's coordinate space, or world space without a parent.
+    /// `target` must differ from `position`; `up` must be normalized and not parallel
+    /// to the viewing direction. Position and parent are preserved.
+    pub fn look_at(&mut self, target: DVec3, up: DVec3) {
+        let back = (self.position - target).normalize();
+        let right = up.cross(back).normalize();
+        let corrected_up = back.cross(right);
+
+        self.rotation = DQuat::from_rotation_axes(right, corrected_up, back);
     }
 
     pub fn world_matrix(&self) -> DMat4 {

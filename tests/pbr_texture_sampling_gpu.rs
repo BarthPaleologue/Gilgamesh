@@ -13,7 +13,7 @@ use gilgamesh::lights::directional_light::DirectionalLight;
 use gilgamesh::materials::pbr::PbrMaterial;
 use gilgamesh::texture::{Linear, Srgb, Texture};
 use gilgamesh::transform::Transformable;
-use glam::{DVec3, dcamera::rh};
+use glam::DVec3;
 use std::io::Cursor;
 use std::rc::Rc;
 
@@ -80,10 +80,8 @@ fn albedo_encodings_match_equivalent_linear_constants() {
         )
     });
     let camera: Camera = Camera::default();
-    let position = DVec3::new(0.0, 3.0, 3.0);
-    camera.transform_mut().position = position;
-    camera.transform_mut().rotation =
-        rh::view::look_at_quat(position, DVec3::ZERO, DVec3::Y).conjugate();
+    camera.transform_mut().position = DVec3::new(0.0, 3.0, 3.0);
+    camera.transform_mut().look_at(DVec3::ZERO, DVec3::Y);
     let light = DirectionalLight::default();
     let mut renderer = RasterRenderer::new(&gpu, wgpu::TextureFormat::Rgba8UnormSrgb);
     renderer.update_frame_bindings(FrameBindingsData::new(&camera, &light, &[]), &gpu);

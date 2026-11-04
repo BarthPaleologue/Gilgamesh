@@ -14,7 +14,7 @@ use gilgamesh::lights::directional_light::DirectionalLight;
 use gilgamesh::lights::light::Light;
 use gilgamesh::materials::pbr::PbrMaterial;
 use gilgamesh::transform::Transformable;
-use glam::{DVec3, dcamera::rh};
+use glam::DVec3;
 use std::cell::Cell;
 use std::io::Cursor;
 use std::rc::Rc;
@@ -176,10 +176,8 @@ impl App for TestApp {
             near: 0.1,
             far: 10.0,
         });
-        let position = DVec3::new(0.0, 3.0, 0.0);
-        camera.transform_mut().position = position;
-        camera.transform_mut().rotation =
-            rh::view::look_at_quat(position, DVec3::ZERO, DVec3::NEG_Z).conjugate();
+        camera.transform_mut().position = DVec3::new(0.0, 3.0, 0.0);
+        camera.transform_mut().look_at(DVec3::ZERO, DVec3::NEG_Z);
         let mut light = DirectionalLight::default();
         light.set_intensity(0.0);
         let mut material = PbrMaterial::new("HDR");

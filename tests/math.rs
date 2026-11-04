@@ -93,6 +93,65 @@ fn local_axes_only_depend_on_rotation_and_stay_normalized() {
 }
 
 #[test]
+fn look_at_aims_negative_z_at_the_target_without_moving() {
+    let position = DVec3::new(3.0, -2.0, 4.0);
+    for (offset, up) in [
+        (DVec3::NEG_Z, DVec3::Y),
+        (DVec3::Z, DVec3::Y),
+        (DVec3::X, DVec3::Y),
+        (DVec3::Y, DVec3::NEG_Z),
+        (DVec3::new(-2.0, 3.0, 5.0), DVec3::Y),
+        (DVec3::new(0.0001, 1.0, 0.0), DVec3::Y),
+    ] {
+        let mut transform = Transform::new();
+        transform.position = position;
+        transform.rotation = DQuat::from_rotation_x(0.7);
+        transform.look_at(position + offset, up);
+
+        assert_eq!(transform.position, position);
+        assert!(transform.rotation.is_normalized());
+        assert_close(
+            (transform.rotation * DVec3::NEG_Z).into(),
+            offset.normalize().into(),
+        );
+        assert!(transform.up().dot(up) > 0.0);
+    }
+}
+
+#[test]
+fn look_at_uses_parent_space_for_both_target_and_up() {
+    let parent = Rc::new(RefCell::new(Transform::new()));
+    parent.borrow_mut().position = DVec3::new(7.0, -4.0, 2.0);
+    parent.borrow_mut().rotation = DQuat::from_rotation_z(0.4) * DQuat::from_rotation_y(0.7);
+    let camera: Camera = Camera::default();
+    let position = DVec3::new(3.0, 2.0, 5.0);
+    let target = position + 5.0 * DVec3::X;
+    {
+        let mut transform = camera.transform_mut();
+        transform.parent = Some(parent.clone());
+        transform.position = position;
+        transform.look_at(target, DVec3::NEG_Z);
+        assert_eq!(transform.position, position);
+        assert_close((transform.rotation * DVec3::NEG_Z).into(), DVec3::X.into());
+        assert_close(transform.up().into(), DVec3::NEG_Z.into());
+    }
+
+    for translation in [DVec3::new(7.0, -4.0, 2.0), DVec3::new(-3.0, 6.0, 1.0)] {
+        parent.borrow_mut().position = translation;
+        let parent_world = parent.borrow().world_matrix();
+        let view = camera.view_matrix();
+        assert_close(
+            (view * parent_world * target.extend(1.0)).into(),
+            [0.0, 0.0, -5.0, 1.0],
+        );
+        assert_close(
+            (view * parent_world * (target + DVec3::NEG_Z).extend(1.0)).into(),
+            [0.0, 1.0, -5.0, 1.0],
+        );
+    }
+}
+
+#[test]
 fn camera_view_accounts_for_its_parent_transform() {
     let parent = Rc::new(RefCell::new(Transform::new()));
     parent.borrow_mut().position = DVec3::new(2.0, -1.0, 3.0);
