@@ -1,26 +1,20 @@
-use crate::core::wgpu_context::{DEPTH_FORMAT, WGPUContext};
+use crate::core::wgpu_context::WGPUContext;
 use std::sync::Arc;
 use wgpu::{Device, Surface, SurfaceCapabilities, SurfaceConfiguration};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
-/// Presentation surface and its size-dependent attachments.
+/// Presentation surface and its configuration.
 pub struct WindowSurface {
     pub surface: Surface<'static>,
     pub config: SurfaceConfiguration,
-    pub(crate) depth_view: wgpu::TextureView,
 }
 
 impl WindowSurface {
     pub fn new(ctx: &WGPUContext, surface: Surface<'static>, size: PhysicalSize<u32>) -> Self {
         let config = surface_configuration(&surface.get_capabilities(&ctx.adapter), size);
         surface.configure(&ctx.device, &config);
-        let depth_view = Self::create_depth_view(&ctx.device, &config);
-        Self {
-            surface,
-            config,
-            depth_view,
-        }
+        Self { surface, config }
     }
 
     pub fn resize(&mut self, device: &Device, new_size: PhysicalSize<u32>) {
@@ -32,34 +26,11 @@ impl WindowSurface {
         self.config.height = new_size.height;
         // Reconfigure even at the same size to recover outdated surfaces.
         self.surface.configure(device, &self.config);
-        if self.depth_view.texture().width() != new_size.width
-            || self.depth_view.texture().height() != new_size.height
-        {
-            self.depth_view = Self::create_depth_view(device, &self.config);
-        }
     }
 
     pub fn recreate_surface(&mut self, ctx: &WGPUContext, window: Arc<Window>) {
         self.surface = ctx.instance.create_surface(window).unwrap();
         self.surface.configure(&ctx.device, &self.config);
-    }
-
-    fn create_depth_view(device: &Device, config: &SurfaceConfiguration) -> wgpu::TextureView {
-        let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Depth Texture"),
-            size: wgpu::Extent3d {
-                width: config.width,
-                height: config.height,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: DEPTH_FORMAT,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            view_formats: &[],
-        });
-        texture.create_view(&wgpu::TextureViewDescriptor::default())
     }
 }
 

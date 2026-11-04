@@ -45,7 +45,7 @@ impl App for TerrainView {
 
     fn update_before_render(&mut self, frame: &FrameContext<'_>) {
         self.camera.projection.aspect_ratio =
-            frame.surface_width as f64 / frame.surface_height as f64;
+            frame.render_width as f64 / frame.render_height as f64;
         self.orbit_control
             .update(&mut self.camera, frame.mouse, frame.delta_seconds);
     }

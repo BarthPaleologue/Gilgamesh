@@ -8,10 +8,10 @@ use winit::event::WindowEvent;
 pub struct FrameContext<'a> {
     pub elapsed_seconds: f64,
     pub delta_seconds: f64,
-    /// Configured render surface width in physical pixels.
-    pub surface_width: u32,
-    /// Configured render surface height in physical pixels.
-    pub surface_height: u32,
+    /// Render target width in physical pixels.
+    pub render_width: u32,
+    /// Render target height in physical pixels.
+    pub render_height: u32,
     pub mouse: &'a Mouse,
     pub wgpu_context: &'a WGPUContext,
 }

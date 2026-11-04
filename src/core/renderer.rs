@@ -1,11 +1,11 @@
 use crate::camera::CameraProjection;
 use crate::core::frame_bindings::FrameBindings;
 use crate::core::render_context::FrameBindingsData;
+use crate::core::render_target::RenderTarget;
 use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::mesh::Mesh;
 use crate::materials::material_pipeline::{MaterialPipeline, PipelineConfig, PipelineKey};
 use std::collections::HashMap;
-use std::iter;
 use std::rc::Rc;
 
 pub struct Renderer {
@@ -47,7 +47,7 @@ impl Renderer {
             .clone()
     }
 
-    pub(crate) fn update_frame_bindings<'a, ProjectionType>(
+    pub fn update_frame_bindings<'a, ProjectionType>(
         &mut self,
         context: FrameBindingsData<'a, ProjectionType>,
         wgpu_context: &WGPUContext,
@@ -62,31 +62,21 @@ impl Renderer {
         );
     }
 
-    pub(crate) fn render<'a, RenderObjects>(
+    /// Records a scene pass into the caller's encoder using the supplied attachments.
+    pub fn encode<'a, RenderObjects>(
         &mut self,
         render_objects: RenderObjects,
         wgpu_context: &WGPUContext,
-        output: &wgpu::SurfaceTexture,
-        depth_view: &wgpu::TextureView,
+        encoder: &mut wgpu::CommandEncoder,
+        target: RenderTarget<'_>,
     ) where
         RenderObjects: IntoIterator<Item = &'a mut Mesh>,
     {
-        let view = output
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
-
-        let mut encoder =
-            wgpu_context
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some("Render Encoder"),
-                });
-
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
+                    view: target.color,
                     depth_slice: None,
                     resolve_target: None,
                     ops: wgpu::Operations {
@@ -100,7 +90,7 @@ impl Renderer {
                     },
                 })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: depth_view,
+                    view: target.depth,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(0.0),
                         store: wgpu::StoreOp::Discard,
@@ -115,7 +105,5 @@ impl Renderer {
                 mesh.render(&mut render_pass, self, wgpu_context);
             }
         }
-
-        wgpu_context.queue.submit(iter::once(encoder.finish()));
     }
 }

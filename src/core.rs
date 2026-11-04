@@ -1,6 +1,7 @@
 pub mod app;
 pub mod engine;
 pub mod render_context;
+pub mod render_target;
 pub mod wgpu_context;
 pub mod window_surface;
 

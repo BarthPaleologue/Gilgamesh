@@ -1,4 +1,5 @@
-use crate::core::wgpu_context::{DEPTH_FORMAT, WGPUContext};
+use crate::core::render_target::DEPTH_FORMAT;
+use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::gpu_mesh_buffers::Vertex;
 use crate::materials::utils::uniform_layout_entry;
 use crate::texture::Texture;

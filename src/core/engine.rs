@@ -1,4 +1,5 @@
 use crate::core::app::{App, FrameContext};
+use crate::core::render_target::{RenderTarget, create_depth_view};
 use crate::core::renderer::Renderer;
 use crate::core::wgpu_context::WGPUContext;
 use crate::core::window_surface::WindowSurface;
@@ -19,6 +20,7 @@ pub struct Engine<Application: App> {
     pub window_surface: WindowSurface,
 
     renderer: Renderer,
+    depth_view: wgpu::TextureView,
     clock: Instant,
     elapsed_seconds: f64,
     delta_seconds: f64,
@@ -78,6 +80,14 @@ impl<Application: App> Engine<Application> {
         let surface = instance.create_surface(window.clone()).unwrap();
         let wgpu_context = WGPUContext::new(instance, Some(&surface)).await;
         let window_surface = WindowSurface::new(&wgpu_context, surface, window.inner_size());
+        let depth_view = create_depth_view(
+            &wgpu_context.device,
+            wgpu::Extent3d {
+                width: window_surface.config.width,
+                height: window_surface.config.height,
+                depth_or_array_layers: 1,
+            },
+        );
 
         let renderer = Renderer::new(&wgpu_context, window_surface.config.format);
         let app = Application::new(&wgpu_context);
@@ -85,6 +95,7 @@ impl<Application: App> Engine<Application> {
         Engine {
             app,
             renderer,
+            depth_view,
             window,
             wgpu_context,
             window_surface,
@@ -109,23 +120,42 @@ impl<Application: App> Engine<Application> {
     }
 
     fn render(&mut self, output: wgpu::SurfaceTexture) {
+        let size = output.texture.size();
+        if self.depth_view.texture().size() != size {
+            self.depth_view = create_depth_view(&self.wgpu_context.device, size);
+        }
+        let color_view = output
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
         let frame = FrameContext {
             elapsed_seconds: self.elapsed_seconds,
             delta_seconds: self.delta_seconds,
-            surface_width: self.window_surface.config.width,
-            surface_height: self.window_surface.config.height,
+            render_width: size.width,
+            render_height: size.height,
             mouse: &self.mouse,
             wgpu_context: &self.wgpu_context,
         };
         self.app.update_before_render(&frame);
         self.renderer
             .update_frame_bindings(self.app.get_frame_bindings_data(), &self.wgpu_context);
-        self.renderer.render(
+        let mut encoder =
+            self.wgpu_context
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Render Encoder"),
+                });
+        self.renderer.encode(
             self.app.get_meshes(),
             &self.wgpu_context,
-            &output,
-            &self.window_surface.depth_view,
+            &mut encoder,
+            RenderTarget {
+                color: &color_view,
+                depth: &self.depth_view,
+            },
         );
+        self.wgpu_context
+            .queue
+            .submit(std::iter::once(encoder.finish()));
         self.mouse.reset();
         self.window.pre_present_notify();
         self.wgpu_context.queue.present(output);

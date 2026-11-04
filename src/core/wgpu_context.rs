@@ -3,8 +3,6 @@ use crate::texture::Texture;
 use std::rc::Rc;
 use wgpu::{Adapter, Device, Instance, Queue, Surface};
 
-pub(crate) const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
-
 /// GPU resources shared by rendering and compute, independent of a window.
 pub struct WGPUContext {
     pub instance: Instance,
