@@ -27,7 +27,7 @@ fn shared_materials_have_renderer_local_runtime() {
         Material::from(PbrMaterial::new("PBR")),
         Material::from(BlinnPhongMaterial::new("Blinn-Phong")),
     ] {
-        set_ambient(&mut description, [1.0, 0.0, 0.0]);
+        set_unlit_color(&mut description, [1.0, 0.0, 0.0]);
         let material = Rc::new(description);
         let source = Rc::downgrade(&material);
         let mut left =
@@ -64,7 +64,7 @@ fn shared_materials_have_renderer_local_runtime() {
         assert_eq!(renderer.transforms.len(), 2);
 
         let mut replacement = material.as_ref().clone();
-        set_ambient(&mut replacement, [0.0, 1.0, 0.0]);
+        set_unlit_color(&mut replacement, [0.0, 1.0, 0.0]);
         left.set_material(Rc::new(replacement));
         let image = render(&gpu, renderer, &[&left, &right], color, &depth);
         assert_channel(&image, 32, 1);
@@ -74,7 +74,7 @@ fn shared_materials_have_renderer_local_runtime() {
         drop(left);
         drop(right);
         let mut material = material;
-        set_ambient(Rc::make_mut(&mut material), [0.0, 0.0, 1.0]);
+        set_unlit_color(Rc::make_mut(&mut material), [0.0, 0.0, 1.0]);
         assert!(source.upgrade().is_none());
         let mesh = Mesh::from_cpu_buffers("Edited", primitive::plane(2, 1.0), material, &gpu);
         for (renderer, color) in &mut renderers {
@@ -126,9 +126,9 @@ fn shared_materials_have_renderer_local_runtime() {
     }
 }
 
-fn set_ambient(material: &mut Material, color: [f32; 3]) {
+fn set_unlit_color(material: &mut Material, color: [f32; 3]) {
     match material {
-        Material::Pbr(material) => material.ambient_color = color,
+        Material::Pbr(material) => material.emissive_color = color,
         Material::BlinnPhong(material) => material.ambient_color = color,
     }
 }

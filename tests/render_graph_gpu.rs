@@ -150,7 +150,7 @@ fn custom_blocks_mrt_compute_caches_and_independent_raster_inputs() {
         let mut light = DirectionalLight::default();
         light.set_intensity(0.0);
         let mut material = PbrMaterial::new("Amber");
-        material.set_ambient_color(4.0, 1.0, 0.25);
+        material.set_emissive_color(4.0, 1.0, 0.25);
         let mesh = Mesh::from_cpu_buffers(
             "Plane",
             primitive::plane(2, 2.0),

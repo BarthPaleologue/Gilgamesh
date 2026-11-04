@@ -183,7 +183,7 @@ impl App for TestApp {
         let mut light = DirectionalLight::default();
         light.set_intensity(0.0);
         let mut material = PbrMaterial::new("HDR");
-        material.set_ambient_color(4.0, 1.0, 0.25);
+        material.set_emissive_color(4.0, 1.0, 0.25);
         Self {
             name: String::new(),
             camera,
@@ -213,7 +213,7 @@ impl App for TestApp {
             frame.render_width as f64 / frame.render_height as f64;
         if frame.elapsed_seconds >= 0.04 {
             let mut blue = PbrMaterial::new("Blue");
-            blue.set_ambient_color(0.0, 0.0, 4.0);
+            blue.set_emissive_color(0.0, 0.0, 4.0);
             self.mesh.set_material(Rc::new(blue.into()));
         }
         self.frames.push((

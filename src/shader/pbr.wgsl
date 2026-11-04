@@ -33,8 +33,8 @@ struct PointLightUniforms {
 struct PbrUniforms {
     albedo_color: vec3<f32>,
     has_albedo_texture: u32,
-    ambient_color: vec3<f32>,
-    has_ambient_texture: u32,
+    emissive_color: vec3<f32>,
+    has_emissive_texture: u32,
     metallic: f32,
     has_metallic_texture: u32,
     roughness: f32,
@@ -47,8 +47,8 @@ struct PbrUniforms {
 @group(1) @binding(1) var albedo_texture: texture_2d<f32>;
 @group(1) @binding(2) var albedo_sampler: sampler;
 
-@group(1) @binding(3) var ambient_texture: texture_2d<f32>;
-@group(1) @binding(4) var ambient_sampler: sampler;
+@group(1) @binding(3) var emissive_texture: texture_2d<f32>;
+@group(1) @binding(4) var emissive_sampler: sampler;
 
 @group(1) @binding(5) var normal_texture: texture_2d<f32>;
 @group(1) @binding(6) var normal_sampler: sampler;
@@ -169,9 +169,9 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         albedo = textureSample(albedo_texture, albedo_sampler, in.vUV).rgb;
     }
 
-    var ambient: vec3<f32> = pbr.ambient_color;
-    if(pbr.has_ambient_texture > 0u) {
-        ambient = textureSample(ambient_texture, ambient_sampler, in.vUV).rgb;
+    var emissive: vec3<f32> = pbr.emissive_color;
+    if(pbr.has_emissive_texture > 0u) {
+        emissive *= textureSample(emissive_texture, emissive_sampler, in.vUV).rgb;
     }
 
     var metallic: f32 = pbr.metallic;
@@ -201,5 +201,5 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         Lo += pbr_radiance(L, H, V, N, point_lights[i].color, distance, albedo, metallic, roughness) * point_lights[i].intensity;
     }
 
-    return vec4(Lo + ambient, 1.0);
+    return vec4(Lo + emissive, 1.0);
 }

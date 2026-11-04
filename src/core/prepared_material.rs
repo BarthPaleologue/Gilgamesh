@@ -13,8 +13,8 @@ pub(crate) struct PbrUniforms {
     albedo_color: [f32; 3],
     has_albedo_texture: u32,
 
-    ambient_color: [f32; 3],
-    has_ambient_texture: u32,
+    emissive_color: [f32; 3],
+    has_emissive_texture: u32,
 
     metallic: f32,
     has_metallic_texture: u32,
@@ -68,7 +68,7 @@ impl PreparedMaterial {
                             .as_ref()
                             .map(|texture| texture as &dyn SampledTexture),
                         material
-                            .ambient_texture
+                            .emissive_texture
                             .as_ref()
                             .map(|texture| texture as &dyn SampledTexture),
                         material
@@ -168,8 +168,8 @@ impl From<&crate::materials::pbr::PbrMaterial> for PbrUniforms {
         PbrUniforms {
             albedo_color: material.albedo_color,
             has_albedo_texture: u32::from(material.albedo_texture.is_some()),
-            ambient_color: material.ambient_color,
-            has_ambient_texture: u32::from(material.ambient_texture.is_some()),
+            emissive_color: material.emissive_color,
+            has_emissive_texture: u32::from(material.emissive_texture.is_some()),
             metallic: material.metallic,
             has_metallic_texture: 0,
             roughness: material.roughness,
@@ -204,21 +204,21 @@ mod pbr_tests {
     fn constant_colors_can_be_configured_without_texture_resources() {
         let mut material = PbrMaterial::new("Constant");
         assert!(material.albedo_texture.is_none());
-        assert!(material.ambient_texture.is_none());
+        assert!(material.emissive_texture.is_none());
         assert!(material.normal_map.is_none());
         assert!(material.roughness_map.is_none());
         material.set_albedo_color(0.2, 0.3, 0.4);
-        material.set_ambient_color(0.1, 0.0, 0.2);
+        material.set_emissive_color(0.1, 0.0, 0.2);
 
         let uniforms = PbrUniforms::from(&material);
         assert_eq!(uniforms.albedo_color, [0.2, 0.3, 0.4]);
-        assert_eq!(uniforms.ambient_color, [0.1, 0.0, 0.2]);
+        assert_eq!(uniforms.emissive_color, [0.1, 0.0, 0.2]);
         assert_eq!(uniforms.metallic, 0.7);
         assert_eq!(uniforms.roughness, 0.4);
         assert_eq!(
             [
                 uniforms.has_albedo_texture,
-                uniforms.has_ambient_texture,
+                uniforms.has_emissive_texture,
                 uniforms.has_normal_map,
                 uniforms.has_metallic_texture,
                 uniforms.has_roughness_texture,
@@ -230,7 +230,7 @@ mod pbr_tests {
     #[test]
     fn gpu_uniforms_match_shader_layout() {
         assert_eq!(std::mem::size_of::<PbrUniforms>(), 64);
-        assert_eq!(std::mem::offset_of!(PbrUniforms, ambient_color), 16);
+        assert_eq!(std::mem::offset_of!(PbrUniforms, emissive_color), 16);
         assert_eq!(std::mem::offset_of!(PbrUniforms, metallic), 32);
         assert_eq!(std::mem::offset_of!(PbrUniforms, roughness), 40);
     }

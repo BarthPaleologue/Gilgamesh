@@ -233,3 +233,99 @@ fn test_texture(pixel: [u8; 4], gpu: &WGPUContext) -> Rc<Texture<Linear>> {
         .unwrap();
     Rc::new(Texture::<Linear>::new("PBR data", png.get_ref(), gpu))
 }
+
+#[test]
+#[ignore = "GPU end-to-end check; run explicitly with approval"]
+fn emissive_textures_multiply_linear_hdr_factors_without_received_light() {
+    use gilgamesh::blocks::{rasterize, tone_map};
+    use gilgamesh::core::graph_executor::GraphExecutor;
+    use gilgamesh::core::render_graph::RenderGraph;
+    use gilgamesh::lights::light::Light;
+    use gilgamesh::texture::ColorTexture;
+
+    pollster::block_on(async {
+        let mut executor = GraphExecutor::new().await;
+        let camera: Camera = Camera::default();
+        camera.transform_mut().position = DVec3::new(0.0, 3.0, 3.0);
+        camera.transform_mut().look_at(DVec3::ZERO, DVec3::Y);
+        let mut light = DirectionalLight::default();
+        light.set_intensity(0.0);
+        let mut target = executor.create_target(32, 32);
+        let factor = [8.0, 2.0, 0.5];
+        let mut png = Cursor::new(Vec::new());
+        image::DynamicImage::ImageRgba8(image::RgbaImage::from_pixel(
+            1,
+            1,
+            image::Rgba([128, 128, 128, 17]),
+        ))
+        .write_to(&mut png, image::ImageFormat::Png)
+        .unwrap();
+        for linear in [false, true] {
+            let (texture, gray): (ColorTexture, f32) = if linear {
+                (
+                    Rc::new(Texture::<Linear>::new(
+                        "Linear emission",
+                        png.get_ref(),
+                        executor.wgpu_context(),
+                    ))
+                    .into(),
+                    128.0 / 255.0,
+                )
+            } else {
+                (
+                    Rc::new(Texture::<Srgb>::new(
+                        "sRGB emission",
+                        png.get_ref(),
+                        executor.wgpu_context(),
+                    ))
+                    .into(),
+                    0.2158605,
+                )
+            };
+            let mut reference = PbrMaterial::new("Constant emission");
+            reference.set_emissive_color(factor[0] * gray, factor[1] * gray, factor[2] * gray);
+            let mut textured = PbrMaterial::new("Textured emission");
+            textured.set_emissive_texture(texture);
+            textured.set_emissive_color(factor[0], factor[1], factor[2]);
+            let mut disabled = textured.clone();
+            disabled.set_emissive_color(0.0, 0.0, 0.0);
+            let mut images = Vec::new();
+            for material in [reference, textured, disabled] {
+                let mesh = Mesh::from_cpu_buffers(
+                    "Emitter",
+                    primitive::plane(2, 4.0),
+                    Rc::new(material.into()),
+                    executor.wgpu_context(),
+                );
+                let mut graph = RenderGraph::new();
+                let scene = rasterize(
+                    FrameBindingsData::new(&camera, &light, &[]),
+                    [&mesh],
+                    wgpu::TextureFormat::Rgba16Float,
+                    &mut graph,
+                );
+                let output = tone_map(scene.color, wgpu::TextureFormat::Rgba8UnormSrgb, &mut graph);
+                graph.export(output);
+                executor.execute(graph, &mut target).unwrap();
+                images.push(target.read_image(executor.wgpu_context()).await.unwrap());
+            }
+            let center = images[1].get_pixel(16, 16);
+            assert!(
+                center[0] > 200 && center[1] > center[2],
+                "Emission must remain HDR and keep its color without lights: {center:?}"
+            );
+            assert_eq!(center[3], 255, "Emissive texture alpha must be ignored");
+            for (a, b) in images[0].as_raw().iter().zip(images[1].as_raw()) {
+                assert!(
+                    a.abs_diff(*b) <= 1,
+                    "linear={linear}: constant {a} != textured {b}"
+                );
+            }
+            assert_eq!(
+                images[2].get_pixel(16, 16).0,
+                [0, 0, 0, 255],
+                "A zero emission factor must disable the texture"
+            );
+        }
+    });
+}

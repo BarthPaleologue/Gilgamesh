@@ -54,8 +54,9 @@ impl ColorEncoding for Linear {
 /// ) {
 ///     pbr.set_albedo_texture(srgb.clone());
 ///     pbr.set_albedo_texture(linear.clone());
-///     pbr.set_ambient_texture(srgb.clone());
-///     pbr.set_ambient_texture(linear.clone());
+///     pbr.set_emissive_color(1.0, 1.0, 1.0);
+///     pbr.set_emissive_texture(srgb.clone());
+///     pbr.set_emissive_texture(linear.clone());
 ///     phong.set_diffuse_texture(srgb.clone());
 ///     phong.set_diffuse_texture(linear.clone());
 ///     phong.set_ambient_texture(srgb);
