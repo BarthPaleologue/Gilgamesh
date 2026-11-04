@@ -1,4 +1,4 @@
-use gilgamesh::blocks::{rasterize, tone_map};
+use gilgamesh::blocks::{bloom, rasterize, tone_map};
 use gilgamesh::camera::{Camera, Perspective};
 use gilgamesh::core::app::{App, FrameContext};
 use gilgamesh::core::render_context::FrameBindingsData;
@@ -154,7 +154,8 @@ impl App for StarSystemDemo {
             TextureFormat::Rgba16Float,
             &mut graph,
         );
-        let image = tone_map(scene.color, TextureFormat::Rgba8UnormSrgb, &mut graph);
+        let color = bloom(scene.color, 5, 0.04, &mut graph);
+        let image = tone_map(color, TextureFormat::Rgba8UnormSrgb, &mut graph);
         graph.export(image);
         graph
     }

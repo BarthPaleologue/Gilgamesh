@@ -1,0 +1,77 @@
+use super::resize_bilinear;
+use crate::core::render_graph::{Binding, Image, ImageSize, RenderGraph, fragment_pass};
+
+/// Blurs RGBA using a normalized pyramid of `levels` half-resolution images.
+/// Uses bilinear resizing in both directions, blending adjacent levels equally.
+/// Preserves the source size and format; uniform colors stay unchanged.
+/// Requires a filterable color format. Zero levels returns the source unchanged.
+pub fn pyramid_blur(source: Image, levels: u32, graph: &mut RenderGraph<'_>) -> Image {
+    if levels == 0 {
+        return source;
+    }
+    let mut pyramid = Vec::new();
+    let mut image = source;
+    for _ in 0..levels {
+        let size = half_size(graph.image_descriptor(image).size);
+        image = resize_bilinear(image, size, graph);
+        pyramid.push(image);
+        if matches!(
+            size,
+            ImageSize::Fixed {
+                width: 1,
+                height: 1
+            }
+        ) {
+            break;
+        }
+    }
+    let mut blurred = pyramid.pop().unwrap();
+    for image in pyramid.into_iter().rev() {
+        let expanded = resize_bilinear(blurred, graph.image_descriptor(image).size, graph);
+        blurred = merge_levels(image, expanded, graph);
+    }
+    resize_bilinear(blurred, graph.image_descriptor(source).size, graph)
+}
+
+fn merge_levels(fine: Image, coarse: Image, graph: &mut RenderGraph<'_>) -> Image {
+    let output = graph.create_image("Blur Merge", graph.image_descriptor(fine));
+    fragment_pass(
+        "Blur Merge",
+        include_str!("pyramid_blur.wgsl"),
+        [Binding::Texture(fine), Binding::Texture(coarse)],
+        &[output],
+        graph,
+    );
+    output
+}
+
+fn half_size(size: ImageSize) -> ImageSize {
+    match size {
+        ImageSize::Fixed { width, height } => ImageSize::Fixed {
+            width: (width / 2).max(1),
+            height: (height / 2).max(1),
+        },
+        ImageSize::Target => ImageSize::Scaled {
+            numerator: 1,
+            denominator: 2,
+        },
+        ImageSize::Scaled {
+            numerator,
+            denominator,
+        } => {
+            if numerator % 2 == 0 {
+                ImageSize::Scaled {
+                    numerator: numerator / 2,
+                    denominator,
+                }
+            } else {
+                ImageSize::Scaled {
+                    numerator,
+                    denominator: denominator
+                        .checked_mul(2)
+                        .expect("Blur pyramid scale overflows"),
+                }
+            }
+        }
+    }
+}
