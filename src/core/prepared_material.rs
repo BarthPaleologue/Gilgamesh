@@ -76,7 +76,10 @@ impl PreparedMaterial {
                             .as_deref()
                             .map(|texture| texture as &dyn SampledTexture),
                         None,
-                        None,
+                        material
+                            .roughness_map
+                            .as_deref()
+                            .map(|texture| texture as &dyn SampledTexture),
                     ],
                     renderer,
                     ctx,
@@ -170,7 +173,7 @@ impl From<&crate::materials::pbr::PbrMaterial> for PbrUniforms {
             metallic: material.metallic,
             has_metallic_texture: 0,
             roughness: material.roughness,
-            has_roughness_texture: 0,
+            has_roughness_texture: u32::from(material.roughness_map.is_some()),
             has_normal_map: u32::from(material.normal_map.is_some()),
             _padding: [0; 3],
         }
@@ -203,6 +206,7 @@ mod pbr_tests {
         assert!(material.albedo_texture.is_none());
         assert!(material.ambient_texture.is_none());
         assert!(material.normal_map.is_none());
+        assert!(material.roughness_map.is_none());
         material.set_albedo_color(0.2, 0.3, 0.4);
         material.set_ambient_color(0.1, 0.0, 0.2);
 

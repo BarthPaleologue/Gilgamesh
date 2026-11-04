@@ -113,3 +113,123 @@ fn albedo_encodings_match_equivalent_linear_constants() {
         }
     }
 }
+
+#[test]
+#[ignore = "GPU end-to-end check; run explicitly with approval"]
+fn roughness_and_normal_maps_match_equivalent_linear_surface_properties() {
+    use gilgamesh::blocks::{rasterize, tone_map};
+    use gilgamesh::core::graph_executor::GraphExecutor;
+    use gilgamesh::core::render_graph::RenderGraph;
+    use glam::Vec3;
+
+    pollster::block_on(async {
+        let mut executor = GraphExecutor::new().await;
+        let camera: Camera = Camera::default();
+        camera.transform_mut().position = DVec3::new(3.0, 3.0, 0.0);
+        camera.transform_mut().look_at(DVec3::ZERO, DVec3::Y);
+        let light = DirectionalLight::default();
+        let mut target = executor.create_target(64, 64);
+        let mut captures = Vec::new();
+        for roughness in [32_u8, 128, 224] {
+            for mapped in [false, true] {
+                let mut material = PbrMaterial::new("Roughness");
+                material.metallic = 0.0;
+                material.set_albedo_color(0.3, 0.4, 0.5);
+                material.roughness = f32::from(roughness) / 255.0;
+                if mapped {
+                    material.roughness = 0.99;
+                    material.set_roughness_map(test_texture(
+                        [roughness, 3, 240, 255],
+                        executor.wgpu_context(),
+                    ));
+                }
+                let mesh = Mesh::from_cpu_buffers(
+                    "Plane",
+                    primitive::plane(2, 4.0),
+                    Rc::new(material.into()),
+                    executor.wgpu_context(),
+                );
+                let mut graph = RenderGraph::new();
+                let scene = rasterize(
+                    FrameBindingsData::new(&camera, &light, &[]),
+                    [&mesh],
+                    wgpu::TextureFormat::Rgba16Float,
+                    &mut graph,
+                );
+                let output = tone_map(scene.color, wgpu::TextureFormat::Rgba8UnormSrgb, &mut graph);
+                graph.export(output);
+                executor.execute(graph, &mut target).unwrap();
+                captures.push(target.read_image(executor.wgpu_context()).await.unwrap());
+            }
+        }
+        for pair in captures.as_chunks::<2>().0 {
+            assert!(pair[0].pixels().any(|p| p[0] > 0));
+            for (a, b) in pair[0].as_raw().iter().zip(pair[1].as_raw()) {
+                assert!(
+                    a.abs_diff(*b) <= 1,
+                    "Scalar roughness and linear red channel differ: {a} != {b}"
+                );
+            }
+        }
+        assert!(
+            captures[2]
+                .as_raw()
+                .iter()
+                .zip(captures[4].as_raw())
+                .any(|(a, b)| a.abs_diff(*b) > 5),
+            "Roughness must affect the rendered surface"
+        );
+
+        let encoded = [128_u8, 218, 218, 255];
+        let tangent_normal =
+            (Vec3::new(encoded[0] as f32, encoded[1] as f32, encoded[2] as f32) / 255.0 * 2.0
+                - Vec3::ONE)
+                .normalize();
+        let expected_normal =
+            Vec3::new(tangent_normal.x, tangent_normal.z, -tangent_normal.y).to_array();
+        let mut images = Vec::new();
+        for mapped in [false, true] {
+            let mut material = PbrMaterial::new("Normal");
+            material.metallic = 0.0;
+            material.roughness = 0.7;
+            let mut geometry = primitive::plane(2, 4.0);
+            if mapped {
+                material.set_normal_map(test_texture(encoded, executor.wgpu_context()));
+            } else {
+                geometry.vertices.normals.fill(expected_normal);
+            }
+            let mesh = Mesh::from_cpu_buffers(
+                "Plane",
+                geometry,
+                Rc::new(material.into()),
+                executor.wgpu_context(),
+            );
+            let mut graph = RenderGraph::new();
+            let scene = rasterize(
+                FrameBindingsData::new(&camera, &light, &[]),
+                [&mesh],
+                wgpu::TextureFormat::Rgba16Float,
+                &mut graph,
+            );
+            let output = tone_map(scene.color, wgpu::TextureFormat::Rgba8UnormSrgb, &mut graph);
+            graph.export(output);
+            executor.execute(graph, &mut target).unwrap();
+            images.push(target.read_image(executor.wgpu_context()).await.unwrap());
+        }
+        assert!(images[0].pixels().any(|p| p[0] > 0));
+        for (a, b) in images[0].as_raw().iter().zip(images[1].as_raw()) {
+            assert!(
+                a.abs_diff(*b) <= 1,
+                "Linear tangent-space normal differs from equivalent geometry: {a} != {b}"
+            );
+        }
+    });
+}
+
+fn test_texture(pixel: [u8; 4], gpu: &WGPUContext) -> Rc<Texture<Linear>> {
+    let mut png = Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgba8(image::RgbaImage::from_pixel(1, 1, image::Rgba(pixel)))
+        .write_to(&mut png, image::ImageFormat::Png)
+        .unwrap();
+    Rc::new(Texture::<Linear>::new("PBR data", png.get_ref(), gpu))
+}

@@ -176,6 +176,9 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     var metallic: f32 = pbr.metallic;
     var roughness: f32 = pbr.roughness;
+    if(pbr.has_roughness_texture > 0u) {
+        roughness = textureSample(roughness_texture, roughness_sampler, in.vUV).r;
+    }
 
     var Lo: vec3<f32> = vec3(0.0);
 

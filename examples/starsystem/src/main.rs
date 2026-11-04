@@ -12,7 +12,6 @@ use gilgamesh::lights::debug::create_point_light_debug_mesh;
 use gilgamesh::lights::directional_light::DirectionalLight;
 use gilgamesh::lights::light::Light;
 use gilgamesh::lights::point_light::PointLight;
-use gilgamesh::materials::blinn_phong::BlinnPhongMaterial;
 use gilgamesh::materials::pbr::PbrMaterial;
 use gilgamesh::texture::{Linear, Srgb, Texture};
 use gilgamesh::transform::Transformable;
@@ -73,19 +72,24 @@ impl App for StarSystemDemo {
             ctx,
         );
 
-        let mut earth_material = BlinnPhongMaterial::new("EarthMaterial");
+        let mut earth_material = PbrMaterial::new("EarthMaterial");
+        earth_material.metallic = 0.0;
         let earth_diffuse_texture = Rc::new(Texture::<Srgb>::new(
             "Earth diffuse texture",
             include_bytes!("../assets/2k_earth_daymap.jpg"),
             ctx,
         ));
-        earth_material.set_diffuse_texture(earth_diffuse_texture);
-        let earth_specular_texture = Rc::new(Texture::<Linear>::new(
-            "Earth specular texture",
-            include_bytes!("../assets/2k_earth_specular_map.jpg"),
+        earth_material.set_albedo_texture(earth_diffuse_texture);
+        earth_material.set_normal_map(Rc::new(Texture::<Linear>::new(
+            "Earth normal map",
+            include_bytes!("../assets/2k_earth_normal_map.png"),
             ctx,
-        ));
-        earth_material.set_specular_texture(earth_specular_texture);
+        )));
+        earth_material.set_roughness_map(Rc::new(Texture::<Linear>::new(
+            "Earth roughness map",
+            include_bytes!("../assets/2k_earth_roughness_map.png"),
+            ctx,
+        )));
         let earth = Mesh::from_cpu_buffers(
             "Earth",
             primitive::sphere(32),
@@ -96,10 +100,13 @@ impl App for StarSystemDemo {
 
         camera.transform_mut().parent = Some(earth.transform_rc());
 
+        let mut plane_material = PbrMaterial::new("PlaneMaterial");
+        plane_material.metallic = 0.0;
+        plane_material.roughness = 0.8;
         let plane = Mesh::from_cpu_buffers(
             "Plane",
             primitive::plane(10, 10.0),
-            Rc::new(BlinnPhongMaterial::new("PlaneMaterial").into()),
+            Rc::new(plane_material.into()),
             ctx,
         );
         plane.transform_mut().position = DVec3::new(0.0, -5.0, 0.0);
@@ -150,5 +157,32 @@ impl App for StarSystemDemo {
         let image = tone_map(scene.color, TextureFormat::Rgba8UnormSrgb, &mut graph);
         graph.export(image);
         graph
+    }
+}
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod tests {
+    use super::StarSystemDemo;
+    use gilgamesh::core::headless_runtime::HeadlessRuntime;
+    use gilgamesh::lights::light::Light;
+    use std::time::Duration;
+
+    #[test]
+    #[ignore = "GPU end-to-end check; run explicitly with approval"]
+    fn earth_maps_render_in_the_star_system_graph() {
+        HeadlessRuntime::<StarSystemDemo>::run(400, 320, async |mut runtime| {
+            for light in &mut runtime.app_mut().point_lights {
+                light.set_intensity(200.0);
+            }
+            runtime.render(Duration::ZERO);
+            let image = runtime.capture_frame().await.unwrap();
+            assert_eq!(image.dimensions(), (400, 320));
+            assert!(image.pixels().any(|p| p[0] > 20 && p[2] > 20));
+            runtime.resize(321, 257);
+            runtime.render(Duration::from_millis(16));
+            let image = runtime.capture_frame().await.unwrap();
+            assert_eq!(image.dimensions(), (321, 257));
+            assert!(image.pixels().any(|p| p[0] > 20 && p[2] > 20));
+        });
     }
 }

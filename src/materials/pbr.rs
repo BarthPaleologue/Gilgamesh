@@ -14,6 +14,8 @@ pub struct PbrMaterial {
     pub albedo_texture: Option<ColorTexture>,
     pub ambient_texture: Option<ColorTexture>,
     pub normal_map: Option<Rc<Texture<Linear>>>,
+    /// Linear roughness sampled from the red channel; replaces the scalar when present.
+    pub roughness_map: Option<Rc<Texture<Linear>>>,
 
     pub double_sided: bool,
 }
@@ -31,6 +33,7 @@ impl PbrMaterial {
             albedo_texture: None,
             ambient_texture: None,
             normal_map: None,
+            roughness_map: None,
 
             double_sided: false,
         }
@@ -50,6 +53,22 @@ impl PbrMaterial {
 
     pub fn set_ambient_color(&mut self, r: f32, g: f32, b: f32) {
         self.ambient_color = [r, g, b];
+    }
+
+    pub fn set_normal_map(&mut self, texture: Rc<Texture<Linear>>) {
+        self.normal_map = Some(texture);
+    }
+
+    /// ```compile_fail,E0308
+    /// use gilgamesh::materials::pbr::PbrMaterial;
+    /// use gilgamesh::texture::{Srgb, Texture};
+    /// use std::rc::Rc;
+    /// fn bind(material: &mut PbrMaterial, srgb: Rc<Texture<Srgb>>) {
+    ///     material.set_roughness_map(srgb);
+    /// }
+    /// ```
+    pub fn set_roughness_map(&mut self, texture: Rc<Texture<Linear>>) {
+        self.roughness_map = Some(texture);
     }
 
     pub fn set_double_sided(&mut self, double_sided: bool) {
