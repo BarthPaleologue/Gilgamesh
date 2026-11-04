@@ -89,6 +89,7 @@ impl PbrMaterial {
         }
     }
 
+    /// For sRGB images, create the texture with [`crate::texture::ColorSpace::Srgb`].
     pub fn set_albedo_texture(&mut self, texture: Rc<Texture>) {
         self.prepared.take();
         self.diffuse_texture = texture;

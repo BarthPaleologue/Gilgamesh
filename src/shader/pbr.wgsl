@@ -166,7 +166,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     var albedo: vec3<f32> = pbr.albedo_color;
     if(pbr.has_albedo_texture > 0u) {
-        albedo = pow(textureSample(albedo_texture, albedo_sampler, in.vUV).rgb, vec3(2.2));
+        albedo = textureSample(albedo_texture, albedo_sampler, in.vUV).rgb;
     }
 
     var ambient: vec3<f32> = pbr.ambient_color;
