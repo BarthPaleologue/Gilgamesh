@@ -801,6 +801,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "headless"
+version = "0.1.0"
+dependencies = [
+ "gilgamesh",
+ "glam 0.34.2",
+ "image",
+ "js-sys",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
 name = "hermit-abi"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"

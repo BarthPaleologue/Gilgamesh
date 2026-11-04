@@ -1,0 +1,84 @@
+use gilgamesh::camera::{Camera, CameraProjection, Perspective};
+use gilgamesh::core::app::{App, FrameContext};
+use gilgamesh::core::headless_runtime::HeadlessRuntime;
+use gilgamesh::core::render_context::FrameBindingsData;
+use gilgamesh::core::wgpu_context::WGPUContext;
+use gilgamesh::geometry::{mesh::Mesh, primitive};
+use gilgamesh::lights::directional_light::DirectionalLight;
+use gilgamesh::materials::blinn_phong::BlinnPhongMaterial;
+use gilgamesh::transform::Transformable;
+use glam::{DVec3, dcamera::rh};
+use std::rc::Rc;
+use std::time::Duration;
+
+mod output;
+
+fn main() {
+    HeadlessRuntime::<HeadlessScene>::run(800, 600, async |mut runtime| {
+        runtime.render(Duration::ZERO);
+        let screenshot = runtime.capture_frame().await.unwrap();
+        output::save(&screenshot, "headless.png");
+    });
+}
+
+struct HeadlessScene {
+    camera: Camera<Perspective>,
+    plane: Mesh,
+    sphere: Mesh,
+    directional_light: DirectionalLight,
+}
+
+impl App for HeadlessScene {
+    fn new(ctx: &WGPUContext) -> Self {
+        let camera = Camera::default();
+        let position = DVec3::new(3.0, 3.0, 5.0);
+        camera.transform_mut().position = position;
+        camera.transform_mut().rotation =
+            rh::view::look_at_quat(position, DVec3::new(0.0, 0.75, 0.0), DVec3::Y).conjugate();
+
+        let mut plane_material = BlinnPhongMaterial::new("Ground");
+        plane_material.set_diffuse_color(0.3, 0.35, 0.4);
+        plane_material.set_ambient_color(0.02, 0.02, 0.02);
+        let plane = Mesh::from_cpu_buffers(
+            "Plane",
+            primitive::plane(2, 8.0),
+            Rc::new(plane_material.into()),
+            ctx,
+        );
+
+        let mut sphere_material = BlinnPhongMaterial::new("Sphere");
+        sphere_material.set_diffuse_color(0.9, 0.2, 0.05);
+        sphere_material.set_ambient_color(0.03, 0.01, 0.005);
+        let sphere = Mesh::from_cpu_buffers(
+            "Sphere",
+            primitive::sphere(32),
+            Rc::new(sphere_material.into()),
+            ctx,
+        );
+        sphere.transform_mut().position = DVec3::Y;
+
+        Self {
+            camera,
+            plane,
+            sphere,
+            directional_light: DirectionalLight::default(),
+        }
+    }
+
+    fn name(&self) -> &str {
+        "Headless scene"
+    }
+
+    fn update_before_render(&mut self, frame: &FrameContext<'_>) {
+        self.camera.projection.aspect_ratio =
+            frame.render_width as f64 / frame.render_height as f64;
+    }
+
+    fn get_frame_bindings_data(&self) -> FrameBindingsData<'_, impl CameraProjection> {
+        FrameBindingsData::new(&self.camera, &self.directional_light, &[])
+    }
+
+    fn get_meshes(&self) -> impl IntoIterator<Item = &Mesh> {
+        [&self.plane, &self.sphere]
+    }
+}

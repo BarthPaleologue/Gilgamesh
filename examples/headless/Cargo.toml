@@ -1,0 +1,15 @@
+[package]
+name = "headless"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+gilgamesh = { workspace = true }
+glam = { workspace = true }
+image = { workspace = true, features = ["png"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+js-sys = "0.3"
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3", features = ["Blob", "BlobPropertyBag", "Document", "HtmlAnchorElement", "Url", "Window", "console"] }
