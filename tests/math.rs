@@ -32,46 +32,54 @@ fn default_transform_has_identity_orientation() {
 }
 
 #[test]
-fn world_transform_keeps_rotation_then_nonuniform_scale_then_translation() {
+fn world_transform_applies_rotation_then_translation() {
     let mut transform = Transform::new();
     transform.position = DVec3::new(3.0, -2.0, 4.0);
-    transform.scaling = DVec3::new(2.0, 3.0, 4.0);
     transform.rotation = DQuat::from_rotation_z(FRAC_PI_2) * DQuat::from_rotation_x(FRAC_PI_2);
     let position = transform.world_matrix() * DVec4::new(1.0, 2.0, 3.0, 1.0);
-    assert_close(position.into(), [9.0, 1.0, 12.0, 1.0]);
+    assert_close(position.into(), [6.0, -1.0, 6.0, 1.0]);
 }
 
 #[test]
 fn child_transform_follows_changes_to_its_parent() {
     let parent = Rc::new(RefCell::new(Transform::new()));
     parent.borrow_mut().position = DVec3::new(5.0, -4.0, 2.0);
-    parent.borrow_mut().scaling = DVec3::new(2.0, 3.0, 4.0);
     parent.borrow_mut().rotation = DQuat::from_rotation_z(FRAC_PI_2);
     let mut child = Transform::new();
     child.parent = Some(parent.clone());
     child.position = DVec3::new(1.0, 2.0, 3.0);
     let position = child.world_matrix() * DVec4::new(0.0, 0.0, 0.0, 1.0);
-    assert_close(position.into(), [1.0, -1.0, 14.0, 1.0]);
+    assert_close(position.into(), [3.0, -3.0, 5.0, 1.0]);
 
     parent.borrow_mut().position = DVec3::new(8.0, -4.0, 2.0);
     let position = child.world_matrix() * DVec4::new(0.0, 0.0, 0.0, 1.0);
-    assert_close(position.into(), [4.0, -1.0, 14.0, 1.0]);
+    assert_close(position.into(), [6.0, -3.0, 5.0, 1.0]);
 }
 
 #[test]
-fn normal_transform_accounts_for_nonuniform_scale_and_rotation() {
-    let mut transform = Transform::new();
-    transform.scaling = DVec3::new(2.0, 4.0, 8.0);
-    transform.rotation = DQuat::from_rotation_z(FRAC_PI_2);
-    let normal = transform.normal_matrix() * DVec4::new(1.0, 0.0, 0.0, 0.0);
-    assert_close(normal.into(), [0.0, 0.25, 0.0, 0.0]);
+fn rigid_hierarchy_preserves_lengths_and_perpendicular_normals_in_gpu_uniforms() {
+    let parent = Rc::new(RefCell::new(Transform::new()));
+    parent.borrow_mut().position = DVec3::new(5.0, -4.0, 2.0);
+    parent.borrow_mut().rotation = DQuat::from_rotation_z(0.4);
+    let mut child = Transform::new();
+    child.parent = Some(parent);
+    child.position = DVec3::new(1.0, 2.0, 3.0);
+    child.rotation = DQuat::from_rotation_x(0.7);
+
+    let mut uniforms = TransformUniforms::default();
+    uniforms.update(&child);
+    let world = glam::Mat4::from_cols_array_2d(&uniforms.world_matrix);
+    let normal = world.transform_vector3(glam::Vec3::Y);
+    let tangent = world.transform_point3(glam::Vec3::X) - world.transform_point3(glam::Vec3::ZERO);
+    assert!((normal.length() - 1.0).abs() < 1e-6);
+    assert!((tangent.length() - 1.0).abs() < 1e-6);
+    assert!(normal.dot(tangent).abs() < 1e-6);
 }
 
 #[test]
 fn local_axes_only_depend_on_rotation_and_stay_normalized() {
     let mut transform = Transform::new();
     transform.position = DVec3::new(100.0, -20.0, 50.0);
-    transform.scaling = DVec3::new(2.0, 3.0, 4.0);
     transform.rotation = DQuat::from_rotation_y(FRAC_PI_2);
     assert_close(transform.forward().into(), [1.0, 0.0, 0.0]);
     assert_close(transform.right().into(), [0.0, 0.0, -1.0]);
@@ -122,7 +130,6 @@ fn camera_view_uses_its_quaternion_orientation() {
 fn orbit_control_keeps_looking_at_the_target_under_a_parent_transform() {
     let parent = Rc::new(RefCell::new(Transform::new()));
     parent.borrow_mut().position = DVec3::new(2.0, -1.0, 3.0);
-    parent.borrow_mut().scaling = DVec3::new(2.0, 3.0, 4.0);
     parent.borrow_mut().rotation = DQuat::from_rotation_y(0.4);
     let target = parent.borrow().world_matrix() * DVec4::new(0.0, 0.0, 0.0, 1.0);
     let mut camera: Camera = Camera::default();
@@ -154,28 +161,9 @@ fn orbit_control_keeps_looking_at_the_target_under_a_parent_transform() {
 }
 
 #[test]
-#[should_panic]
-fn singular_transform_cannot_produce_a_normal_matrix() {
-    let mut transform = Transform::new();
-    transform.scaling = DVec3::new(0.0, 1.0, 1.0);
-    transform.normal_matrix();
-}
-
-#[test]
-#[should_panic]
-fn singular_parent_transform_cannot_produce_a_camera_view() {
-    let parent = Rc::new(RefCell::new(Transform::new()));
-    parent.borrow_mut().scaling = DVec3::new(0.0, 1.0, 1.0);
-    let camera: Camera = Camera::default();
-    camera.transform_mut().parent = Some(parent);
-    camera.view_matrix();
-}
-
-#[test]
 fn gpu_uniforms_keep_their_layout_and_column_major_matrices() {
-    assert_eq!(std::mem::size_of::<TransformUniforms>(), 144);
+    assert_eq!(std::mem::size_of::<TransformUniforms>(), 80);
     assert_eq!(std::mem::offset_of!(TransformUniforms, world_matrix), 16);
-    assert_eq!(std::mem::offset_of!(TransformUniforms, normal_matrix), 80);
     assert_eq!(std::mem::size_of::<CameraUniforms>(), 80);
     let mut transform = Transform::new();
     transform.position = DVec3::new(3.0, -2.0, 4.0);
@@ -193,7 +181,7 @@ fn gpu_uniforms_keep_their_layout_and_column_major_matrices() {
 }
 
 #[test]
-fn shader_positions_follow_parent_translation_rotation_and_scale() {
+fn shader_positions_follow_parent_translation_and_rotation() {
     let grandparent = Rc::new(RefCell::new(Transform::new()));
     grandparent.borrow_mut().position = DVec3::new(100.0, 0.0, 0.0);
     let parent = Rc::new(RefCell::new(Transform::new()));
@@ -201,7 +189,6 @@ fn shader_positions_follow_parent_translation_rotation_and_scale() {
         let mut transform = parent.borrow_mut();
         transform.parent = Some(grandparent);
         transform.rotation = DQuat::from_rotation_z(FRAC_PI_2);
-        transform.scaling = DVec3::new(2.0, 3.0, 4.0);
     }
     let camera: Camera = Camera::default();
     let light = PointLight::default();
@@ -211,8 +198,8 @@ fn shader_positions_follow_parent_translation_rotation_and_scale() {
     }
 
     for (translation, expected) in [
-        (DVec3::new(10.0, 20.0, 30.0), [106.0, 23.0, 42.0]),
-        (DVec3::new(30.0, 40.0, 50.0), [126.0, 43.0, 62.0]),
+        (DVec3::new(10.0, 20.0, 30.0), [108.0, 21.0, 33.0]),
+        (DVec3::new(30.0, 40.0, 50.0), [128.0, 41.0, 53.0]),
     ] {
         parent.borrow_mut().position = translation;
         let mut camera_uniforms = CameraUniforms::default();

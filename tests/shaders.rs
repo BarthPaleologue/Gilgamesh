@@ -31,6 +31,12 @@ fn uniform_bindings_have_webgl_compatible_sizes() {
         for (_, variable) in module.global_variables.iter() {
             if variable.space == naga::AddressSpace::Uniform {
                 assert_eq!(layouter[variable.ty].size % 16, 0, "{:?}", variable.name);
+                if variable.name.as_deref() == Some("transform") {
+                    assert_eq!(
+                        layouter[variable.ty].size as usize,
+                        std::mem::size_of::<gilgamesh::transform::TransformUniforms>()
+                    );
+                }
             }
         }
     }

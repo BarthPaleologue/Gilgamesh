@@ -2,7 +2,6 @@ use gilgamesh::camera::{Camera, Perspective};
 use gilgamesh::input::mouse::Mouse;
 use gilgamesh::input::orbit_control::OrbitControl;
 use gilgamesh::transform::Transformable;
-use glam::DVec3;
 use winit::dpi::PhysicalPosition;
 use winit::event::{DeviceId, MouseScrollDelta, TouchPhase, WindowEvent};
 
@@ -83,13 +82,12 @@ fn orbit_input_and_zoom_smoothing_are_independent_of_frame_partitioning() {
 }
 
 #[test]
-fn controls_preserve_camera_projection_and_scale() {
+fn controls_preserve_camera_projection() {
     let mut camera = Camera::new(Perspective {
         fov_vertical: std::f64::consts::FRAC_PI_3,
         aspect_ratio: 1.5,
         near: 0.5,
     });
-    camera.transform_mut().scaling = DVec3::new(2.0, 3.0, 4.0);
     let projection = camera.projection_matrix();
     let input = Mouse {
         left_button_pressed: true,
@@ -99,7 +97,6 @@ fn controls_preserve_camera_projection_and_scale() {
     };
     OrbitControl::default().update(&mut camera, &input, 1.0 / 60.0);
     assert_eq!(camera.projection_matrix(), projection);
-    assert_eq!(camera.transform().scaling, DVec3::new(2.0, 3.0, 4.0));
     assert!(camera.transform().rotation.is_normalized());
     assert!(camera.transform().position.length() > 0.0);
 }

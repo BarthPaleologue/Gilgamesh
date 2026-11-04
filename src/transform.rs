@@ -2,12 +2,12 @@ use glam::{DMat4, DQuat, DVec3};
 use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
 
+/// A rigid transform composed of a translation and a rotation.
 #[derive(Debug)]
 pub struct Transform {
     pub position: DVec3,
     /// Local orientation as a unit quaternion.
     pub rotation: DQuat,
-    pub scaling: DVec3,
 
     pub parent: Option<Rc<RefCell<Transform>>>,
 }
@@ -19,7 +19,6 @@ pub struct TransformUniforms {
     // Due to uniforms requiring 16 byte (4 float) spacing, we need to use a padding field here
     _padding1: u32,
     pub world_matrix: [[f32; 4]; 4],
-    pub normal_matrix: [[f32; 4]; 4],
 }
 
 impl TransformUniforms {
@@ -27,7 +26,6 @@ impl TransformUniforms {
         let world_matrix = transform.world_matrix();
         self.position = world_matrix.w_axis.truncate().as_vec3().to_array();
         self.world_matrix = world_matrix.as_mat4().to_cols_array_2d();
-        self.normal_matrix = transform.normal_matrix().as_mat4().to_cols_array_2d();
     }
 }
 
@@ -42,7 +40,6 @@ impl Default for Transform {
         Transform {
             position: DVec3::ZERO,
             rotation: DQuat::IDENTITY,
-            scaling: DVec3::ONE,
 
             parent: None,
         }
@@ -55,11 +52,7 @@ impl Transform {
     }
 
     pub fn world_matrix(&self) -> DMat4 {
-        let position = DMat4::from_translation(self.position);
-        let rotation = DMat4::from_quat(self.rotation);
-        let scaling = DMat4::from_scale(self.scaling);
-
-        let mut world_matrix = position * scaling * rotation;
+        let mut world_matrix = DMat4::from_rotation_translation(self.rotation, self.position);
 
         if let Some(parent) = &self.parent {
             let parent_world_matrix = parent.borrow().world_matrix();
@@ -67,14 +60,6 @@ impl Transform {
         }
 
         world_matrix
-    }
-
-    pub fn normal_matrix(&self) -> DMat4 {
-        let world_matrix = self.world_matrix();
-        world_matrix
-            .try_inverse()
-            .expect("Transform matrix is not invertible")
-            .transpose()
     }
 
     pub fn world_position(&self) -> DVec3 {

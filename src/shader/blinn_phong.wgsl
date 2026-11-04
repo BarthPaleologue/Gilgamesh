@@ -2,7 +2,6 @@
 struct TransformUniforms {
     position: vec3<f32>,
     world_matrix: mat4x4<f32>,
-    normal_matrix: mat4x4<f32>,
 }
 @group(2) @binding(0)
 var<uniform> transform: TransformUniforms;
@@ -97,7 +96,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         normal = normalize(normal_map_normal * normal_map_tangent);
     }
     // to world space
-    normal = normalize((transform.normal_matrix * vec4<f32>(normal, 0.0)).xyz);
+    normal = normalize((transform.world_matrix * vec4<f32>(normal, 0.0)).xyz);
 
     var diffuse: vec3<f32> = phong.diffuse_color;
     if(phong.has_diffuse_texture > 0u) {

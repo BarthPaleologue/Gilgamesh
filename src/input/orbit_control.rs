@@ -36,7 +36,7 @@ impl OrbitControl {
     }
 
     /// Orbits around the origin in the camera's parent coordinate space.
-    /// Changes position and orientation, leaving projection and scale untouched.
+    /// Changes position and orientation, leaving projection untouched.
     pub fn update<ProjectionType: CameraProjection>(
         &mut self,
         camera: &mut Camera<ProjectionType>,
