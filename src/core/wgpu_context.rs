@@ -1,5 +1,5 @@
 use crate::core::object_bindings::ObjectBindings;
-use crate::texture::Texture;
+use crate::texture::{Linear, Texture};
 use std::rc::Rc;
 use wgpu::{Adapter, Device, Instance, Queue, Surface};
 
@@ -9,7 +9,7 @@ pub struct WGPUContext {
     pub adapter: Adapter,
     pub device: Device,
     pub queue: Queue,
-    empty_texture: Rc<Texture>,
+    empty_texture: Rc<Texture<Linear>>,
     pub(crate) object_bind_group_layout: wgpu::BindGroupLayout,
 }
 
@@ -55,7 +55,7 @@ impl WGPUContext {
             .await
             .unwrap();
 
-        let empty_texture = Rc::new(Texture::new_empty("Default Texture", &device));
+        let empty_texture = Rc::new(Texture::<Linear>::new_empty("Default Texture", &device));
 
         let object_bind_group_layout = ObjectBindings::create_layout(&device);
 
@@ -69,7 +69,7 @@ impl WGPUContext {
         }
     }
 
-    pub fn empty_texture(&self) -> Rc<Texture> {
+    pub fn empty_texture(&self) -> Rc<Texture<Linear>> {
         self.empty_texture.clone()
     }
 }

@@ -1,21 +1,81 @@
 use crate::core::wgpu_context::WGPUContext;
 use image::GenericImageView;
+use std::marker::PhantomData;
 
-#[derive(Debug, Clone, Copy)]
-pub enum ColorSpace {
-    /// Color images encoded in sRGB.
-    Srgb,
-    /// Linear values, including normal maps and material data.
-    Linear,
+/// Color images decoded from sRGB when sampled.
+pub struct Srgb;
+
+/// Linear colors or data sampled without an sRGB conversion.
+pub struct Linear;
+
+mod sealed {
+    pub trait Sealed {}
 }
 
-pub struct Texture {
+/// Encodings supported by material textures.
+///
+/// ```compile_fail,E0277
+/// use gilgamesh::texture::ColorEncoding;
+///
+/// struct UncheckedEncoding;
+/// impl ColorEncoding for UncheckedEncoding {
+///     const RGBA8_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
+/// }
+/// ```
+pub trait ColorEncoding: sealed::Sealed + 'static {
+    const RGBA8_FORMAT: wgpu::TextureFormat;
+}
+
+impl sealed::Sealed for Srgb {}
+impl sealed::Sealed for Linear {}
+
+impl ColorEncoding for Srgb {
+    const RGBA8_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
+}
+
+impl ColorEncoding for Linear {
+    const RGBA8_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
+}
+
+/// A sampled texture whose encoding is selected at construction.
+/// Color inputs accept either encoding; data inputs require [`Linear`].
+///
+/// ```no_run
+/// use gilgamesh::materials::{blinn_phong::BlinnPhongMaterial, pbr::PbrMaterial};
+/// use gilgamesh::texture::{Linear, Srgb, Texture};
+/// use std::rc::Rc;
+///
+/// fn bind(
+///     pbr: &mut PbrMaterial,
+///     phong: &mut BlinnPhongMaterial,
+///     srgb: Rc<Texture<Srgb>>,
+///     linear: Rc<Texture<Linear>>,
+/// ) {
+///     pbr.set_albedo_texture(srgb.clone());
+///     pbr.set_albedo_texture(linear.clone());
+///     pbr.set_ambient_texture(srgb.clone());
+///     pbr.set_ambient_texture(linear.clone());
+///     phong.set_diffuse_texture(srgb.clone());
+///     phong.set_diffuse_texture(linear.clone());
+///     phong.set_ambient_texture(srgb);
+///     phong.set_ambient_texture(linear.clone());
+///     phong.set_specular_texture(linear.clone());
+///     phong.set_normal_map(linear);
+/// }
+/// ```
+pub struct Texture<Encoding: ColorEncoding> {
     texture_view: wgpu::TextureView,
     sampler: wgpu::Sampler,
+    encoding: PhantomData<Encoding>,
 }
 
-impl Texture {
-    pub fn new_empty(name: &str, device: &wgpu::Device) -> Texture {
+/// Supplies GPU bindings independently of the texture's storage encoding.
+pub trait SampledTexture {
+    fn create_bind_group_entries(&self, start_index: u32) -> [wgpu::BindGroupEntry<'_>; 2];
+}
+
+impl<Encoding: ColorEncoding> Texture<Encoding> {
+    pub fn new_empty(name: &str, device: &wgpu::Device) -> Self {
         let texture_size = wgpu::Extent3d {
             width: 1,
             height: 1,
@@ -29,7 +89,7 @@ impl Texture {
             mip_level_count: 1, // We'll talk about this a little later
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8Unorm,
+            format: Encoding::RGBA8_FORMAT,
             // TEXTURE_BINDING tells wgpu that we want to use this texture in shaders
             // COPY_DST means that we want to copy data to this texture
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
@@ -53,15 +113,11 @@ impl Texture {
         Texture {
             texture_view,
             sampler,
+            encoding: PhantomData,
         }
     }
 
-    pub fn new(
-        name: &str,
-        bytes: &[u8],
-        color_space: ColorSpace,
-        wgpu_context: &WGPUContext,
-    ) -> Texture {
+    pub fn new(name: &str, bytes: &[u8], wgpu_context: &WGPUContext) -> Self {
         let image = image::load_from_memory(bytes).unwrap();
         let image_rgba = image.to_rgba8();
 
@@ -81,10 +137,7 @@ impl Texture {
                 mip_level_count: 1, // We'll talk about this a little later
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
-                format: match color_space {
-                    ColorSpace::Srgb => wgpu::TextureFormat::Rgba8UnormSrgb,
-                    ColorSpace::Linear => wgpu::TextureFormat::Rgba8Unorm,
-                },
+                format: Encoding::RGBA8_FORMAT,
                 // TEXTURE_BINDING tells wgpu that we want to use this texture in shaders
                 // COPY_DST means that we want to copy data to this texture
                 usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
@@ -129,33 +182,36 @@ impl Texture {
         Texture {
             texture_view,
             sampler,
+            encoding: PhantomData,
         }
     }
+}
 
-    pub fn create_bind_group_layout_entries(start_index: u32) -> [wgpu::BindGroupLayoutEntry; 2] {
-        [
-            wgpu::BindGroupLayoutEntry {
-                binding: start_index,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Texture {
-                    multisampled: false,
-                    view_dimension: wgpu::TextureViewDimension::D2,
-                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                },
-                count: None,
+pub(crate) fn bind_group_layout_entries(start_index: u32) -> [wgpu::BindGroupLayoutEntry; 2] {
+    [
+        wgpu::BindGroupLayoutEntry {
+            binding: start_index,
+            visibility: wgpu::ShaderStages::FRAGMENT,
+            ty: wgpu::BindingType::Texture {
+                multisampled: false,
+                view_dimension: wgpu::TextureViewDimension::D2,
+                sample_type: wgpu::TextureSampleType::Float { filterable: true },
             },
-            wgpu::BindGroupLayoutEntry {
-                binding: start_index + 1,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                // This should match the filterable field of the
-                // corresponding Texture entry above.
-                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                count: None,
-            },
-        ]
-    }
+            count: None,
+        },
+        wgpu::BindGroupLayoutEntry {
+            binding: start_index + 1,
+            visibility: wgpu::ShaderStages::FRAGMENT,
+            // This should match the filterable field of the
+            // corresponding Texture entry above.
+            ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+            count: None,
+        },
+    ]
+}
 
-    pub fn create_bind_group_entries(&self, start_index: u32) -> [wgpu::BindGroupEntry<'_>; 2] {
+impl<Encoding: ColorEncoding> SampledTexture for Texture<Encoding> {
+    fn create_bind_group_entries(&self, start_index: u32) -> [wgpu::BindGroupEntry<'_>; 2] {
         [
             wgpu::BindGroupEntry {
                 binding: start_index,

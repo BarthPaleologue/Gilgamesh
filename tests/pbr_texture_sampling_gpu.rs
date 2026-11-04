@@ -11,7 +11,7 @@ use gilgamesh::core::wgpu_context::WGPUContext;
 use gilgamesh::geometry::{mesh::Mesh, primitive};
 use gilgamesh::lights::directional_light::DirectionalLight;
 use gilgamesh::materials::pbr::PbrMaterial;
-use gilgamesh::texture::{ColorSpace, Texture};
+use gilgamesh::texture::{Linear, Srgb, Texture};
 use gilgamesh::transform::Transformable;
 use glam::{DVec3, dcamera::rh};
 use std::io::Cursor;
@@ -19,7 +19,7 @@ use std::rc::Rc;
 
 #[test]
 #[ignore = "GPU end-to-end check; run explicitly with approval"]
-fn srgb_albedo_matches_the_equivalent_linear_constant() {
+fn albedo_encodings_match_equivalent_linear_constants() {
     let gpu = pollster::block_on(WGPUContext::new(wgpu::Instance::default(), None));
     let size = wgpu::Extent3d {
         width: 32,
@@ -56,24 +56,24 @@ fn srgb_albedo_matches_the_equivalent_linear_constant() {
     ))
     .write_to(&mut png, image::ImageFormat::Png)
     .unwrap();
-    let texture = Rc::new(Texture::new("Gray", png.get_ref(), ColorSpace::Srgb, &gpu));
+    let texture = Rc::new(Texture::<Srgb>::new("Gray", png.get_ref(), &gpu));
     let mut textured = PbrMaterial::new("Textured", &gpu);
     textured.set_albedo_texture(texture);
     let mut constant = PbrMaterial::new("Constant", &gpu);
     // sRGB byte 128 represents approximately 0.2158605 in linear space.
     constant.set_albedo_color(0.2158605, 0.2158605, 0.2158605);
-    let mut textured = Mesh::from_cpu_buffers(
-        "Textured",
-        primitive::plane(2, 4.0),
-        Rc::new(textured),
+    let mut linear_textured = PbrMaterial::new("Linear Textured", &gpu);
+    linear_textured.set_albedo_texture(Rc::new(Texture::<Linear>::new(
+        "Linear Gray",
+        png.get_ref(),
         &gpu,
-    );
-    let mut constant = Mesh::from_cpu_buffers(
-        "Constant",
-        primitive::plane(2, 4.0),
-        Rc::new(constant),
-        &gpu,
-    );
+    )));
+    let mut linear_constant = PbrMaterial::new("Linear Constant", &gpu);
+    let linear_gray = 128.0 / 255.0;
+    linear_constant.set_albedo_color(linear_gray, linear_gray, linear_gray);
+    let mut meshes = [constant, textured, linear_constant, linear_textured].map(|material| {
+        Mesh::from_cpu_buffers("Albedo", primitive::plane(2, 4.0), Rc::new(material), &gpu)
+    });
     let camera: Camera = Camera::default();
     let position = DVec3::new(0.0, 3.0, 3.0);
     camera.transform_mut().position = position;
@@ -83,7 +83,7 @@ fn srgb_albedo_matches_the_equivalent_linear_constant() {
     let mut renderer = Renderer::new(&gpu, wgpu::TextureFormat::Rgba8UnormSrgb);
     renderer.update_frame_bindings(FrameBindingsData::new(&camera, &light, &[]), &gpu);
     let mut images = Vec::new();
-    for mesh in [&mut constant, &mut textured] {
+    for mesh in &mut meshes {
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
         renderer.encode(
             [mesh],
@@ -98,12 +98,15 @@ fn srgb_albedo_matches_the_equivalent_linear_constant() {
         images.push(read_rgba8(&gpu.device, &gpu.queue, &color));
     }
     let center = (16 * 32 + 16) * 4;
-    assert!(images[0][center] > 0);
-    assert!(images[0][center].abs_diff(images[0][center + 2]) <= 1);
-    for (index, (&constant, &textured)) in images[0].iter().zip(&images[1]).enumerate() {
-        assert!(
-            constant.abs_diff(textured) <= 1,
-            "byte {index}: constant {constant} != textured {textured}"
-        );
+    let (paired_images, _) = images.as_chunks::<2>();
+    for (encoding, pair) in ["Srgb", "Linear"].into_iter().zip(paired_images) {
+        assert!(pair[0][center] > 0);
+        assert!(pair[0][center].abs_diff(pair[0][center + 2]) <= 1);
+        for (index, (&constant, &textured)) in pair[0].iter().zip(&pair[1]).enumerate() {
+            assert!(
+                constant.abs_diff(textured) <= 1,
+                "{encoding}, byte {index}: constant {constant} != textured {textured}"
+            );
+        }
     }
 }

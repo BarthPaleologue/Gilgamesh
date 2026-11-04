@@ -3,7 +3,7 @@ use crate::core::wgpu_context::WGPUContext;
 use crate::materials::material::Material;
 use crate::materials::material_pipeline::PipelineConfig;
 use crate::materials::prepared_material::PreparedMaterial;
-use crate::texture::Texture;
+use crate::texture::{ColorEncoding, Linear, SampledTexture, Texture};
 use std::cell::OnceCell;
 use std::rc::Rc;
 use wgpu::util::DeviceExt;
@@ -43,10 +43,10 @@ pub struct BlinnPhongMaterial {
 
     blinn_phong_uniforms: BlinnPhongUniforms,
 
-    diffuse_texture: Rc<Texture>,
-    ambient_texture: Rc<Texture>,
-    specular_texture: Rc<Texture>,
-    normal_map: Rc<Texture>,
+    diffuse_texture: Rc<dyn SampledTexture>,
+    ambient_texture: Rc<dyn SampledTexture>,
+    specular_texture: Rc<Texture<Linear>>,
+    normal_map: Rc<Texture<Linear>>,
 
     pipeline_config: PipelineConfig,
 }
@@ -79,7 +79,7 @@ impl BlinnPhongMaterial {
         }
     }
 
-    pub fn set_diffuse_texture(&mut self, texture: Rc<Texture>) {
+    pub fn set_diffuse_texture<Encoding: ColorEncoding>(&mut self, texture: Rc<Texture<Encoding>>) {
         self.prepared.take();
         self.diffuse_texture = texture;
         self.blinn_phong_uniforms.has_diffuse_texture = 1;
@@ -90,7 +90,7 @@ impl BlinnPhongMaterial {
         self.blinn_phong_uniforms.diffuse_color = [r, g, b];
     }
 
-    pub fn set_ambient_texture(&mut self, texture: Rc<Texture>) {
+    pub fn set_ambient_texture<Encoding: ColorEncoding>(&mut self, texture: Rc<Texture<Encoding>>) {
         self.prepared.take();
         self.ambient_texture = texture;
         self.blinn_phong_uniforms.has_ambient_texture = 1;
@@ -101,8 +101,16 @@ impl BlinnPhongMaterial {
         self.blinn_phong_uniforms.ambient_color = [r, g, b];
     }
 
-    /// Expects a texture created with [`crate::texture::ColorSpace::Linear`].
-    pub fn set_specular_texture(&mut self, texture: Rc<Texture>) {
+    /// ```compile_fail,E0308
+    /// use gilgamesh::materials::blinn_phong::BlinnPhongMaterial;
+    /// use gilgamesh::texture::{Srgb, Texture};
+    /// use std::rc::Rc;
+    ///
+    /// fn bind(material: &mut BlinnPhongMaterial, srgb: Rc<Texture<Srgb>>) {
+    ///     material.set_specular_texture(srgb);
+    /// }
+    /// ```
+    pub fn set_specular_texture(&mut self, texture: Rc<Texture<Linear>>) {
         self.prepared.take();
         self.specular_texture = texture;
         self.blinn_phong_uniforms.has_specular_texture = 1;
@@ -113,8 +121,16 @@ impl BlinnPhongMaterial {
         self.blinn_phong_uniforms.specular_color = [r, g, b];
     }
 
-    /// Expects a texture created with [`crate::texture::ColorSpace::Linear`].
-    pub fn set_normal_map(&mut self, texture: Rc<Texture>) {
+    /// ```compile_fail,E0308
+    /// use gilgamesh::materials::blinn_phong::BlinnPhongMaterial;
+    /// use gilgamesh::texture::{Srgb, Texture};
+    /// use std::rc::Rc;
+    ///
+    /// fn bind(material: &mut BlinnPhongMaterial, srgb: Rc<Texture<Srgb>>) {
+    ///     material.set_normal_map(srgb);
+    /// }
+    /// ```
+    pub fn set_normal_map(&mut self, texture: Rc<Texture<Linear>>) {
         self.prepared.take();
         self.normal_map = texture;
         self.blinn_phong_uniforms.has_normal_map = 1;
@@ -147,10 +163,10 @@ impl Material for BlinnPhongMaterial {
                 self.pipeline_config,
                 &buffer,
                 &[
-                    &self.diffuse_texture,
-                    &self.ambient_texture,
-                    &self.specular_texture,
-                    &self.normal_map,
+                    self.diffuse_texture.as_ref(),
+                    self.ambient_texture.as_ref(),
+                    self.specular_texture.as_ref(),
+                    self.normal_map.as_ref(),
                 ],
                 renderer,
                 ctx,

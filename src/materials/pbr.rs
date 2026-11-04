@@ -3,7 +3,7 @@ use crate::core::wgpu_context::WGPUContext;
 use crate::materials::material::Material;
 use crate::materials::material_pipeline::PipelineConfig;
 use crate::materials::prepared_material::PreparedMaterial;
-use crate::texture::Texture;
+use crate::texture::{ColorEncoding, Linear, SampledTexture, Texture};
 use std::cell::OnceCell;
 use std::rc::Rc;
 use wgpu::util::DeviceExt;
@@ -50,11 +50,11 @@ pub struct PbrMaterial {
 
     pbr_uniforms: PbrUniforms,
 
-    diffuse_texture: Rc<Texture>,
-    ambient_texture: Rc<Texture>,
-    normal_map: Rc<Texture>,
-    metallic_texture: Rc<Texture>,
-    roughness_texture: Rc<Texture>,
+    diffuse_texture: Rc<dyn SampledTexture>,
+    ambient_texture: Rc<dyn SampledTexture>,
+    normal_map: Rc<Texture<Linear>>,
+    metallic_texture: Rc<Texture<Linear>>,
+    roughness_texture: Rc<Texture<Linear>>,
 
     pipeline_config: PipelineConfig,
 }
@@ -89,8 +89,7 @@ impl PbrMaterial {
         }
     }
 
-    /// For sRGB images, create the texture with [`crate::texture::ColorSpace::Srgb`].
-    pub fn set_albedo_texture(&mut self, texture: Rc<Texture>) {
+    pub fn set_albedo_texture<Encoding: ColorEncoding>(&mut self, texture: Rc<Texture<Encoding>>) {
         self.prepared.take();
         self.diffuse_texture = texture;
         self.pbr_uniforms.has_albedo_texture = 1;
@@ -101,7 +100,7 @@ impl PbrMaterial {
         self.pbr_uniforms.albedo_color = [r, g, b];
     }
 
-    pub fn set_ambient_texture(&mut self, texture: Rc<Texture>) {
+    pub fn set_ambient_texture<Encoding: ColorEncoding>(&mut self, texture: Rc<Texture<Encoding>>) {
         self.prepared.take();
         self.ambient_texture = texture;
         self.pbr_uniforms.has_ambient_texture = 1;
@@ -138,11 +137,11 @@ impl Material for PbrMaterial {
                 self.pipeline_config,
                 &buffer,
                 &[
-                    &self.diffuse_texture,
-                    &self.ambient_texture,
-                    &self.normal_map,
-                    &self.metallic_texture,
-                    &self.roughness_texture,
+                    self.diffuse_texture.as_ref(),
+                    self.ambient_texture.as_ref(),
+                    self.normal_map.as_ref(),
+                    self.metallic_texture.as_ref(),
+                    self.roughness_texture.as_ref(),
                 ],
                 renderer,
                 ctx,

@@ -1,7 +1,7 @@
 use crate::core::renderer::Renderer;
 use crate::core::wgpu_context::WGPUContext;
 use crate::materials::material_pipeline::{MaterialPipeline, PipelineConfig};
-use crate::texture::Texture;
+use crate::texture::SampledTexture;
 use std::rc::Rc;
 use wgpu::{BindGroup, RenderPass};
 
@@ -16,7 +16,7 @@ impl PreparedMaterial {
         name: &str,
         config: PipelineConfig,
         uniforms: &wgpu::Buffer,
-        textures: &[&Texture],
+        textures: &[&dyn SampledTexture],
         renderer: &mut Renderer,
         ctx: &WGPUContext,
     ) -> Self {

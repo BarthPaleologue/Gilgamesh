@@ -2,7 +2,7 @@ use crate::core::render_target::DEPTH_FORMAT;
 use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::gpu_mesh_buffers::Vertex;
 use crate::materials::utils::uniform_layout_entry;
-use crate::texture::Texture;
+use crate::texture;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct PipelineConfig {
@@ -110,8 +110,7 @@ impl MaterialPipeline {
 fn material_bind_group_layout_entries(texture_count: usize) -> Vec<wgpu::BindGroupLayoutEntry> {
     let mut entries = vec![uniform_layout_entry(0)];
     entries.extend(
-        (0..texture_count)
-            .flat_map(|i| Texture::create_bind_group_layout_entries(1 + 2 * i as u32)),
+        (0..texture_count).flat_map(|i| texture::bind_group_layout_entries(1 + 2 * i as u32)),
     );
     entries
 }
