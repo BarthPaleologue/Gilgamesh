@@ -14,8 +14,9 @@ use gilgamesh::lights::light::Light;
 use gilgamesh::lights::point_light::PointLight;
 use gilgamesh::materials::pbr::PbrMaterial;
 use gilgamesh::texture::{Linear, Srgb, Texture};
-use gilgamesh::transform::Transformable;
+use gilgamesh::transform::{Transform, Transformable};
 use glam::{DQuat, DVec3};
+use std::cell::RefCell;
 use std::rc::Rc;
 
 fn main() {
@@ -105,9 +106,13 @@ impl App for StarSystemDemo {
             Rc::new(earth_material.into()),
             ctx,
         );
-        earth.transform_mut().parent = Some(sun.transform_rc());
-
-        camera.transform_mut().parent = Some(earth.transform_rc());
+        let earth_orbit = Rc::new(RefCell::new(Transform {
+            position: DVec3::new(6.0, 0.0, 0.0),
+            parent: Some(sun.transform_rc()),
+            ..Default::default()
+        }));
+        earth.transform_mut().parent = Some(earth_orbit.clone());
+        camera.transform_mut().parent = Some(earth_orbit);
 
         let mut plane_material = PbrMaterial::new("PlaneMaterial");
         plane_material.metallic = 0.0;
@@ -141,10 +146,10 @@ impl App for StarSystemDemo {
             frame.render_width as f64 / frame.render_height as f64;
         self.orbit_control
             .update(&mut self.camera, frame.mouse, frame.delta_seconds);
-        self.sun.transform_mut().rotation = DQuat::from_rotation_y(frame.elapsed_seconds);
-        self.earth.transform_mut().position = DVec3::new(6.0, 0.0, 0.0);
+        self.sun.transform_mut().rotation = DQuat::from_rotation_y(0.2 * frame.elapsed_seconds);
+        self.earth.transform_mut().rotation = DQuat::from_rotation_y(0.5 * frame.elapsed_seconds);
 
-        let orbit_angle = 2.0 * frame.elapsed_seconds;
+        let orbit_angle = 0.5 * frame.elapsed_seconds;
         let (orbit_sin, orbit_cos) = orbit_angle.sin_cos();
         let [red_light, blue_light, green_light, yellow_light, _] = &self.point_lights;
         red_light.transform_mut().position = DVec3::new(12.0 * orbit_cos, 0.0, 12.0 * orbit_sin);
@@ -176,6 +181,70 @@ mod tests {
     use gilgamesh::core::headless_runtime::HeadlessRuntime;
     use gilgamesh::lights::light::Light;
     use std::time::Duration;
+
+    #[test]
+    #[ignore = "GPU end-to-end check; run explicitly with approval"]
+    fn earth_spins_under_the_orbit_camera_and_captures_keep_its_pose() {
+        use gilgamesh::transform::Transformable;
+        use std::rc::Rc;
+
+        HeadlessRuntime::<StarSystemDemo>::run(400, 320, async |mut runtime| {
+            for light in &mut runtime.app_mut().point_lights[..4] {
+                light.set_intensity(0.0);
+            }
+            runtime.render(Duration::ZERO);
+            let app = runtime.app();
+            assert!(Rc::ptr_eq(
+                app.camera.transform().parent.as_ref().unwrap(),
+                app.earth.transform().parent.as_ref().unwrap(),
+            ));
+            let initial_rotation = app.earth.transform().rotation;
+            let camera_rotation = app.camera.transform().rotation;
+            let earth_in_view = app
+                .camera
+                .transform()
+                .world_matrix()
+                .inverse()
+                .transform_point3(app.earth.transform().world_position());
+            let before = runtime.capture_frame().await.unwrap();
+
+            runtime.render(Duration::from_secs(2));
+            let app = runtime.app();
+            assert!(
+                !app.earth
+                    .transform()
+                    .rotation
+                    .abs_diff_eq(initial_rotation, 1e-10)
+            );
+            assert!(
+                app.camera
+                    .transform()
+                    .rotation
+                    .abs_diff_eq(camera_rotation, 1e-10)
+            );
+            let next_earth_in_view = app
+                .camera
+                .transform()
+                .world_matrix()
+                .inverse()
+                .transform_point3(app.earth.transform().world_position());
+            assert!(next_earth_in_view.abs_diff_eq(earth_in_view, 1e-10));
+            let after = runtime.capture_frame().await.unwrap();
+            assert!(
+                after.enumerate_pixels().any(|(x, y, pixel)| {
+                    (130..270).contains(&x)
+                        && (100..220).contains(&y)
+                        && (0..3).any(|c| pixel[c].abs_diff(before.get_pixel(x, y)[c]) > 5)
+                }),
+                "Earth's surface must visibly rotate independently of the camera"
+            );
+
+            let rotation = runtime.app().earth.transform().rotation;
+            let capture = runtime.render_image(400, 320).await.unwrap();
+            assert_eq!(runtime.app().earth.transform().rotation, rotation);
+            assert_eq!(capture, after);
+        });
+    }
 
     #[test]
     #[ignore = "GPU end-to-end check; run explicitly with approval"]
