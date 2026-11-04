@@ -1,9 +1,9 @@
 use crate::camera::uniforms::CameraUniforms;
 use crate::camera::{Camera, CameraProjection};
+use crate::core::uniforms::{create_array_buffer, create_buffer, uniform_layout_entry};
 use crate::core::wgpu_context::WGPUContext;
 use crate::lights::directional_light::{DirectionalLight, DirectionalLightUniform};
 use crate::lights::point_light::{PointLight, PointLightUniforms};
-use crate::materials::utils::{create_array_buffer, create_buffer, uniform_layout_entry};
 use crate::settings::MAX_POINT_LIGHTS;
 
 pub(crate) struct FrameBindings {

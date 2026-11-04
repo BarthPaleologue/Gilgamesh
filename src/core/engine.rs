@@ -1,6 +1,6 @@
 use crate::core::app::{App, FrameContext};
+use crate::core::raster_renderer::RasterRenderer;
 use crate::core::render_target::{RenderTarget, create_depth_view};
-use crate::core::renderer::Renderer;
 use crate::core::wgpu_context::WGPUContext;
 use crate::core::window_surface::WindowSurface;
 use crate::input::mouse::Mouse;
@@ -19,7 +19,7 @@ pub struct Engine<Application: App> {
     pub wgpu_context: WGPUContext,
     pub window_surface: WindowSurface,
 
-    renderer: Renderer,
+    renderer: RasterRenderer,
     depth_view: wgpu::TextureView,
     clock: Instant,
     elapsed_seconds: f64,
@@ -89,7 +89,7 @@ impl<Application: App> Engine<Application> {
             },
         );
 
-        let renderer = Renderer::new(&wgpu_context, window_surface.config.format);
+        let renderer = RasterRenderer::new(&wgpu_context, window_surface.config.format);
         let app = Application::new(&wgpu_context);
 
         Engine {

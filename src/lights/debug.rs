@@ -22,7 +22,7 @@ pub fn create_point_light_debug_mesh(point_light: &PointLight, wgpu_context: &WG
     let mesh = Mesh::from_cpu_buffers(
         "PointLightDebugMesh",
         buffers,
-        Rc::new(material),
+        Rc::new(material.into()),
         wgpu_context,
     );
     mesh.transform_mut().parent = Some(point_light.transform_rc());

@@ -1,11 +1,11 @@
 use crate::core::render_target::DEPTH_FORMAT;
+use crate::core::uniforms::uniform_layout_entry;
 use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::gpu_mesh_buffers::Vertex;
-use crate::materials::utils::uniform_layout_entry;
 use crate::texture;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct PipelineConfig {
+pub(crate) struct PipelineConfig {
     pub shader_source: &'static str,
     pub polygon_mode: wgpu::PolygonMode,
     pub back_face_culling: bool,
@@ -29,6 +29,7 @@ impl MaterialPipeline {
         texture_count: usize,
         target_format: wgpu::TextureFormat,
         frame_layout: &wgpu::BindGroupLayout,
+        object_layout: &wgpu::BindGroupLayout,
         ctx: &WGPUContext,
     ) -> Self {
         let shader = ctx
@@ -50,7 +51,7 @@ impl MaterialPipeline {
                 bind_group_layouts: &[
                     Some(frame_layout),
                     Some(&material_layout),
-                    Some(&ctx.object_bind_group_layout),
+                    Some(object_layout),
                 ],
                 immediate_size: 0,
             });
@@ -125,12 +126,12 @@ mod tests {
             (
                 include_str!("../shader/blinn_phong.wgsl"),
                 4,
-                std::mem::size_of::<crate::materials::blinn_phong::BlinnPhongUniforms>(),
+                std::mem::size_of::<crate::core::prepared_material::BlinnPhongUniforms>(),
             ),
             (
                 include_str!("../shader/pbr.wgsl"),
                 5,
-                std::mem::size_of::<crate::materials::pbr::PbrUniforms>(),
+                std::mem::size_of::<crate::core::prepared_material::PbrUniforms>(),
             ),
         ] {
             let module = naga::front::wgsl::parse_str(source).unwrap();

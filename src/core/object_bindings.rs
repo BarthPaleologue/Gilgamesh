@@ -1,5 +1,5 @@
+use crate::core::uniforms::{create_buffer, uniform_layout_entry};
 use crate::core::wgpu_context::WGPUContext;
-use crate::materials::utils::{create_buffer, uniform_layout_entry};
 use crate::transform::{Transform, TransformUniforms};
 
 pub(crate) struct ObjectBindings {
@@ -15,11 +15,11 @@ impl ObjectBindings {
         })
     }
 
-    pub(crate) fn new(name: &str, ctx: &WGPUContext) -> Self {
+    pub(crate) fn new(name: &str, layout: &wgpu::BindGroupLayout, ctx: &WGPUContext) -> Self {
         let buffer = create_buffer::<TransformUniforms>(&format!("{name} Transform Buffer"), ctx);
         let bind_group = ctx.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Object Bind Group"),
-            layout: &ctx.object_bind_group_layout,
+            layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
                 resource: buffer.as_entire_binding(),

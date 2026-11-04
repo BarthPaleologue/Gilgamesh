@@ -3,8 +3,8 @@ use crate::geometry::cpu_mesh_buffers::CpuMeshBuffers;
 use crate::geometry::cpu_vertex_buffers::CpuVertexBuffers;
 use bytemuck::{Pod, Zeroable, cast_slice};
 use std::mem;
+use wgpu::Buffer;
 use wgpu::util::DeviceExt;
-use wgpu::{Buffer, RenderPass};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
@@ -71,10 +71,16 @@ impl GpuMeshBuffers {
         )
     }
 
-    pub fn draw(&self, render_pass: &mut RenderPass<'_>) {
-        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-        render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-        render_pass.draw_indexed(0..self.index_count, 0, 0..1);
+    pub fn vertex_buffer(&self) -> &Buffer {
+        &self.vertex_buffer
+    }
+
+    pub fn index_buffer(&self) -> &Buffer {
+        &self.index_buffer
+    }
+
+    pub fn index_count(&self) -> u32 {
+        self.index_count
     }
 }
 

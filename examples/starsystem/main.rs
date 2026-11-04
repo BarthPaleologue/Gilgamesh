@@ -64,7 +64,12 @@ impl App for StarSystemDemo {
         ));
         let mut sun_material = PbrMaterial::new("SunMaterial");
         sun_material.set_albedo_texture(sun_texture);
-        let sun = Mesh::from_cpu_buffers("Sun", primitive::sphere(32), Rc::new(sun_material), ctx);
+        let sun = Mesh::from_cpu_buffers(
+            "Sun",
+            primitive::sphere(32),
+            Rc::new(sun_material.into()),
+            ctx,
+        );
 
         let mut earth_material = BlinnPhongMaterial::new("EarthMaterial");
         let earth_diffuse_texture = Rc::new(Texture::<Srgb>::new(
@@ -79,8 +84,12 @@ impl App for StarSystemDemo {
             ctx,
         ));
         earth_material.set_specular_texture(earth_specular_texture);
-        let earth =
-            Mesh::from_cpu_buffers("Earth", primitive::sphere(32), Rc::new(earth_material), ctx);
+        let earth = Mesh::from_cpu_buffers(
+            "Earth",
+            primitive::sphere(32),
+            Rc::new(earth_material.into()),
+            ctx,
+        );
         earth.transform_mut().parent = Some(sun.transform_rc());
 
         camera.transform_mut().parent = Some(earth.transform_rc());
@@ -88,7 +97,7 @@ impl App for StarSystemDemo {
         let plane = Mesh::from_cpu_buffers(
             "Plane",
             primitive::plane(10, 10.0),
-            Rc::new(BlinnPhongMaterial::new("PlaneMaterial")),
+            Rc::new(BlinnPhongMaterial::new("PlaneMaterial").into()),
             ctx,
         );
         plane.transform_mut().position = DVec3::new(0.0, -5.0, 0.0);
@@ -126,9 +135,9 @@ impl App for StarSystemDemo {
         FrameBindingsData::new(&self.camera, &self.directional_light, &self.point_lights)
     }
 
-    fn get_meshes(&mut self) -> impl IntoIterator<Item = &mut Mesh> {
+    fn get_meshes(&self) -> impl IntoIterator<Item = &Mesh> {
         self.point_light_meshes
-            .iter_mut()
-            .chain([&mut self.sun, &mut self.earth, &mut self.plane])
+            .iter()
+            .chain([&self.sun, &self.earth, &self.plane])
     }
 }

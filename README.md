@@ -87,7 +87,7 @@ impl App for TerrainApp {
         });
         let mut material = BlinnPhongMaterial::new("sincMaterial");
         material.set_diffuse_color(0.5, 0.2, 1.0);
-        let terrain = Mesh::from_cpu_buffers("sinc", cpu_buffers, Rc::new(material), ctx);
+        let terrain = Mesh::from_cpu_buffers("sinc", cpu_buffers, Rc::new(material.into()), ctx);
 
         Self { camera, orbit_control, terrain, directional_light: DirectionalLight::default() }
     }
@@ -98,8 +98,8 @@ impl App for TerrainApp {
         self.terrain.transform_mut().rotation = DQuat::from_rotation_y(frame.elapsed_seconds);
     }
 
-    fn get_meshes(&mut self) -> impl IntoIterator<Item = &mut Mesh> {
-        [&mut self.terrain]
+    fn get_meshes(&self) -> impl IntoIterator<Item = &Mesh> {
+        [&self.terrain]
     }
 
     fn get_frame_bindings_data(&mut self) -> FrameBindingsData<'_, impl CameraProjection> {

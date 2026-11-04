@@ -1,8 +1,22 @@
-use crate::core::renderer::Renderer;
-use crate::core::wgpu_context::WGPUContext;
-use crate::materials::prepared_material::PreparedMaterial;
+use crate::materials::blinn_phong::BlinnPhongMaterial;
+use crate::materials::pbr::PbrMaterial;
 
-/// A material can be shared between meshes without sharing their object uniforms.
-pub trait Material {
-    fn prepare(&self, renderer: &mut Renderer, ctx: &WGPUContext) -> &PreparedMaterial;
+/// A surface description that can be shared by meshes and interpreted by each renderer.
+/// Configure it before sharing, or replace it with a new description when editing.
+#[derive(Clone)]
+pub enum Material {
+    Pbr(PbrMaterial),
+    BlinnPhong(BlinnPhongMaterial),
+}
+
+impl From<PbrMaterial> for Material {
+    fn from(material: PbrMaterial) -> Self {
+        Self::Pbr(material)
+    }
+}
+
+impl From<BlinnPhongMaterial> for Material {
+    fn from(material: BlinnPhongMaterial) -> Self {
+        Self::BlinnPhong(material)
+    }
 }

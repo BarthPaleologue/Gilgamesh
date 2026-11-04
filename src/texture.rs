@@ -1,6 +1,7 @@
 use crate::core::wgpu_context::WGPUContext;
 use image::GenericImageView;
 use std::marker::PhantomData;
+use std::rc::Rc;
 
 /// Color images decoded from sRGB when sampled.
 pub struct Srgb;
@@ -69,8 +70,27 @@ pub struct Texture<Encoding: ColorEncoding> {
     encoding: PhantomData<Encoding>,
 }
 
+/// A color input whose storage can be either sRGB or linear.
+#[derive(Clone)]
+pub enum ColorTexture {
+    Srgb(Rc<Texture<Srgb>>),
+    Linear(Rc<Texture<Linear>>),
+}
+
+impl From<Rc<Texture<Srgb>>> for ColorTexture {
+    fn from(texture: Rc<Texture<Srgb>>) -> Self {
+        Self::Srgb(texture)
+    }
+}
+
+impl From<Rc<Texture<Linear>>> for ColorTexture {
+    fn from(texture: Rc<Texture<Linear>>) -> Self {
+        Self::Linear(texture)
+    }
+}
+
 /// Supplies GPU bindings independently of the texture's storage encoding.
-pub trait SampledTexture {
+pub(crate) trait SampledTexture {
     fn create_bind_group_entries(&self, start_index: u32) -> [wgpu::BindGroupEntry<'_>; 2];
 }
 
@@ -222,5 +242,14 @@ impl<Encoding: ColorEncoding> SampledTexture for Texture<Encoding> {
                 resource: wgpu::BindingResource::Sampler(&self.sampler),
             },
         ]
+    }
+}
+
+impl SampledTexture for ColorTexture {
+    fn create_bind_group_entries(&self, start_index: u32) -> [wgpu::BindGroupEntry<'_>; 2] {
+        match self {
+            Self::Srgb(texture) => texture.create_bind_group_entries(start_index),
+            Self::Linear(texture) => texture.create_bind_group_entries(start_index),
+        }
     }
 }

@@ -33,7 +33,7 @@ impl App for TerrainView {
         });
         let mut material = BlinnPhongMaterial::new("sincMaterial");
         material.set_diffuse_color(0.5, 0.2, 1.0);
-        let terrain = Mesh::from_cpu_buffers("sinc", cpu_buffers, Rc::new(material), ctx);
+        let terrain = Mesh::from_cpu_buffers("sinc", cpu_buffers, Rc::new(material.into()), ctx);
 
         Self {
             camera,
@@ -54,7 +54,7 @@ impl App for TerrainView {
         FrameBindingsData::new(&self.camera, &self.directional_light, &[])
     }
 
-    fn get_meshes(&mut self) -> impl IntoIterator<Item = &mut Mesh> {
-        [&mut self.terrain]
+    fn get_meshes(&self) -> impl IntoIterator<Item = &Mesh> {
+        [&self.terrain]
     }
 }

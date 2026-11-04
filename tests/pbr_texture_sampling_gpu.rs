@@ -4,9 +4,9 @@ mod common;
 
 use common::read_rgba8;
 use gilgamesh::camera::Camera;
+use gilgamesh::core::raster_renderer::RasterRenderer;
 use gilgamesh::core::render_context::FrameBindingsData;
 use gilgamesh::core::render_target::RenderTarget;
-use gilgamesh::core::renderer::Renderer;
 use gilgamesh::core::wgpu_context::WGPUContext;
 use gilgamesh::geometry::{mesh::Mesh, primitive};
 use gilgamesh::lights::directional_light::DirectionalLight;
@@ -71,8 +71,13 @@ fn albedo_encodings_match_equivalent_linear_constants() {
     let mut linear_constant = PbrMaterial::new("Linear Constant");
     let linear_gray = 128.0 / 255.0;
     linear_constant.set_albedo_color(linear_gray, linear_gray, linear_gray);
-    let mut meshes = [constant, textured, linear_constant, linear_textured].map(|material| {
-        Mesh::from_cpu_buffers("Albedo", primitive::plane(2, 4.0), Rc::new(material), &gpu)
+    let meshes = [constant, textured, linear_constant, linear_textured].map(|material| {
+        Mesh::from_cpu_buffers(
+            "Albedo",
+            primitive::plane(2, 4.0),
+            Rc::new(material.into()),
+            &gpu,
+        )
     });
     let camera: Camera = Camera::default();
     let position = DVec3::new(0.0, 3.0, 3.0);
@@ -80,10 +85,10 @@ fn albedo_encodings_match_equivalent_linear_constants() {
     camera.transform_mut().rotation =
         rh::view::look_at_quat(position, DVec3::ZERO, DVec3::Y).conjugate();
     let light = DirectionalLight::default();
-    let mut renderer = Renderer::new(&gpu, wgpu::TextureFormat::Rgba8UnormSrgb);
+    let mut renderer = RasterRenderer::new(&gpu, wgpu::TextureFormat::Rgba8UnormSrgb);
     renderer.update_frame_bindings(FrameBindingsData::new(&camera, &light, &[]), &gpu);
     let mut images = Vec::new();
-    for mesh in &mut meshes {
+    for mesh in &meshes {
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
         renderer.encode(
             [mesh],

@@ -27,7 +27,7 @@ pub trait App: Sized {
     fn get_frame_bindings_data(&mut self) -> FrameBindingsData<'_, impl CameraProjection>;
 
     /// Borrows the meshes.
-    fn get_meshes(&mut self) -> impl IntoIterator<Item = &mut Mesh>;
+    fn get_meshes(&self) -> impl IntoIterator<Item = &Mesh>;
 
     fn on_window_event(&mut self, _event: &WindowEvent) {}
 }
