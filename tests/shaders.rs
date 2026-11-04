@@ -28,7 +28,7 @@ fn fullscreen_blocks_translate_to_webgl2_shaders() {
         include_str!("../src/blocks/resize_nearest.wgsl"),
         include_str!("../src/blocks/resize_bilinear.wgsl"),
         include_str!("../src/blocks/bloom.wgsl"),
-        include_str!("../src/blocks/pyramid_blur.wgsl"),
+        include_str!("../src/blocks/pyramid_blur/merge_levels.wgsl"),
         include_str!("../src/blocks/visualize_depth.wgsl"),
         include_str!("../src/blocks/vertical_split_screen.wgsl"),
         include_str!("../src/core/image_blit.wgsl"),

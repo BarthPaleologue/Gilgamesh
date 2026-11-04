@@ -1,5 +1,8 @@
 use super::resize_bilinear;
-use crate::core::render_graph::{Binding, Image, ImageSize, RenderGraph, fragment_pass};
+use crate::core::render_graph::{Image, ImageSize, RenderGraph};
+
+mod merge_levels;
+use merge_levels::merge_levels;
 
 /// Blurs RGBA using a normalized pyramid of `levels` half-resolution images.
 /// Uses bilinear resizing in both directions, blending adjacent levels equally.
@@ -31,18 +34,6 @@ pub fn pyramid_blur(source: Image, levels: u32, graph: &mut RenderGraph<'_>) -> 
         blurred = merge_levels(image, expanded, graph);
     }
     resize_bilinear(blurred, graph.image_descriptor(source).size, graph)
-}
-
-fn merge_levels(fine: Image, coarse: Image, graph: &mut RenderGraph<'_>) -> Image {
-    let output = graph.create_image("Blur Merge", graph.image_descriptor(fine));
-    fragment_pass(
-        "Blur Merge",
-        include_str!("pyramid_blur.wgsl"),
-        [Binding::Texture(fine), Binding::Texture(coarse)],
-        &[output],
-        graph,
-    );
-    output
 }
 
 fn half_size(size: ImageSize) -> ImageSize {
