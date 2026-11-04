@@ -1,5 +1,4 @@
 use crate::camera::uniforms::CameraUniforms;
-use crate::camera::{Camera, CameraProjection};
 use crate::core::uniforms::{create_array_buffer, create_buffer, uniform_layout_entry};
 use crate::core::wgpu_context::WGPUContext;
 use crate::lights::directional_light::{DirectionalLight, DirectionalLightUniform};
@@ -63,22 +62,20 @@ impl FrameBindings {
         }
     }
 
-    pub(crate) fn update<ProjectionType: CameraProjection>(
+    pub(crate) fn update(
         &self,
-        camera: &Camera<ProjectionType>,
+        camera: &CameraUniforms,
         directional_light: &DirectionalLight,
         point_lights: &[PointLight],
         queue: &wgpu::Queue,
     ) {
-        let mut camera_uniforms = CameraUniforms::default();
-        camera_uniforms.update(camera);
         let mut directional_uniforms = DirectionalLightUniform::default();
         directional_uniforms.update(directional_light);
         let mut point_uniforms = [PointLightUniforms::default(); MAX_POINT_LIGHTS];
         for (uniforms, light) in point_uniforms.iter_mut().zip(point_lights) {
             uniforms.update(light);
         }
-        queue.write_buffer(&self.camera, 0, bytemuck::bytes_of(&camera_uniforms));
+        queue.write_buffer(&self.camera, 0, bytemuck::bytes_of(camera));
         queue.write_buffer(
             &self.directional_light,
             0,

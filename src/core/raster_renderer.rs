@@ -1,4 +1,3 @@
-use crate::camera::CameraProjection;
 use crate::core::frame_bindings::FrameBindings;
 use crate::core::material_pipeline::{MaterialPipeline, PipelineConfig, PipelineKey};
 use crate::core::object_bindings::ObjectBindings;
@@ -81,15 +80,13 @@ impl RasterRenderer {
             .clone()
     }
 
-    pub fn update_frame_bindings<'a, ProjectionType>(
+    pub fn update_frame_bindings(
         &mut self,
-        context: FrameBindingsData<'a, ProjectionType>,
+        context: FrameBindingsData<'_>,
         wgpu_context: &WGPUContext,
-    ) where
-        ProjectionType: CameraProjection,
-    {
+    ) {
         self.frame.update(
-            context.camera,
+            &context.camera,
             context.directional_light,
             context.point_lights,
             &wgpu_context.queue,
@@ -131,7 +128,7 @@ impl RasterRenderer {
                     view: target.depth,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(0.0),
-                        store: wgpu::StoreOp::Discard,
+                        store: wgpu::StoreOp::Store,
                     }),
                     stencil_ops: None,
                 }),

@@ -1,6 +1,7 @@
 #![doc = include_str!("../README.md")]
 
 pub mod animation;
+pub mod blocks;
 pub mod camera;
 pub mod core;
 pub mod geometry;

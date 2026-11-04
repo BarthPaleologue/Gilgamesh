@@ -1,11 +1,13 @@
 #![cfg(not(target_arch = "wasm32"))]
 
-use gilgamesh::camera::{Camera, CameraProjection, Orthographic};
+use gilgamesh::blocks::{rasterize, tone_map};
+use gilgamesh::camera::{Camera, Orthographic};
 use gilgamesh::core::app::{App, FrameContext};
 use gilgamesh::core::color_pass::ColorPass;
-use gilgamesh::core::frame_renderer::{FrameRenderer, FrameTarget};
+use gilgamesh::core::graph_executor::{FrameTarget, GraphExecutor};
 use gilgamesh::core::headless_runtime::HeadlessRuntime;
 use gilgamesh::core::render_context::FrameBindingsData;
+use gilgamesh::core::render_graph::{RenderGraph, TextureFormat};
 use gilgamesh::core::wgpu_context::WGPUContext;
 use gilgamesh::core::window_runtime::WindowContext;
 use gilgamesh::geometry::{mesh::Mesh, primitive};
@@ -22,32 +24,32 @@ use std::time::Duration;
 
 #[test]
 #[ignore = "GPU end-to-end check; run explicitly with approval"]
-fn frame_renderer_and_captures_keep_targets_and_hooks_independent() {
+fn graph_execution_and_captures_keep_targets_and_hooks_independent() {
     let first = pollster::block_on(async {
-        let mut renderer = FrameRenderer::new().await;
-        let mut target = renderer.create_target(67, 33);
-        let mut app = TestApp::new(renderer.wgpu_context());
+        let mut executor = GraphExecutor::new().await;
+        let mut target = executor.create_target(67, 33);
+        let mut app = TestApp::new(executor.wgpu_context());
         assert_eq!(
             target.output().texture().format(),
             wgpu::TextureFormat::Rgba8UnormSrgb
         );
 
-        render_frame(&mut renderer, &mut app, &target, 0.0, 0.0);
-        let first = target.read_image(renderer.wgpu_context()).await.unwrap();
+        render_frame(&mut executor, &mut app, &mut target, 0.0, 0.0);
+        let first = target.read_image(executor.wgpu_context()).await.unwrap();
         assert_eq!(first.dimensions(), (67, 33));
         assert_pixel(first.get_pixel(33, 16).0, [253, 182, 158, 255]);
         let background = first.get_pixel(0, 0).0;
         assert_ne!(background, first.get_pixel(33, 16).0);
         assert_eq!(first.get_pixel(66, 32).0, background);
-        assert_eq!(blit_and_read(&renderer, &target).await, first);
+        assert_eq!(blit_and_read(&executor, &target).await, first);
         assert_eq!(app.name(), "67x33 at 0.00");
 
         let first_view = target.output().clone();
-        assert!(!renderer.resize_target(&mut target, 67, 33));
+        assert!(!executor.resize_target(&mut target, 67, 33));
         assert_eq!(first_view, *target.output());
-        render_frame(&mut renderer, &mut app, &target, 0.02, 0.02);
+        render_frame(&mut executor, &mut app, &mut target, 0.02, 0.02);
         assert_eq!(
-            target.read_image(renderer.wgpu_context()).await.unwrap(),
+            target.read_image(executor.wgpu_context()).await.unwrap(),
             first
         );
 
@@ -60,7 +62,7 @@ fn frame_renderer_and_captures_keep_targets_and_hooks_independent() {
 
         {
             let mut context = WindowContext {
-                renderer: &mut renderer,
+                executor: &mut executor,
                 frame: &target,
                 elapsed_seconds: 0.02,
             };
@@ -75,12 +77,12 @@ fn frame_renderer_and_captures_keep_targets_and_hooks_independent() {
             assert_eq!(app.name(), "129x65 at 0.02");
         }
         assert_eq!(app.frames.len(), 3);
-        render_frame(&mut renderer, &mut app, &target, 0.04, 0.02);
+        render_frame(&mut executor, &mut app, &mut target, 0.04, 0.02);
         assert_eq!(app.camera.projection.aspect_ratio, 67.0 / 33.0);
         assert_eq!(app.name(), "67x33 at 0.04");
         assert_pixel(
             target
-                .read_image(renderer.wgpu_context())
+                .read_image(executor.wgpu_context())
                 .await
                 .unwrap()
                 .get_pixel(33, 16)
@@ -88,13 +90,13 @@ fn frame_renderer_and_captures_keep_targets_and_hooks_independent() {
             [150, 150, 253, 255],
         );
 
-        assert!(renderer.resize_target(&mut target, 3, 4));
+        assert!(executor.resize_target(&mut target, 3, 4));
         assert_ne!(first_view, *target.output());
-        render_frame(&mut renderer, &mut app, &target, 0.06, 0.02);
-        let image = target.read_image(renderer.wgpu_context()).await.unwrap();
+        render_frame(&mut executor, &mut app, &mut target, 0.06, 0.02);
+        let image = target.read_image(executor.wgpu_context()).await.unwrap();
         assert_eq!(image.dimensions(), (3, 4));
         assert_pixel(image.get_pixel(1, 2).0, [150, 150, 253, 255]);
-        assert_eq!(blit_and_read(&renderer, &target).await, image);
+        assert_eq!(blit_and_read(&executor, &target).await, image);
         assert_eq!(first_view.texture().width(), 67);
         assert_eq!(first_view.texture().height(), 33);
         assert_eq!(app.frames.len(), 5);
@@ -141,9 +143,9 @@ fn frame_renderer_and_captures_keep_targets_and_hooks_independent() {
 }
 
 fn render_frame(
-    renderer: &mut FrameRenderer,
+    executor: &mut GraphExecutor,
     app: &mut TestApp,
-    target: &FrameTarget,
+    target: &mut FrameTarget,
     elapsed_seconds: f64,
     delta_seconds: f64,
 ) {
@@ -155,9 +157,9 @@ fn render_frame(
         render_width: texture.width(),
         render_height: texture.height(),
         mouse: &mouse,
-        wgpu_context: renderer.wgpu_context(),
+        wgpu_context: executor.wgpu_context(),
     });
-    renderer.render_to(target, app.get_frame_bindings_data(), app.get_meshes());
+    executor.execute(app.render_graph(), target).unwrap();
 }
 
 struct TestApp {
@@ -222,17 +224,22 @@ impl App for TestApp {
         ));
     }
 
-    fn get_frame_bindings_data(&self) -> FrameBindingsData<'_, impl CameraProjection> {
-        FrameBindingsData::new(&self.camera, &self.light, &[])
-    }
-
-    fn get_meshes(&self) -> impl IntoIterator<Item = &Mesh> {
-        [&self.mesh]
+    fn render_graph(&self) -> RenderGraph<'_> {
+        let mut graph = RenderGraph::new();
+        let scene = rasterize(
+            FrameBindingsData::new(&self.camera, &self.light, &[]),
+            [&self.mesh],
+            TextureFormat::Rgba16Float,
+            &mut graph,
+        );
+        let image = tone_map(scene.color, TextureFormat::Rgba8UnormSrgb, &mut graph);
+        graph.export(image);
+        graph
     }
 }
 
-async fn blit_and_read(renderer: &FrameRenderer, target: &FrameTarget) -> image::RgbaImage {
-    let ctx = renderer.wgpu_context();
+async fn blit_and_read(executor: &GraphExecutor, target: &FrameTarget) -> image::RgbaImage {
+    let ctx = executor.wgpu_context();
     let output = ctx.device.create_texture(&wgpu::TextureDescriptor {
         label: Some("Headless Output Consumer"),
         size: target.output().texture().size(),

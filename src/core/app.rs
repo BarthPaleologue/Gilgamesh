@@ -1,9 +1,7 @@
-use crate::camera::CameraProjection;
-use crate::core::frame_renderer::{FrameRenderer, FrameTarget};
-use crate::core::render_context::FrameBindingsData;
+use crate::core::graph_executor::{FrameTarget, GraphExecutor};
+use crate::core::render_graph::RenderGraph;
 use crate::core::wgpu_context::WGPUContext;
 use crate::core::window_runtime::WindowContext;
-use crate::geometry::mesh::Mesh;
 use crate::input::mouse::Mouse;
 use winit::event::WindowEvent;
 
@@ -28,18 +26,16 @@ pub trait App: Sized {
     /// Prepares the application and camera for this render's dimensions and time.
     fn update_before_render(&mut self, frame: &FrameContext<'_>);
 
-    /// Borrows the camera and lights for rendering.
-    fn get_frame_bindings_data(&self) -> FrameBindingsData<'_, impl CameraProjection>;
-
-    /// Borrows the meshes.
-    fn get_meshes(&self) -> impl IntoIterator<Item = &Mesh>;
+    /// Describes this render, borrowing any scenes and parameters it needs.
+    /// Export one color image at the render dimensions for presentation and capture.
+    fn render_graph(&self) -> RenderGraph<'_>;
 
     fn on_window_event(&mut self, _event: &WindowEvent, _context: &mut WindowContext<'_>) {}
 }
 
 pub(crate) fn prepare_frame(
     app: &mut impl App,
-    renderer: &FrameRenderer,
+    executor: &GraphExecutor,
     target: &FrameTarget,
     elapsed_seconds: f64,
     delta_seconds: f64,
@@ -52,19 +48,21 @@ pub(crate) fn prepare_frame(
         render_width: texture.width(),
         render_height: texture.height(),
         mouse,
-        wgpu_context: renderer.wgpu_context(),
+        wgpu_context: executor.wgpu_context(),
     });
 }
 
 pub(crate) fn render_image<Application: App>(
     app: &mut Application,
-    renderer: &mut FrameRenderer,
+    executor: &mut GraphExecutor,
     elapsed_seconds: f64,
     width: u32,
     height: u32,
 ) -> impl std::future::Future<Output = std::io::Result<image::RgbaImage>> + use<Application> {
-    let target = renderer.create_target(width, height);
-    prepare_frame(app, renderer, &target, elapsed_seconds, 0.0, &Mouse::new());
-    renderer.render_to(&target, app.get_frame_bindings_data(), app.get_meshes());
-    target.read_image(renderer.wgpu_context())
+    let mut target = executor.create_target(width, height);
+    prepare_frame(app, executor, &target, elapsed_seconds, 0.0, &Mouse::new());
+    executor
+        .execute(app.render_graph(), &mut target)
+        .expect("Render graph execution failed");
+    target.read_image(executor.wgpu_context())
 }

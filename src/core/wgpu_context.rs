@@ -53,7 +53,9 @@ impl WGPUContext {
                         | wgpu::Features::POLYGON_MODE_POINT
                         | wgpu::Features::ADDRESS_MODE_CLAMP_TO_BORDER
                 },
-                required_limits: if cfg!(target_arch = "wasm32") {
+                required_limits: if cfg!(target_arch = "wasm32")
+                    && adapter.get_info().backend == wgpu::Backend::Gl
+                {
                     wgpu::Limits::downlevel_webgl2_defaults().using_resolution(adapter.limits())
                 } else {
                     wgpu::Limits::default()

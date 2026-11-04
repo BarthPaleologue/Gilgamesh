@@ -1,14 +1,16 @@
 pub mod app;
 pub mod color_pass;
-pub mod frame_renderer;
+pub mod graph_executor;
 pub mod headless_runtime;
 pub mod render_context;
+pub mod render_graph;
 pub mod render_target;
 pub mod wgpu_context;
 pub mod window_runtime;
 pub mod window_surface;
 
 pub(crate) mod frame_bindings;
+pub(crate) mod fullscreen_pass;
 pub(crate) mod material_pipeline;
 pub(crate) mod object_bindings;
 pub(crate) mod prepared_material;

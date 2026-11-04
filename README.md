@@ -59,10 +59,12 @@ Implement `App` to own and update your camera, controls, and meshes.
 Here is a procedural terrain example:
 
 ```rust,no_run
-use gilgamesh::camera::{Camera, CameraProjection, Perspective};
+use gilgamesh::camera::{Camera, Perspective};
 use gilgamesh::core::app::{App, FrameContext};
 use gilgamesh::core::window_runtime::WindowRuntime;
 use gilgamesh::core::render_context::FrameBindingsData;
+use gilgamesh::core::render_graph::{RenderGraph, TextureFormat};
+use gilgamesh::blocks::{rasterize, tone_map};
 use gilgamesh::core::wgpu_context::WGPUContext;
 use gilgamesh::geometry::mesh::Mesh;
 use gilgamesh::geometry::procedural;
@@ -107,12 +109,17 @@ impl App for TerrainApp {
         self.terrain.transform_mut().rotation = DQuat::from_rotation_y(frame.elapsed_seconds);
     }
 
-    fn get_meshes(&self) -> impl IntoIterator<Item = &Mesh> {
-        [&self.terrain]
-    }
-
-    fn get_frame_bindings_data(&self) -> FrameBindingsData<'_, impl CameraProjection> {
-        FrameBindingsData::new(&self.camera, &self.directional_light, &[])
+    fn render_graph(&self) -> RenderGraph<'_> {
+        let mut graph = RenderGraph::new();
+        let scene = rasterize(
+            FrameBindingsData::new(&self.camera, &self.directional_light, &[]),
+            [&self.terrain],
+            TextureFormat::Rgba16Float,
+            &mut graph,
+        );
+        let image = tone_map(scene.color, TextureFormat::Rgba8UnormSrgb, &mut graph);
+        graph.export(image);
+        graph
     }
 }
 

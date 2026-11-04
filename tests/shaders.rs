@@ -20,37 +20,42 @@ fn pbr_shader_is_valid() {
 }
 
 #[test]
-fn color_passes_translate_to_webgl2_shaders() {
+fn fullscreen_blocks_translate_to_webgl2_shaders() {
     use naga::back::glsl;
 
-    let module = validate_shader(include_str!("../src/shader/color.wgsl"));
-    let info = Validator::new(ValidationFlags::all(), Capabilities::empty())
-        .validate(&module)
-        .unwrap();
-    let options = glsl::Options {
-        version: glsl::Version::Embedded {
-            version: 300,
-            is_webgl: true,
-        },
-        ..Default::default()
-    };
-    for entry in &module.entry_points {
-        let pipeline = glsl::PipelineOptions {
-            shader_stage: entry.stage,
-            entry_point: entry.name.clone(),
-            multiview: None,
+    for fragment in [
+        include_str!("../src/blocks/tone_map.wgsl"),
+        include_str!("../src/core/image_blit.wgsl"),
+    ] {
+        let source = [include_str!("../src/core/fullscreen_pass.wgsl"), fragment].join("\n");
+        let module = validate_shader(&source);
+        let info = Validator::new(ValidationFlags::all(), Capabilities::empty())
+            .validate(&module)
+            .unwrap();
+        let options = glsl::Options {
+            version: glsl::Version::Embedded {
+                version: 300,
+                is_webgl: true,
+            },
+            ..Default::default()
         };
-        glsl::Writer::new(
-            String::new(),
-            &module,
-            &info,
-            &options,
-            &pipeline,
-            naga::proc::BoundsCheckPolicies::default(),
-        )
-        .unwrap()
-        .write()
-        .unwrap_or_else(|error| panic!("{}: {error}", entry.name));
+        for entry in &module.entry_points {
+            glsl::Writer::new(
+                String::new(),
+                &module,
+                &info,
+                &options,
+                &glsl::PipelineOptions {
+                    shader_stage: entry.stage,
+                    entry_point: entry.name.clone(),
+                    multiview: None,
+                },
+                naga::proc::BoundsCheckPolicies::default(),
+            )
+            .unwrap()
+            .write()
+            .unwrap_or_else(|error| panic!("{}: {error}", entry.name));
+        }
     }
 }
 

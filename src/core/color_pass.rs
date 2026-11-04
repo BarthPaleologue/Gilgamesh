@@ -1,3 +1,5 @@
+use crate::core::fullscreen_pass;
+
 /// A fullscreen fragment pass over equally sized, single-sample textures.
 pub struct ColorPass {
     pipeline: wgpu::RenderPipeline,
@@ -9,7 +11,12 @@ impl ColorPass {
     /// Maps linear Rec. 709 HDR colors to linear SDR using Khronos PBR Neutral.
     /// An sRGB destination performs the output encoding automatically.
     pub fn tone_mapping(device: &wgpu::Device, target_format: wgpu::TextureFormat) -> Self {
-        Self::new(device, target_format, "tone_mapping")
+        Self::new(
+            device,
+            target_format,
+            include_str!("../blocks/tone_map.wgsl"),
+            "fs_main",
+        )
     }
 
     /// Transfers an SDR image, encoding sRGB explicitly for non-sRGB destinations.
@@ -20,7 +27,12 @@ impl ColorPass {
         } else {
             "encode_srgb"
         };
-        Self::new(device, target_format, entry_point)
+        Self::new(
+            device,
+            target_format,
+            include_str!("image_blit.wgsl"),
+            entry_point,
+        )
     }
 
     pub fn bind_source(
@@ -44,76 +56,18 @@ impl ColorPass {
         source: &wgpu::BindGroup,
         target: &wgpu::TextureView,
     ) {
-        let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some(self.entry_point),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: target,
-                depth_slice: None,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
-                    store: wgpu::StoreOp::Store,
-                },
-            })],
-            ..Default::default()
-        });
-        pass.set_pipeline(&self.pipeline);
-        pass.set_bind_group(0, source, &[]);
-        pass.draw(0..3, 0..1);
+        fullscreen_pass::encode(encoder, &self.pipeline, source, target);
     }
 
     fn new(
         device: &wgpu::Device,
         target_format: wgpu::TextureFormat,
+        fragment: &str,
         entry_point: &'static str,
     ) -> Self {
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Color Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../shader/color.wgsl").into()),
-        });
-        let source_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Color Source Layout"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Texture {
-                    sample_type: wgpu::TextureSampleType::Float { filterable: false },
-                    view_dimension: wgpu::TextureViewDimension::D2,
-                    multisampled: false,
-                },
-                count: None,
-            }],
-        });
-        let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Color Pipeline Layout"),
-            bind_group_layouts: &[Some(&source_layout)],
-            immediate_size: 0,
-        });
-        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some(entry_point),
-            layout: Some(&layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: Some("vs_main"),
-                buffers: &[],
-                compilation_options: Default::default(),
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: Some(entry_point),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: target_format,
-                    blend: None,
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-                compilation_options: Default::default(),
-            }),
-            primitive: wgpu::PrimitiveState::default(),
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState::default(),
-            multiview_mask: None,
-            cache: None,
-        });
+        let pipeline =
+            fullscreen_pass::create_pipeline(device, fragment, entry_point, target_format);
+        let source_layout = pipeline.get_bind_group_layout(0);
         Self {
             pipeline,
             source_layout,

@@ -1,6 +1,8 @@
-use gilgamesh::camera::{Camera, CameraProjection, Perspective};
+use gilgamesh::blocks::{rasterize, tone_map};
+use gilgamesh::camera::{Camera, Perspective};
 use gilgamesh::core::app::{App, FrameContext};
 use gilgamesh::core::render_context::FrameBindingsData;
+use gilgamesh::core::render_graph::{RenderGraph, TextureFormat};
 use gilgamesh::core::wgpu_context::WGPUContext;
 use gilgamesh::core::window_runtime::WindowRuntime;
 use gilgamesh::geometry::mesh::Mesh;
@@ -135,13 +137,18 @@ impl App for StarSystemDemo {
         yellow_light.transform_mut().position = DVec3::new(15.0 * orbit_sin, 0.0, 15.0 * orbit_cos);
     }
 
-    fn get_frame_bindings_data(&self) -> FrameBindingsData<'_, impl CameraProjection> {
-        FrameBindingsData::new(&self.camera, &self.directional_light, &self.point_lights)
-    }
-
-    fn get_meshes(&self) -> impl IntoIterator<Item = &Mesh> {
-        self.point_light_meshes
-            .iter()
-            .chain([&self.sun, &self.earth, &self.plane])
+    fn render_graph(&self) -> RenderGraph<'_> {
+        let mut graph = RenderGraph::new();
+        let scene = rasterize(
+            FrameBindingsData::new(&self.camera, &self.directional_light, &self.point_lights),
+            self.point_light_meshes
+                .iter()
+                .chain([&self.sun, &self.earth, &self.plane]),
+            TextureFormat::Rgba16Float,
+            &mut graph,
+        );
+        let image = tone_map(scene.color, TextureFormat::Rgba8UnormSrgb, &mut graph);
+        graph.export(image);
+        graph
     }
 }

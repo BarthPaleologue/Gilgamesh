@@ -1,6 +1,6 @@
 use crate::core::app::{App, prepare_frame, render_image};
 use crate::core::color_pass::ColorPass;
-use crate::core::frame_renderer::{FrameRenderer, FrameTarget};
+use crate::core::graph_executor::{FrameTarget, GraphExecutor};
 use crate::core::wgpu_context::WGPUContext;
 use crate::core::window_surface::WindowSurface;
 use crate::input::mouse::Mouse;
@@ -13,13 +13,13 @@ use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::{Window, WindowAttributes, WindowId};
 
-/// Owns an application and renderer, and drives them through the window event loop.
+/// Owns an application and executor, and drives them through the window event loop.
 pub struct WindowRuntime<Application: App> {
     app: Application,
     window: Arc<Window>,
     window_surface: WindowSurface,
 
-    renderer: FrameRenderer,
+    executor: GraphExecutor,
     frame: FrameTarget,
     window_title: String,
     image_blit: ColorPass,
@@ -81,10 +81,10 @@ impl<Application: App> WindowRuntime<Application> {
         let surface = instance.create_surface(window.clone()).unwrap();
         let wgpu_context = WGPUContext::new(instance, Some(&surface)).await;
         let window_surface = WindowSurface::new(&wgpu_context, surface, window.inner_size());
-        let renderer = FrameRenderer::from_context(wgpu_context);
+        let executor = GraphExecutor::from_context(wgpu_context);
         let frame =
-            renderer.create_target(window_surface.config.width, window_surface.config.height);
-        let ctx = renderer.wgpu_context();
+            executor.create_target(window_surface.config.width, window_surface.config.height);
+        let ctx = executor.wgpu_context();
         let image_blit = ColorPass::image_blit(&ctx.device, window_surface.config.format);
         let ldr_source = image_blit.bind_source(&ctx.device, frame.output());
         let app = Application::new(ctx);
@@ -93,7 +93,7 @@ impl<Application: App> WindowRuntime<Application> {
 
         WindowRuntime {
             app,
-            renderer,
+            executor,
             frame,
             window_title,
             image_blit,
@@ -108,7 +108,7 @@ impl<Application: App> WindowRuntime<Application> {
 
     pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
         self.window_surface
-            .resize(&self.renderer.wgpu_context().device, new_size);
+            .resize(&self.executor.wgpu_context().device, new_size);
     }
 
     fn manage_event(&mut self, event: &WindowEvent) {
@@ -116,7 +116,7 @@ impl<Application: App> WindowRuntime<Application> {
         self.app.on_window_event(
             event,
             &mut WindowContext {
-                renderer: &mut self.renderer,
+                executor: &mut self.executor,
                 frame: &self.frame,
                 elapsed_seconds: self.elapsed_seconds,
             },
@@ -128,14 +128,9 @@ impl<Application: App> WindowRuntime<Application> {
 
     fn render(&mut self, output: wgpu::SurfaceTexture) {
         let size = output.texture.size();
-        if self
-            .renderer
-            .resize_target(&mut self.frame, size.width, size.height)
-        {
-            self.ldr_source = self
-                .image_blit
-                .bind_source(&self.renderer.wgpu_context().device, self.frame.output());
-        }
+        let previous_output = self.frame.output().clone();
+        self.executor
+            .resize_target(&mut self.frame, size.width, size.height);
         let elapsed_seconds = self.clock.elapsed().as_secs_f64();
         let delta_seconds = elapsed_seconds - self.elapsed_seconds;
         self.elapsed_seconds = elapsed_seconds;
@@ -144,7 +139,7 @@ impl<Application: App> WindowRuntime<Application> {
             .create_view(&wgpu::TextureViewDescriptor::default());
         prepare_frame(
             &mut self.app,
-            &self.renderer,
+            &self.executor,
             &self.frame,
             elapsed_seconds,
             delta_seconds,
@@ -156,32 +151,34 @@ impl<Application: App> WindowRuntime<Application> {
             self.window_title.clear();
             self.window_title.push_str(title);
         }
-        let mut encoder = self.renderer.wgpu_context().device.create_command_encoder(
+        let mut encoder = self.executor.wgpu_context().device.create_command_encoder(
             &wgpu::CommandEncoderDescriptor {
                 label: Some("Window Frame Encoder"),
             },
         );
-        self.renderer.encode(
-            &self.frame,
-            self.app.get_frame_bindings_data(),
-            self.app.get_meshes(),
-            &mut encoder,
-        );
+        self.executor
+            .encode(self.app.render_graph(), &mut self.frame, &mut encoder)
+            .expect("Render graph execution failed");
+        if previous_output != *self.frame.output() {
+            self.ldr_source = self
+                .image_blit
+                .bind_source(&self.executor.wgpu_context().device, self.frame.output());
+        }
         self.image_blit
             .encode(&mut encoder, &self.ldr_source, &color_view);
-        self.renderer
+        self.executor
             .wgpu_context()
             .queue
             .submit(std::iter::once(encoder.finish()));
         self.mouse.reset();
         self.window.pre_present_notify();
-        self.renderer.wgpu_context().queue.present(output);
+        self.executor.wgpu_context().queue.present(output);
     }
 }
 
 /// Rendering services available to an application's window event callback.
 pub struct WindowContext<'a> {
-    pub renderer: &'a mut FrameRenderer,
+    pub executor: &'a mut GraphExecutor,
     pub frame: &'a FrameTarget,
     pub elapsed_seconds: f64,
 }
@@ -191,7 +188,7 @@ impl WindowContext<'_> {
     pub fn capture_frame(
         &self,
     ) -> impl std::future::Future<Output = std::io::Result<image::RgbaImage>> + use<> {
-        self.frame.read_image(self.renderer.wgpu_context())
+        self.frame.read_image(self.executor.wgpu_context())
     }
 
     /// Prepares and renders a separate image, preserving the main frame and simulation time.
@@ -204,7 +201,7 @@ impl WindowContext<'_> {
         height: u32,
     ) -> impl std::future::Future<Output = std::io::Result<image::RgbaImage>> + use<Application>
     {
-        render_image(app, self.renderer, self.elapsed_seconds, width, height)
+        render_image(app, self.executor, self.elapsed_seconds, width, height)
     }
 }
 
@@ -300,7 +297,7 @@ impl<Application: App + 'static> ApplicationHandler<WindowRuntime<Application>>
                     }
                     CurrentSurfaceTexture::Lost => {
                         runtime.window_surface.recreate_surface(
-                            runtime.renderer.wgpu_context(),
+                            runtime.executor.wgpu_context(),
                             runtime.window.clone(),
                         );
                     }

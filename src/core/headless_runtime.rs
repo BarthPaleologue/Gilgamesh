@@ -1,14 +1,14 @@
 use crate::core::app::{App, prepare_frame, render_image};
-use crate::core::frame_renderer::{FrameRenderer, FrameTarget};
+use crate::core::graph_executor::{FrameTarget, GraphExecutor};
 use crate::core::wgpu_context::WGPUContext;
 use crate::input::mouse::Mouse;
 use std::future::Future;
 use std::time::Duration;
 
-/// Owns an application and renderer for rendering without a window or event loop.
+/// Owns an application and executor for rendering without a window or event loop.
 pub struct HeadlessRuntime<Application: App> {
     app: Application,
-    renderer: FrameRenderer,
+    executor: GraphExecutor,
     frame: FrameTarget,
     elapsed_seconds: f64,
 }
@@ -34,12 +34,12 @@ impl<Application: App> HeadlessRuntime<Application> {
     }
 
     pub async fn new(width: u32, height: u32) -> Self {
-        let renderer = FrameRenderer::new().await;
-        let frame = renderer.create_target(width, height);
-        let app = Application::new(renderer.wgpu_context());
+        let executor = GraphExecutor::new().await;
+        let frame = executor.create_target(width, height);
+        let app = Application::new(executor.wgpu_context());
         Self {
             app,
-            renderer,
+            executor,
             frame,
             elapsed_seconds: 0.0,
         }
@@ -54,7 +54,7 @@ impl<Application: App> HeadlessRuntime<Application> {
     }
 
     pub fn wgpu_context(&self) -> &WGPUContext {
-        self.renderer.wgpu_context()
+        self.executor.wgpu_context()
     }
 
     /// Advances by the caller's timestep and renders the main frame with neutral input.
@@ -63,22 +63,20 @@ impl<Application: App> HeadlessRuntime<Application> {
         self.elapsed_seconds += delta_seconds;
         prepare_frame(
             &mut self.app,
-            &self.renderer,
+            &self.executor,
             &self.frame,
             self.elapsed_seconds,
             delta_seconds,
             &Mouse::new(),
         );
-        self.renderer.render_to(
-            &self.frame,
-            self.app.get_frame_bindings_data(),
-            self.app.get_meshes(),
-        );
+        self.executor
+            .execute(self.app.render_graph(), &mut self.frame)
+            .expect("Render graph execution failed");
     }
 
     /// Replaces the main target when its dimensions change; rendering remains explicit.
     pub fn resize(&mut self, width: u32, height: u32) {
-        self.renderer.resize_target(&mut self.frame, width, height);
+        self.executor.resize_target(&mut self.frame, width, height);
     }
 
     pub fn output(&self) -> &wgpu::TextureView {
@@ -90,7 +88,7 @@ impl<Application: App> HeadlessRuntime<Application> {
         &self,
     ) -> impl std::future::Future<Output = std::io::Result<image::RgbaImage>> + use<Application>
     {
-        self.frame.read_image(self.renderer.wgpu_context())
+        self.frame.read_image(self.executor.wgpu_context())
     }
 
     /// Renders a separate image at the current time, with zero delta and neutral input.
@@ -102,7 +100,7 @@ impl<Application: App> HeadlessRuntime<Application> {
     {
         render_image(
             &mut self.app,
-            &mut self.renderer,
+            &mut self.executor,
             self.elapsed_seconds,
             width,
             height,
