@@ -115,7 +115,9 @@ impl<'a> RenderGraph<'a> {
         image
     }
 
-    /// Imports a read-only, single-mip, single-layer, single-sample 2D texture.
+    /// Imports a single-mip, single-layer, single-sample 2D texture owned by the caller.
+    /// Passes may read or write it according to the texture's creation usages.
+    /// Reads depend on its writer, if any; otherwise they see its existing contents.
     /// Importing the same texture again returns the same handle.
     pub fn import_texture(
         &mut self,
@@ -158,7 +160,8 @@ impl<'a> RenderGraph<'a> {
         self.images[image.index].descriptor
     }
 
-    /// Adds a custom raster, compute, or copy pass. Each created image has one writer.
+    /// Adds a custom raster, compute, or copy pass. Each image has at most one writer;
+    /// created images require one, while imported images may keep their existing contents.
     /// Usages describe how the callback accesses each image; execution order follows
     /// the producers of its reads, independently of pass registration order.
     pub fn add_pass(
@@ -176,7 +179,8 @@ impl<'a> RenderGraph<'a> {
         });
     }
 
-    /// Selects the image written into the caller's target. It must match its dimensions.
+    /// Selects a graph-created image written into the caller's target.
+    /// It must match the target's dimensions; imported textures remain caller-owned.
     pub fn export(&mut self, image: Image) {
         self.output = Some(image);
     }
@@ -193,7 +197,7 @@ impl<'a> RenderGraph<'a> {
         self.check_image(output)?;
         if self.images[output.index].imported.is_some() {
             return Err(GraphError::new(
-                "Export an image written by the graph, not an imported texture",
+                "Export a graph-created image, not an imported texture",
             ));
         }
         let mut producers = vec![None; self.images.len()];
@@ -202,12 +206,6 @@ impl<'a> RenderGraph<'a> {
             for &(image, usage) in &pass.writes {
                 self.check_image(image)?;
                 let resource = &self.images[image.index];
-                if resource.imported.is_some() {
-                    return Err(GraphError::new(format!(
-                        "{}: imported image {} is read-only",
-                        pass.label, resource.label
-                    )));
-                }
                 let allowed = wgpu::TextureUsages::RENDER_ATTACHMENT
                     | wgpu::TextureUsages::STORAGE_BINDING
                     | wgpu::TextureUsages::COPY_DST;

@@ -185,6 +185,184 @@ fn custom_blocks_mrt_compute_caches_and_independent_raster_inputs() {
     });
 }
 
+#[test]
+#[ignore = "GPU end-to-end check; run explicitly with approval"]
+fn imported_textures_keep_written_state_across_ping_pong_frames() {
+    pollster::block_on(async {
+        let mut executor = GraphExecutor::new().await;
+        let mut target = executor.create_target(8, 4);
+        let gpu = executor.wgpu_context();
+        let states = ["State A", "State B"].map(|label| {
+            gpu.device.create_texture_with_data(
+                &gpu.queue,
+                &wgpu::TextureDescriptor {
+                    label: Some(label),
+                    size: wgpu::Extent3d {
+                        width: 8,
+                        height: 4,
+                        depth_or_array_layers: 1,
+                    },
+                    mip_level_count: 1,
+                    sample_count: 1,
+                    dimension: wgpu::TextureDimension::D2,
+                    format: Format::Rgba8Unorm,
+                    usage: Usage::TEXTURE_BINDING | Usage::STORAGE_BINDING,
+                    view_formats: &[],
+                },
+                wgpu::util::TextureDataOrder::LayerMajor,
+                &[0, 0, 0, 255].repeat(32),
+            )
+        });
+        let shader = gpu
+            .device
+            .create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: Some("Increment State"),
+                source: wgpu::ShaderSource::Wgsl(
+                    r#"
+                @group(0) @binding(0) var previous: texture_2d<f32>;
+                @group(0) @binding(1) var next: texture_storage_2d<rgba8unorm, write>;
+                @compute @workgroup_size(8, 8)
+                fn main(@builtin(global_invocation_id) id: vec3u) {
+                    if any(id.xy >= textureDimensions(next)) { return; }
+                    let p = vec2i(id.xy);
+                    textureStore(next, p, textureLoad(previous, p, 0) + vec4f(0.25, 0., 0., 0.));
+                }
+                "#
+                    .into(),
+                ),
+            });
+        let pipeline = gpu
+            .device
+            .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                label: Some("Increment State"),
+                layout: None,
+                module: &shader,
+                entry_point: Some("main"),
+                compilation_options: Default::default(),
+                cache: None,
+            });
+        let builds = Cell::new(0);
+        let mut front = 0;
+        for (width, expected_red) in [(8, 137), (16, 188), (8, 225), (16, 255)] {
+            executor.resize_target(&mut target, width, 4);
+            let alias = states[1 - front].clone();
+            let mut graph = RenderGraph::new();
+            let previous = graph.import_texture("Previous", &states[front]);
+            let next_texture = &states[1 - front];
+            let next = graph.import_texture("Next", next_texture);
+            assert_eq!(next, graph.import_texture("Same Next", &alias));
+            let output = resized_copy(next, &builds, &mut graph);
+            let pipeline = &pipeline;
+            graph.add_pass(
+                "Increment",
+                &[(previous, Usage::TEXTURE_BINDING)],
+                &[(next, Usage::STORAGE_BINDING)],
+                move |context| {
+                    assert_eq!(context.images.get(next).texture(), next_texture);
+                    let bindings =
+                        context
+                            .gpu
+                            .device
+                            .create_bind_group(&wgpu::BindGroupDescriptor {
+                                label: None,
+                                layout: &pipeline.get_bind_group_layout(0),
+                                entries: &[
+                                    wgpu::BindGroupEntry {
+                                        binding: 0,
+                                        resource: wgpu::BindingResource::TextureView(
+                                            context.images.get(previous),
+                                        ),
+                                    },
+                                    wgpu::BindGroupEntry {
+                                        binding: 1,
+                                        resource: wgpu::BindingResource::TextureView(
+                                            context.images.get(next),
+                                        ),
+                                    },
+                                ],
+                            });
+                    let mut pass = context.encoder.begin_compute_pass(&Default::default());
+                    pass.set_pipeline(pipeline);
+                    pass.set_bind_group(0, &bindings, &[]);
+                    pass.dispatch_workgroups(1, 1, 1);
+                },
+            );
+            graph.export(output);
+            executor.execute(graph, &mut target).unwrap();
+            front = 1 - front;
+            for pixel in target
+                .read_image(executor.wgpu_context())
+                .await
+                .unwrap()
+                .pixels()
+            {
+                assert_pixel(pixel.0, [expected_red, 0, 0, 255]);
+            }
+        }
+
+        let imported_graph = || {
+            let mut graph = RenderGraph::new();
+            let state = graph.import_texture("State", &states[front]);
+            let output = resized_copy(state, &builds, &mut graph);
+            graph.export(output);
+            (graph, state)
+        };
+        let (mut graph, state) = imported_graph();
+        graph.add_pass(
+            "Unsupported Usage",
+            &[],
+            &[(state, Usage::RENDER_ATTACHMENT)],
+            |_| {},
+        );
+        assert!(
+            graph
+                .validate()
+                .unwrap_err()
+                .to_string()
+                .contains("lacks required usages")
+        );
+
+        let (mut graph, state) = imported_graph();
+        graph.add_pass(
+            "First Writer",
+            &[],
+            &[(state, Usage::STORAGE_BINDING)],
+            |_| {},
+        );
+        graph.add_pass(
+            "Second Writer",
+            &[],
+            &[(state, Usage::STORAGE_BINDING)],
+            |_| {},
+        );
+        assert!(
+            graph
+                .validate()
+                .unwrap_err()
+                .to_string()
+                .contains("multiple writers")
+        );
+
+        let texture_alias = states[front].clone();
+        let (mut graph, state) = imported_graph();
+        let alias = graph.import_texture("Same State", &texture_alias);
+        assert_eq!(state, alias);
+        graph.add_pass(
+            "Feedback",
+            &[(state, Usage::TEXTURE_BINDING)],
+            &[(alias, Usage::STORAGE_BINDING)],
+            |_| {},
+        );
+        assert!(
+            graph
+                .validate()
+                .unwrap_err()
+                .to_string()
+                .contains("separate image versions")
+        );
+    });
+}
+
 fn camera_at(x: f64) -> Camera<Orthographic> {
     let camera = Camera::new(Orthographic {
         size_vertical: 4.0,
