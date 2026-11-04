@@ -59,7 +59,7 @@ impl App for StarSystemDemo {
 
         let sun_texture = Rc::new(Texture::<Srgb>::new(
             "Sun texture",
-            include_bytes!("assets/sun.jpg"),
+            include_bytes!("../assets/sun.jpg"),
             ctx,
         ));
         let mut sun_material = PbrMaterial::new("SunMaterial");
@@ -74,13 +74,13 @@ impl App for StarSystemDemo {
         let mut earth_material = BlinnPhongMaterial::new("EarthMaterial");
         let earth_diffuse_texture = Rc::new(Texture::<Srgb>::new(
             "Earth diffuse texture",
-            include_bytes!("assets/2k_earth_daymap.jpg"),
+            include_bytes!("../assets/2k_earth_daymap.jpg"),
             ctx,
         ));
         earth_material.set_diffuse_texture(earth_diffuse_texture);
         let earth_specular_texture = Rc::new(Texture::<Linear>::new(
             "Earth specular texture",
-            include_bytes!("assets/2k_earth_specular_map.jpg"),
+            include_bytes!("../assets/2k_earth_specular_map.jpg"),
             ctx,
         ));
         earth_material.set_specular_texture(earth_specular_texture);

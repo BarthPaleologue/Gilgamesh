@@ -1,6 +1,6 @@
 [alias]
-demo = "run --locked --example"
-demo-wasm = "run --locked --target wasm32-unknown-unknown --example"
+demo = "run --locked --package"
+demo-wasm = "run --locked --target wasm32-unknown-unknown --package"
 
 [target.wasm32-unknown-unknown]
 runner = "wasm-server-runner"

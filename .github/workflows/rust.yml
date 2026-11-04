@@ -21,12 +21,12 @@ jobs:
     - name: Check formatting
       run: cargo fmt --all -- --check
     - name: Clippy
-      run: cargo clippy --locked --all-targets -- -D warnings
+      run: cargo clippy --locked --workspace --all-targets -- -D warnings
     - name: Clippy WebAssembly
-      run: cargo clippy --locked --all-targets --target wasm32-unknown-unknown -- -D warnings
+      run: cargo clippy --locked --workspace --all-targets --target wasm32-unknown-unknown -- -D warnings
     - name: Build
-      run: cargo build --locked --examples --verbose
+      run: cargo build --locked --workspace --verbose
     - name: Run tests
-      run: cargo test --locked --verbose
+      run: cargo test --locked --workspace --verbose
     - name: Build WebAssembly
-      run: cargo build --locked --target wasm32-unknown-unknown --examples --verbose
+      run: cargo build --locked --workspace --target wasm32-unknown-unknown --verbose

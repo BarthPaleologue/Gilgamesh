@@ -8,10 +8,17 @@ license = "Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[workspace]
+members = ["examples/starsystem", "examples/terrain"]
+
+[workspace.dependencies]
+gilgamesh = { path = "." }
+glam = "0.34.2"
+
 [dependencies]
 cfg-if = "1"
 wgpu = "30"
-glam = "0.34.2"
+glam = { workspace = true }
 pollster = "1"
 winit = "0.30"
 bytemuck = { version = "1.25", features = ["derive"] }
