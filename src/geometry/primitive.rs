@@ -51,54 +51,52 @@ pub fn plane(nb_subdivisions: u32, size: f32) -> CpuMeshBuffers {
 }
 
 pub fn cube() -> CpuMeshBuffers {
-    let positions = vec![
-        [-0.5, -0.5, -0.5], // 0
-        [0.5, -0.5, -0.5],  // 1
-        [0.5, 0.5, -0.5],   // 2
-        [-0.5, 0.5, -0.5],  // 3
-        [-0.5, -0.5, 0.5],  // 4
-        [0.5, -0.5, 0.5],   // 5
-        [0.5, 0.5, 0.5],    // 6
-        [-0.5, 0.5, 0.5],   // 7
+    let corner_positions = [
+        [-0.5, -0.5, -0.5],
+        [0.5, -0.5, -0.5],
+        [0.5, 0.5, -0.5],
+        [-0.5, 0.5, -0.5],
+        [-0.5, -0.5, 0.5],
+        [0.5, -0.5, 0.5],
+        [0.5, 0.5, 0.5],
+        [-0.5, 0.5, 0.5],
     ];
-    let normals = vec![
-        [-0.577, -0.577, -0.577], // 0
-        [0.577, -0.577, -0.577],  // 1
-        [0.577, 0.577, -0.577],   // 2
-        [-0.577, 0.577, -0.577],  // 3
-        [-0.577, -0.577, 0.577],  // 4
-        [0.577, -0.577, 0.577],   // 5
-        [0.577, 0.577, 0.577],    // 6
-        [-0.577, 0.577, 0.577],   // 7
+    let corner_colors = [
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 0.0, 1.0],
+        [1.0, 1.0, 0.0],
+        [1.0, 0.0, 1.0],
+        [0.0, 1.0, 1.0],
+        [1.0, 1.0, 1.0],
+        [0.0, 0.0, 0.0],
     ];
-    let indices = vec![
-        0, 2, 1, 0, 3, 2, // front
-        1, 6, 5, 1, 2, 6, // right
-        5, 7, 4, 5, 6, 7, // back
-        4, 3, 0, 4, 7, 3, // left
-        3, 6, 2, 3, 7, 6, // top
-        4, 1, 5, 4, 0, 1, // bottom
+    let faces: [([usize; 4], [f32; 3]); 6] = [
+        ([0, 1, 2, 3], [0.0, 0.0, -1.0]), // front
+        ([1, 5, 6, 2], [1.0, 0.0, 0.0]),  // right
+        ([5, 4, 7, 6], [0.0, 0.0, 1.0]),  // back
+        ([4, 0, 3, 7], [-1.0, 0.0, 0.0]), // left
+        ([3, 2, 6, 7], [0.0, 1.0, 0.0]),  // top
+        ([4, 5, 1, 0], [0.0, -1.0, 0.0]), // bottom
     ];
-    let uvs = vec![
-        [0.0, 0.0], // 0
-        [1.0, 0.0], // 1
-        [1.0, 1.0], // 2
-        [0.0, 1.0], // 3
-        [0.0, 0.0], // 4
-        [1.0, 0.0], // 5
-        [1.0, 1.0], // 6
-        [0.0, 1.0], // 7
-    ];
-    let colors = vec![
-        [1.0, 0.0, 0.0], // 0
-        [0.0, 1.0, 0.0], // 1
-        [0.0, 0.0, 1.0], // 2
-        [1.0, 1.0, 0.0], // 3
-        [1.0, 0.0, 1.0], // 4
-        [0.0, 1.0, 1.0], // 5
-        [1.0, 1.0, 1.0], // 6
-        [0.0, 0.0, 0.0], // 7
-    ];
+    let face_uvs = [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]];
+
+    let mut positions = Vec::with_capacity(faces.len() * 4);
+    let mut normals = Vec::with_capacity(faces.len() * 4);
+    let mut uvs = Vec::with_capacity(faces.len() * 4);
+    let mut colors = Vec::with_capacity(faces.len() * 4);
+    let mut indices = Vec::with_capacity(faces.len() * 6);
+
+    for (corners, normal) in faces {
+        let base = positions.len() as u32;
+        for (corner, uv) in corners.into_iter().zip(face_uvs) {
+            positions.push(corner_positions[corner]);
+            normals.push(normal);
+            uvs.push(uv);
+            colors.push(corner_colors[corner]);
+        }
+        indices.extend_from_slice(&[base, base + 2, base + 1, base, base + 3, base + 2]);
+    }
 
     let nb_vertices = positions.len();
     let mut cpu_buffers = CpuMeshBuffers {

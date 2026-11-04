@@ -81,6 +81,21 @@ fn cube_triangles_face_outward_and_agree_with_vertex_normals() {
 }
 
 #[test]
+fn cube_uses_one_flat_normal_per_face() {
+    let buffers = primitive::cube();
+    assert_eq!(buffers.vertices.positions.len(), 24);
+    for &triangle in buffers.indices.as_chunks::<3>().0 {
+        let [a, b, c] =
+            triangle.map(|index| Vec3::from_array(buffers.vertices.positions[index as usize]));
+        let face_normal = (b - a).cross(c - a).normalize();
+        for index in triangle {
+            let vertex_normal = Vec3::from_array(buffers.vertices.normals[index as usize]);
+            assert!((vertex_normal - face_normal).length() < 1e-5);
+        }
+    }
+}
+
+#[test]
 fn procedural_terrain_applies_heights_and_computes_normals() {
     let base_height = 3.125;
     let buffers = procedural::terrain(2.0, 3, &|x, z| base_height + x + 2.0 * z);
