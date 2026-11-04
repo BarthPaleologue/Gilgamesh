@@ -87,13 +87,7 @@ impl<Application: App> Engine<Application> {
     }
 
     pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
-        if new_size.width > 0 && new_size.height > 0 {
-            self.wgpu_context.config.width = new_size.width;
-            self.wgpu_context.config.height = new_size.height;
-            self.wgpu_context
-                .surface
-                .configure(&self.wgpu_context.device, &self.wgpu_context.config);
-        }
+        self.wgpu_context.resize(new_size);
     }
 
     fn manage_event(&mut self, event: &WindowEvent) {

@@ -8,8 +8,6 @@ use std::collections::HashMap;
 use std::iter;
 use std::rc::Rc;
 
-pub(crate) const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
-
 pub struct Renderer {
     pub(crate) frame: FrameBindings,
     pipelines: HashMap<PipelineKey, Rc<MaterialPipeline>>,
@@ -73,23 +71,6 @@ impl Renderer {
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
-        let depth_texture = wgpu_context
-            .device
-            .create_texture(&wgpu::TextureDescriptor {
-                size: wgpu::Extent3d {
-                    width: wgpu_context.config.width,
-                    height: wgpu_context.config.height,
-                    depth_or_array_layers: 1,
-                },
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format: DEPTH_FORMAT,
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                label: None,
-                view_formats: &[],
-            });
-        let depth_view = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         let mut encoder =
             wgpu_context
@@ -116,7 +97,7 @@ impl Renderer {
                     },
                 })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &depth_view,
+                    view: &wgpu_context.depth_view,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(0.0),
                         store: wgpu::StoreOp::Discard,

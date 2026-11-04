@@ -3,13 +3,17 @@ use crate::texture::Texture;
 use std::rc::Rc;
 use std::sync::Arc;
 use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
+use winit::dpi::PhysicalSize;
 use winit::window::Window;
+
+pub(crate) const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
 
 pub struct WGPUContext {
     pub surface: Surface<'static>,
     pub device: Device,
     pub queue: Queue,
     pub config: SurfaceConfiguration,
+    pub(crate) depth_view: wgpu::TextureView,
     empty_texture: Rc<Texture>,
     pub(crate) object_bind_group_layout: wgpu::BindGroupLayout,
     instance: wgpu::Instance,
@@ -82,6 +86,7 @@ impl WGPUContext {
             color_space: wgpu::SurfaceColorSpace::Auto,
         };
         surface.configure(&device, &config);
+        let depth_view = Self::create_depth_view(&device, &config);
 
         let empty_texture = Rc::new(Texture::new_empty("Default Texture", &device));
 
@@ -92,6 +97,7 @@ impl WGPUContext {
             device,
             queue,
             config,
+            depth_view,
             empty_texture,
             object_bind_group_layout,
             instance,
@@ -102,8 +108,42 @@ impl WGPUContext {
         self.empty_texture.clone()
     }
 
+    pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
+        if new_size.width == 0 || new_size.height == 0 {
+            return;
+        }
+
+        self.config.width = new_size.width;
+        self.config.height = new_size.height;
+        // Reconfigure even at the same size to recover outdated surfaces.
+        self.surface.configure(&self.device, &self.config);
+        if self.depth_view.texture().width() != new_size.width
+            || self.depth_view.texture().height() != new_size.height
+        {
+            self.depth_view = Self::create_depth_view(&self.device, &self.config);
+        }
+    }
+
     pub fn recreate_surface(&mut self, window: Arc<Window>) {
         self.surface = self.instance.create_surface(window).unwrap();
         self.surface.configure(&self.device, &self.config);
+    }
+
+    fn create_depth_view(device: &Device, config: &SurfaceConfiguration) -> wgpu::TextureView {
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Depth Texture"),
+            size: wgpu::Extent3d {
+                width: config.width,
+                height: config.height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: DEPTH_FORMAT,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        });
+        texture.create_view(&wgpu::TextureViewDescriptor::default())
     }
 }
