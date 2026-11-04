@@ -33,14 +33,13 @@ impl<'a> Binding<'a> {
     }
 }
 
-/// Explicit workgroups, a 2D image domain, or no dispatch while retaining cached state.
+/// Explicit workgroups or a 2D image domain.
 pub enum Dispatch {
     Workgroups([u32; 3]),
     Image {
         image: Image,
         workgroup_size: [u32; 2],
     },
-    Skip,
 }
 
 impl Dispatch {
@@ -65,7 +64,6 @@ impl Dispatch {
                 let size = images.get(image).texture().size();
                 [size.width.div_ceil(x), size.height.div_ceil(y), 1]
             }
-            Self::Skip => [0; 3],
         }
     }
 }

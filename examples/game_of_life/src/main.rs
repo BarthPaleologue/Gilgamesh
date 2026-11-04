@@ -107,12 +107,10 @@ impl App for GameOfLife {
             };
             states[initial] = randomize::randomize(states[initial], self.seed, &mut graph);
         }
-        states[self.current] = evolve::evolve(
-            states[previous],
-            states[self.current],
-            self.step_due,
-            &mut graph,
-        );
+        if self.step_due {
+            states[self.current] =
+                evolve::evolve(states[previous], states[self.current], &mut graph);
+        }
         let image = resize_nearest(states[self.current], ImageSize::Target, &mut graph);
         graph.export(image);
         graph
