@@ -1,0 +1,15 @@
+[package]
+name = "game_of_life"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+gilgamesh = { workspace = true }
+wgpu = "30"
+winit = "0.30"
+
+[dev-dependencies]
+image = { workspace = true }
+pollster = "1"
+naga = { version = "30", features = ["wgsl-in"] }

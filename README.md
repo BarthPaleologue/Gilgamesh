@@ -42,6 +42,7 @@ cargo demo terrain
 cargo demo starsystem
 cargo demo headless
 cargo demo splitscreen
+cargo demo game_of_life
 ```
 
 For the browser, install [wasm-server-runner](https://github.com/jakobhellermann/wasm-server-runner)
@@ -52,6 +53,7 @@ cargo demo-wasm terrain
 cargo demo-wasm starsystem
 cargo demo-wasm headless
 cargo demo-wasm splitscreen
+cargo demo-wasm game_of_life
 ```
 
 The headless example exports `headless.png` to disk on desktop or as a download in the browser.
@@ -59,6 +61,9 @@ Browser screenshots require WebGPU.
 
 The splitscreen example compares scene color with raw reverse-Z depth (near is white, infinity is black).
 Move the mouse horizontally to slide the split; drag to orbit and scroll to zoom.
+
+The Game of Life example requires compute support (WebGPU in browsers).
+Press Space to pause or resume, and R to generate a new random grid.
 
 Implement `App` to own and update your camera, controls, and meshes.
 Here is a procedural terrain example:
