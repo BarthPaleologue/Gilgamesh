@@ -57,8 +57,13 @@ fn custom_blocks_mrt_compute_caches_and_independent_raster_inputs() {
         {
             let resources = observed.borrow();
             for (index, texture) in resources[..5].iter().enumerate() {
+                let overlapping = if index < 4 {
+                    &resources[..index]
+                } else {
+                    &resources[2..4]
+                };
                 assert!(
-                    !resources[..index].contains(texture),
+                    !overlapping.contains(texture),
                     "Simultaneous images must not alias"
                 );
                 assert!(
@@ -804,4 +809,109 @@ fn versions_preserve_old_reads_before_ping_pong_overwrites() {
                 .all(|pixel| pixel.0 == [0, 255, 0, 255])
         );
     });
+}
+
+#[test]
+#[ignore = "GPU end-to-end check; run explicitly with approval"]
+fn transient_chains_reuse_two_textures_without_overwriting_branches_or_other_formats() {
+    pollster::block_on(async {
+        let mut executor = GraphExecutor::new().await;
+        let mut target = executor.create_target(8, 4);
+        for (branch, different_format, expected_textures) in
+            [(false, false, 3), (true, false, 4), (false, true, 4)]
+        {
+            let observed = RefCell::new(Vec::new());
+            let mut graph = RenderGraph::new();
+            let first = image("Initial", Format::Rgba8Unorm, &mut graph);
+            graph.add_pass(
+                "Initialize",
+                &[],
+                &[(first, Usage::RENDER_ATTACHMENT)],
+                move |context| {
+                    let _pass = context
+                        .encoder
+                        .begin_render_pass(&wgpu::RenderPassDescriptor {
+                            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                view: context.images.get(first),
+                                depth_slice: None,
+                                resolve_target: None,
+                                ops: wgpu::Operations {
+                                    load: wgpu::LoadOp::Clear(wgpu::Color {
+                                        r: 0.25,
+                                        g: 0.0,
+                                        b: 0.0,
+                                        a: 1.0,
+                                    }),
+                                    store: wgpu::StoreOp::Store,
+                                },
+                            })],
+                            ..Default::default()
+                        });
+                },
+            );
+            observe_texture(first, &observed, &mut graph);
+            let mut current = first;
+            for index in 1..=8 {
+                let format = if different_format && index == 3 {
+                    Format::Rgba16Float
+                } else {
+                    Format::Rgba8Unorm
+                };
+                current = if graph.image_descriptor(current).format == format {
+                    gilgamesh::blocks::resize_nearest(current, ImageSize::Target, &mut graph)
+                } else {
+                    tone_map(current, format, &mut graph)
+                };
+                observe_texture(current, &observed, &mut graph);
+            }
+            let output = if branch {
+                let output =
+                    gilgamesh::blocks::vertical_split_screen(first, current, 0.5, &mut graph);
+                observe_texture(output, &observed, &mut graph);
+                output
+            } else {
+                current
+            };
+            graph.export(output);
+            executor.execute(graph, &mut target).unwrap();
+            let pixels = target.read_image(executor.wgpu_context()).await.unwrap();
+            assert!(pixels.pixels().all(|pixel| pixel.0 == [64, 0, 0, 255]));
+            let observed = observed.borrow();
+            let mut unique = Vec::new();
+            for texture in observed.iter() {
+                if !unique.contains(texture) {
+                    unique.push(texture.clone());
+                }
+            }
+            assert_eq!(unique.len(), expected_textures);
+            for pair in observed.windows(2) {
+                assert_ne!(pair[0], pair[1], "Input and output must stay distinct");
+            }
+            if branch {
+                for texture in &observed[1..] {
+                    assert_ne!(
+                        observed[0], *texture,
+                        "The first image stays live until the merge"
+                    );
+                }
+            }
+        }
+    });
+}
+
+fn observe_texture<'a>(
+    image: Image,
+    observed: &'a RefCell<Vec<wgpu::Texture>>,
+    graph: &mut RenderGraph<'a>,
+) {
+    graph.add_pass(
+        "Observe allocation",
+        &[(image, Usage::TEXTURE_BINDING)],
+        &[],
+        move |context| {
+            observed
+                .borrow_mut()
+                .push(context.images.get(image).texture().clone());
+        },
+    );
 }

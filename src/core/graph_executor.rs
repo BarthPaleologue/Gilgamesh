@@ -1,4 +1,6 @@
-use crate::core::render_graph::{GraphError, PassCache, PassContext, PassImages, RenderGraph};
+use crate::core::render_graph::{
+    GraphError, GraphPlan, PassCache, PassContext, PassImages, RenderGraph,
+};
 use crate::core::render_target::create_color_view;
 use crate::core::wgpu_context::WGPUContext;
 
@@ -147,29 +149,30 @@ impl GraphExecutor {
                 .iter()
                 .any(|image| image.imported == Some(pooled.view.texture()))
         });
+        let transient = plan_transients(&graph, &plan, &keys);
+        for key in transient.keys {
+            let pooled = if let Some(index) = available.iter().position(|image| image.key == key) {
+                available.swap_remove(index)
+            } else {
+                PooledImage {
+                    key,
+                    view: create_image(&self.wgpu_context.device, "Transient Image", key),
+                }
+            };
+            self.images.push(pooled);
+        }
         let mut views: Vec<wgpu::TextureView> = Vec::with_capacity(graph.images.len());
-        for (index, (image, key)) in graph.images.iter().zip(keys).enumerate() {
-            if image.allocation != index {
-                views.push(views[image.allocation].clone());
-                continue;
-            }
-            let view = if image.allocation == graph.images[plan.output.index].allocation {
+        for (index, image) in graph.images.iter().enumerate() {
+            let view = if image.allocation != index {
+                views[image.allocation].clone()
+            } else if image.allocation == graph.images[plan.output.index].allocation {
                 target.output().clone()
             } else if let Some(imported) = image.imported {
                 imported.create_view(&Default::default())
             } else {
-                let pooled =
-                    if let Some(index) = available.iter().position(|image| image.key == key) {
-                        available.swap_remove(index)
-                    } else {
-                        PooledImage {
-                            key,
-                            view: create_image(&self.wgpu_context.device, &image.label, key),
-                        }
-                    };
-                let view = pooled.view.clone();
-                self.images.push(pooled);
-                view
+                self.images[transient.slots[index].expect("Created image needs a transient slot")]
+                    .view
+                    .clone()
             };
             views.push(view);
         }
@@ -197,6 +200,52 @@ impl GraphExecutor {
             cache.end_render();
         }
         Ok(())
+    }
+}
+
+struct TransientPlan {
+    keys: Vec<ImageKey>,
+    slots: Vec<Option<usize>>,
+}
+
+fn plan_transients(graph: &RenderGraph<'_>, plan: &GraphPlan, keys: &[ImageKey]) -> TransientPlan {
+    let mut roots: Vec<_> = graph
+        .images
+        .iter()
+        .enumerate()
+        .filter_map(|(index, image)| {
+            (image.allocation == index
+                && image.imported.is_none()
+                && index != graph.images[plan.output.index].allocation)
+                .then_some(index)
+        })
+        .collect();
+    roots.sort_by_key(|&index| plan.lifetimes[index].expect("Created image has a writer").0);
+    let mut allocations: Vec<(ImageKey, usize)> = Vec::new();
+    let mut slots = vec![None; graph.images.len()];
+    for image in roots {
+        let key = keys[image];
+        let (first, last) = plan.lifetimes[image].unwrap();
+        let slot = allocations
+            .iter()
+            .position(|(existing, last_use)| {
+                *last_use < first
+                    && existing.width == key.width
+                    && existing.height == key.height
+                    && existing.format == key.format
+            })
+            .unwrap_or_else(|| {
+                allocations.push((key, last));
+                allocations.len() - 1
+            });
+        let (slot_key, last_use) = &mut allocations[slot];
+        slot_key.usage |= key.usage;
+        *last_use = last;
+        slots[image] = Some(slot);
+    }
+    TransientPlan {
+        keys: allocations.into_iter().map(|(key, _)| key).collect(),
+        slots,
     }
 }
 
@@ -236,5 +285,138 @@ impl FrameTarget {
         ctx: &WGPUContext,
     ) -> impl std::future::Future<Output = std::io::Result<image::RgbaImage>> + use<> {
         crate::core::readback::read_rgba8(&ctx.device, &ctx.queue, self.output().texture())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::render_graph::{Image, ImageDescriptor, ImageSize};
+    use wgpu::{TextureFormat as Format, TextureUsages as Usage};
+
+    fn image(format: Format, size: ImageSize, graph: &mut RenderGraph<'_>) -> Image {
+        graph.create_image("Test image", ImageDescriptor { size, format })
+    }
+
+    fn transient_plan(graph: &RenderGraph<'_>) -> TransientPlan {
+        let plan = graph.compile().unwrap();
+        let keys: Vec<_> = graph
+            .images
+            .iter()
+            .zip(&plan.usages)
+            .map(|(image, &usage)| {
+                let (width, height) = image.descriptor.size.resolve(4, 4).unwrap();
+                ImageKey {
+                    width,
+                    height,
+                    format: image.descriptor.format,
+                    usage,
+                }
+            })
+            .collect();
+        plan_transients(graph, &plan, &keys)
+    }
+
+    #[test]
+    fn linear_chain_uses_two_transient_slots_and_reserves_export() {
+        let mut graph = RenderGraph::new();
+        let images: Vec<_> = (0..9)
+            .map(|_| image(Format::Rgba8Unorm, ImageSize::Target, &mut graph))
+            .collect();
+        graph.add_pass(
+            "Initialize",
+            &[],
+            &[(images[0], Usage::RENDER_ATTACHMENT)],
+            |_| {},
+        );
+        for pair in images.windows(2) {
+            graph.add_pass(
+                "Copy",
+                &[(pair[0], Usage::COPY_SRC)],
+                &[(pair[1], Usage::COPY_DST)],
+                |_| {},
+            );
+        }
+        graph.export(images[8]);
+        let plan = transient_plan(&graph);
+        assert_eq!(plan.keys.len(), 2);
+        for (index, &image) in images[..8].iter().enumerate() {
+            assert_eq!(plan.slots[image.index], Some(index % 2));
+        }
+        assert_eq!(plan.slots[images[8].index], None);
+        assert!(
+            plan.keys[0]
+                .usage
+                .contains(Usage::RENDER_ATTACHMENT | Usage::COPY_DST | Usage::COPY_SRC)
+        );
+    }
+
+    #[test]
+    fn a_live_branch_keeps_its_slot_until_the_merge() {
+        let mut graph = RenderGraph::new();
+        let images: Vec<_> = (0..7)
+            .map(|_| image(Format::Rgba8Unorm, ImageSize::Target, &mut graph))
+            .collect();
+        graph.add_pass(
+            "Initialize",
+            &[],
+            &[(images[0], Usage::RENDER_ATTACHMENT)],
+            |_| {},
+        );
+        for pair in images[..6].windows(2) {
+            graph.add_pass(
+                "Filter",
+                &[(pair[0], Usage::TEXTURE_BINDING)],
+                &[(pair[1], Usage::RENDER_ATTACHMENT)],
+                |_| {},
+            );
+        }
+        graph.add_pass(
+            "Merge",
+            &[
+                (images[0], Usage::TEXTURE_BINDING),
+                (images[5], Usage::TEXTURE_BINDING),
+            ],
+            &[(images[6], Usage::RENDER_ATTACHMENT)],
+            |_| {},
+        );
+        graph.export(images[6]);
+        let plan = transient_plan(&graph);
+        assert_eq!(plan.keys.len(), 3);
+        for &image in &images[1..6] {
+            assert_ne!(plan.slots[images[0].index], plan.slots[image.index]);
+        }
+    }
+
+    #[test]
+    fn incompatible_formats_and_sizes_use_separate_slots() {
+        let mut graph = RenderGraph::new();
+        let a = image(Format::Rgba8Unorm, ImageSize::Target, &mut graph);
+        let b = image(Format::Rgba16Float, ImageSize::Target, &mut graph);
+        let c = image(
+            Format::Rgba8Unorm,
+            ImageSize::Fixed {
+                width: 2,
+                height: 2,
+            },
+            &mut graph,
+        );
+        let d = image(Format::Rgba8Unorm, ImageSize::Target, &mut graph);
+        let output = image(Format::Rgba8Unorm, ImageSize::Target, &mut graph);
+        graph.add_pass("Initialize", &[], &[(a, Usage::RENDER_ATTACHMENT)], |_| {});
+        for pair in [a, b, c, d, output].windows(2) {
+            graph.add_pass(
+                "Resize",
+                &[(pair[0], Usage::TEXTURE_BINDING)],
+                &[(pair[1], Usage::RENDER_ATTACHMENT)],
+                |_| {},
+            );
+        }
+        graph.export(output);
+        let plan = transient_plan(&graph);
+        assert_eq!(plan.keys.len(), 3);
+        assert_eq!(plan.slots[a.index], plan.slots[d.index]);
+        assert_ne!(plan.slots[a.index], plan.slots[b.index]);
+        assert_ne!(plan.slots[a.index], plan.slots[c.index]);
     }
 }

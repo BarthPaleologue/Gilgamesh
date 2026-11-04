@@ -105,6 +105,7 @@ impl<'a> RenderGraph<'a> {
         }
     }
 
+    /// Creates a transient image. Its contents are unspecified until written.
     pub fn create_image(&mut self, label: impl Into<String>, descriptor: ImageDescriptor) -> Image {
         let image = Image {
             graph: self.id,
@@ -363,7 +364,20 @@ impl<'a> RenderGraph<'a> {
         if order.len() != self.passes.len() {
             return Err(GraphError::new("Graph contains a dependency cycle"));
         }
+        let mut lifetimes = vec![None; self.images.len()];
+        for (position, &pass) in order.iter().enumerate() {
+            for &(image, _) in self.passes[pass]
+                .reads
+                .iter()
+                .chain(&self.passes[pass].writes)
+            {
+                let allocation = self.images[image.index].allocation;
+                let lifetime = lifetimes[allocation].get_or_insert((position, position));
+                lifetime.1 = position;
+            }
+        }
         Ok(GraphPlan {
+            lifetimes,
             output,
             usages,
             order,
@@ -385,6 +399,7 @@ impl Default for RenderGraph<'_> {
 }
 
 pub(crate) struct GraphPlan {
+    pub lifetimes: Vec<Option<(usize, usize)>>,
     pub output: Image,
     pub usages: Vec<wgpu::TextureUsages>,
     pub order: Vec<usize>,
