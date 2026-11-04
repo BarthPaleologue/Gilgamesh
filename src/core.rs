@@ -1,6 +1,7 @@
 pub mod app;
 pub mod color_pass;
 pub mod frame_renderer;
+pub mod headless_runtime;
 pub mod render_context;
 pub mod render_target;
 pub mod wgpu_context;

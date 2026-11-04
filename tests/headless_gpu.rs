@@ -4,6 +4,7 @@ use gilgamesh::camera::{Camera, CameraProjection, Orthographic};
 use gilgamesh::core::app::{App, FrameContext};
 use gilgamesh::core::color_pass::ColorPass;
 use gilgamesh::core::frame_renderer::{FrameRenderer, FrameTarget};
+use gilgamesh::core::headless_runtime::HeadlessRuntime;
 use gilgamesh::core::render_context::FrameBindingsData;
 use gilgamesh::core::wgpu_context::WGPUContext;
 use gilgamesh::core::window_runtime::WindowContext;
@@ -14,13 +15,15 @@ use gilgamesh::lights::light::Light;
 use gilgamesh::materials::pbr::PbrMaterial;
 use gilgamesh::transform::Transformable;
 use glam::{DVec3, dcamera::rh};
+use std::cell::Cell;
 use std::io::Cursor;
 use std::rc::Rc;
+use std::time::Duration;
 
 #[test]
 #[ignore = "GPU end-to-end check; run explicitly with approval"]
 fn frame_renderer_and_captures_keep_targets_and_hooks_independent() {
-    pollster::block_on(async {
+    let first = pollster::block_on(async {
         let mut renderer = FrameRenderer::new().await;
         let mut target = renderer.create_target(67, 33);
         let mut app = TestApp::new(renderer.wgpu_context());
@@ -95,7 +98,46 @@ fn frame_renderer_and_captures_keep_targets_and_hooks_independent() {
         assert_eq!(first_view.texture().width(), 67);
         assert_eq!(first_view.texture().height(), 33);
         assert_eq!(app.frames.len(), 5);
+
+        first
     });
+
+    let completed = Rc::new(Cell::new(false));
+    let finished = completed.clone();
+    HeadlessRuntime::<TestApp>::run(67, 33, |mut runtime| async move {
+        runtime.app_mut().camera.projection.size_vertical = 5.0;
+        runtime.render(Duration::from_millis(20));
+        assert_eq!(runtime.app().frames, [(0.02, 0.02, 67, 33)]);
+        let initial = runtime.capture_frame().await.unwrap();
+        assert_ne!(initial, first);
+        assert_pixel(initial.get_pixel(33, 16).0, [253, 182, 158, 255]);
+        let pending = runtime.capture_frame();
+        runtime.render(Duration::from_millis(20));
+        assert_eq!(pending.await.unwrap(), initial);
+        assert_eq!(runtime.app().frames.len(), 2);
+        let main = runtime.capture_frame().await.unwrap();
+        assert_pixel(main.get_pixel(33, 16).0, [150, 150, 253, 255]);
+        let custom = runtime.render_image(129, 65);
+        assert_eq!(runtime.app().frames[2], (0.04, 0.0, 129, 65));
+        runtime.render(Duration::ZERO);
+        assert_eq!(runtime.app().camera.projection.aspect_ratio, 67.0 / 33.0);
+        assert_eq!(custom.await.unwrap().dimensions(), (129, 65));
+        assert_eq!(runtime.capture_frame().await.unwrap(), main);
+        runtime.resize(3, 4);
+        runtime.render(Duration::ZERO);
+        assert_eq!(runtime.capture_frame().await.unwrap().dimensions(), (3, 4));
+        assert_eq!(runtime.output().texture().size().width, 3);
+        let gpu_image = gilgamesh::core::readback::read_rgba8(
+            &runtime.wgpu_context().device,
+            &runtime.wgpu_context().queue,
+            runtime.output().texture(),
+        )
+        .await
+        .unwrap();
+        assert_eq!(gpu_image.dimensions(), (3, 4));
+        finished.set(true);
+    });
+    assert!(completed.get());
 }
 
 fn render_frame(
