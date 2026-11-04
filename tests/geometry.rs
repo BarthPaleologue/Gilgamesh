@@ -62,6 +62,25 @@ fn plane_keeps_dimensions_uvs_and_upward_triangle_winding() {
 }
 
 #[test]
+fn cube_triangles_face_outward_and_agree_with_vertex_normals() {
+    let buffers = primitive::cube();
+    for &triangle in buffers.indices.as_chunks::<3>().0 {
+        let [a, b, c] =
+            triangle.map(|index| Vec3::from_array(buffers.vertices.positions[index as usize]));
+        let normal = (b - a).cross(c - a);
+        let center = (a + b + c) / 3.0;
+        assert!(
+            normal.dot(center) > 0.0,
+            "Triangle {triangle:?} faces inward"
+        );
+        for index in triangle {
+            let vertex_normal = Vec3::from_array(buffers.vertices.normals[index as usize]);
+            assert!(normal.dot(vertex_normal) > 0.0);
+        }
+    }
+}
+
+#[test]
 fn procedural_terrain_applies_heights_and_computes_normals() {
     let base_height = 3.125;
     let buffers = procedural::terrain(2.0, 3, &|x, z| base_height + x + 2.0 * z);
