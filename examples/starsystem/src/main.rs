@@ -29,7 +29,7 @@ struct StarSystemDemo {
     earth: Mesh,
     plane: Mesh,
     directional_light: DirectionalLight,
-    point_lights: [PointLight; 4],
+    point_lights: [PointLight; 5],
     point_light_meshes: [Mesh; 4],
 }
 
@@ -64,13 +64,22 @@ impl App for StarSystemDemo {
             ctx,
         ));
         let mut sun_material = PbrMaterial::new("SunMaterial");
-        sun_material.set_albedo_texture(sun_texture);
+        sun_material.set_albedo_color(0.0, 0.0, 0.0);
+        sun_material.metallic = 0.0;
+        sun_material.set_emissive_texture(sun_texture);
+        sun_material.set_emissive_color(20.0, 20.0, 20.0);
         let sun = Mesh::from_cpu_buffers(
             "Sun",
             primitive::sphere(32),
             Rc::new(sun_material.into()),
             ctx,
         );
+
+        let mut sun_light = PointLight::default();
+        sun_light.set_intensity(200.0);
+        sun_light.transform_mut().parent = Some(sun.transform_rc());
+        let [red_light, blue_light, green_light, yellow_light] = point_lights;
+        let point_lights = [red_light, blue_light, green_light, yellow_light, sun_light];
 
         let mut earth_material = PbrMaterial::new("EarthMaterial");
         earth_material.metallic = 0.0;
@@ -105,11 +114,11 @@ impl App for StarSystemDemo {
         plane_material.roughness = 0.8;
         let plane = Mesh::from_cpu_buffers(
             "Plane",
-            primitive::plane(10, 10.0),
+            primitive::plane(10, 40.0),
             Rc::new(plane_material.into()),
             ctx,
         );
-        plane.transform_mut().position = DVec3::new(0.0, -5.0, 0.0);
+        plane.transform_mut().position = DVec3::new(0.0, -15.0, 0.0);
 
         Self {
             camera,
@@ -137,7 +146,7 @@ impl App for StarSystemDemo {
 
         let orbit_angle = 2.0 * frame.elapsed_seconds;
         let (orbit_sin, orbit_cos) = orbit_angle.sin_cos();
-        let [red_light, blue_light, green_light, yellow_light] = &self.point_lights;
+        let [red_light, blue_light, green_light, yellow_light, _] = &self.point_lights;
         red_light.transform_mut().position = DVec3::new(12.0 * orbit_cos, 0.0, 12.0 * orbit_sin);
         blue_light.transform_mut().position = DVec3::new(12.0 * orbit_sin, 12.0 * orbit_cos, 0.0);
         green_light.transform_mut().position = DVec3::new(0.0, 12.0 * orbit_cos, -12.0 * orbit_sin);
@@ -167,6 +176,44 @@ mod tests {
     use gilgamesh::core::headless_runtime::HeadlessRuntime;
     use gilgamesh::lights::light::Light;
     use std::time::Duration;
+
+    #[test]
+    #[ignore = "GPU end-to-end check; run explicitly with approval"]
+    fn solar_light_follows_the_sun_and_illuminates_earth() {
+        use gilgamesh::transform::Transformable;
+        use glam::DVec3;
+        use std::rc::Rc;
+
+        HeadlessRuntime::<StarSystemDemo>::run(400, 320, async |mut runtime| {
+            let app = runtime.app_mut();
+            for light in &mut app.point_lights[..4] {
+                light.set_intensity(0.0);
+            }
+            let solar_light = &app.point_lights[4];
+            assert!(Rc::ptr_eq(
+                solar_light.transform().parent.as_ref().unwrap(),
+                &app.sun.transform_rc()
+            ));
+            app.sun.transform_mut().position = DVec3::new(3.0, 0.0, 2.0);
+            assert_eq!(
+                solar_light.transform().world_position(),
+                app.sun.transform().world_position()
+            );
+            runtime.render(Duration::ZERO);
+            let lit = runtime.capture_frame().await.unwrap();
+            runtime.app_mut().point_lights[4].set_intensity(0.0);
+            runtime.render(Duration::ZERO);
+            let unlit = runtime.capture_frame().await.unwrap();
+            assert!(
+                lit.enumerate_pixels().any(|(x, y, pixel)| {
+                    (130..270).contains(&x)
+                        && (100..220).contains(&y)
+                        && pixel[0].saturating_sub(unlit.get_pixel(x, y)[0]) > 10
+                }),
+                "The solar point light must illuminate the Earth independently of the emissive surface"
+            );
+        });
+    }
 
     #[test]
     #[ignore = "GPU end-to-end check; run explicitly with approval"]
