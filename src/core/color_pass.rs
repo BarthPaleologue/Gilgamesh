@@ -66,7 +66,7 @@ impl ColorPass {
         entry_point: &'static str,
     ) -> Self {
         let pipeline =
-            fullscreen_pass::create_pipeline(device, fragment, entry_point, target_format);
+            fullscreen_pass::create_pipeline(device, fragment, entry_point, &[target_format]);
         let source_layout = pipeline.get_bind_group_layout(0);
         Self {
             pipeline,

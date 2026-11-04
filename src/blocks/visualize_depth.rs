@@ -1,6 +1,5 @@
-use crate::core::fullscreen_pass;
-use crate::core::render_graph::{Image, ImageDescriptor, RenderGraph};
-use wgpu::{TextureFormat, TextureSampleType, TextureUsages};
+use crate::core::render_graph::{Binding, Image, ImageDescriptor, RenderGraph, fragment_pass};
+use wgpu::{TextureFormat, TextureSampleType};
 
 /// Displays raw depth as grayscale in an sRGB image, without linearization.
 pub fn visualize_depth(source: Image, graph: &mut RenderGraph<'_>) -> Image {
@@ -18,51 +17,15 @@ pub fn visualize_depth(source: Image, graph: &mut RenderGraph<'_>) -> Image {
             ..descriptor
         },
     );
-    graph.add_pass(
+    fragment_pass(
         "Visualize Depth",
-        &[(source, TextureUsages::TEXTURE_BINDING)],
-        &[(output, TextureUsages::RENDER_ATTACHMENT)],
-        move |context| {
-            let (pipeline, sampler) = context.cache.get_or_insert_with((), || {
-                (
-                    fullscreen_pass::create_pipeline(
-                        &context.gpu.device,
-                        include_str!("visualize_depth.wgsl"),
-                        "fs_main",
-                        TextureFormat::Rgba8UnormSrgb,
-                    ),
-                    context
-                        .gpu
-                        .device
-                        .create_sampler(&wgpu::SamplerDescriptor::default()),
-                )
-            });
-            let bindings = context
-                .gpu
-                .device
-                .create_bind_group(&wgpu::BindGroupDescriptor {
-                    label: Some("Visualize Depth"),
-                    layout: &pipeline.get_bind_group_layout(0),
-                    entries: &[
-                        wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: wgpu::BindingResource::TextureView(
-                                context.images.get(source),
-                            ),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 1,
-                            resource: wgpu::BindingResource::Sampler(sampler),
-                        },
-                    ],
-                });
-            fullscreen_pass::encode(
-                context.encoder,
-                pipeline,
-                &bindings,
-                context.images.get(output),
-            );
-        },
+        include_str!("visualize_depth.wgsl"),
+        [
+            Binding::Texture(source),
+            Binding::Sampler(wgpu::SamplerDescriptor::default()),
+        ],
+        &[output],
+        graph,
     );
     output
 }

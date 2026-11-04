@@ -9,6 +9,9 @@ use std::collections::{HashMap, HashSet, VecDeque, hash_map::Entry};
 use std::fmt;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+mod shader_pass;
+pub use shader_pass::{Binding, Dispatch, compute_pass, fragment_pass};
+
 pub use wgpu::{TextureFormat, TextureUsages};
 
 static NEXT_GRAPH_ID: AtomicUsize = AtomicUsize::new(1);
