@@ -25,6 +25,8 @@ fn fullscreen_blocks_translate_to_webgl2_shaders() {
 
     for fragment in [
         include_str!("../src/blocks/tone_map.wgsl"),
+        include_str!("../src/blocks/visualize_depth.wgsl"),
+        include_str!("../src/blocks/vertical_split_screen.wgsl"),
         include_str!("../src/core/image_blit.wgsl"),
     ] {
         let source = [include_str!("../src/core/fullscreen_pass.wgsl"), fragment].join("\n");
