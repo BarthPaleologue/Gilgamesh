@@ -1,6 +1,5 @@
 use crate::core::object_bindings::ObjectBindings;
 use crate::texture::{Linear, Texture};
-use std::rc::Rc;
 use wgpu::{Adapter, Device, Instance, Queue, Surface};
 
 /// GPU resources shared by rendering and compute, independent of a window.
@@ -9,7 +8,7 @@ pub struct WGPUContext {
     pub adapter: Adapter,
     pub device: Device,
     pub queue: Queue,
-    empty_texture: Rc<Texture<Linear>>,
+    fallback_texture: Texture<Linear>,
     pub(crate) object_bind_group_layout: wgpu::BindGroupLayout,
 }
 
@@ -55,7 +54,7 @@ impl WGPUContext {
             .await
             .unwrap();
 
-        let empty_texture = Rc::new(Texture::<Linear>::new_empty("Default Texture", &device));
+        let fallback_texture = Texture::<Linear>::new_empty("Fallback Texture", &device);
 
         let object_bind_group_layout = ObjectBindings::create_layout(&device);
 
@@ -64,12 +63,12 @@ impl WGPUContext {
             adapter,
             device,
             queue,
-            empty_texture,
+            fallback_texture,
             object_bind_group_layout,
         }
     }
 
-    pub fn empty_texture(&self) -> Rc<Texture<Linear>> {
-        self.empty_texture.clone()
+    pub fn fallback_texture(&self) -> &Texture<Linear> {
+        &self.fallback_texture
     }
 }

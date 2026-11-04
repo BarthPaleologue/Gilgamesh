@@ -16,7 +16,7 @@ impl PreparedMaterial {
         name: &str,
         config: PipelineConfig,
         uniforms: &wgpu::Buffer,
-        textures: &[&dyn SampledTexture],
+        textures: &[Option<&dyn SampledTexture>],
         renderer: &mut Renderer,
         ctx: &WGPUContext,
     ) -> Self {
@@ -25,12 +25,11 @@ impl PreparedMaterial {
             binding: 0,
             resource: uniforms.as_entire_binding(),
         }];
-        entries.extend(
-            textures
-                .iter()
-                .enumerate()
-                .flat_map(|(i, texture)| texture.create_bind_group_entries(1 + 2 * i as u32)),
-        );
+        entries.extend(textures.iter().enumerate().flat_map(|(i, texture)| {
+            texture
+                .unwrap_or(ctx.fallback_texture())
+                .create_bind_group_entries(1 + 2 * i as u32)
+        }));
         let material_bind_group = ctx.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some(name),
             layout: &pipeline.material_layout,

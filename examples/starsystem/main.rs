@@ -62,11 +62,11 @@ impl App for StarSystemDemo {
             include_bytes!("assets/sun.jpg"),
             ctx,
         ));
-        let mut sun_material = PbrMaterial::new("SunMaterial", ctx);
+        let mut sun_material = PbrMaterial::new("SunMaterial");
         sun_material.set_albedo_texture(sun_texture);
         let sun = Mesh::from_cpu_buffers("Sun", primitive::sphere(32), Rc::new(sun_material), ctx);
 
-        let mut earth_material = BlinnPhongMaterial::new("EarthMaterial", ctx);
+        let mut earth_material = BlinnPhongMaterial::new("EarthMaterial");
         let earth_diffuse_texture = Rc::new(Texture::<Srgb>::new(
             "Earth diffuse texture",
             include_bytes!("assets/2k_earth_daymap.jpg"),
@@ -88,7 +88,7 @@ impl App for StarSystemDemo {
         let plane = Mesh::from_cpu_buffers(
             "Plane",
             primitive::plane(10, 10.0),
-            Rc::new(BlinnPhongMaterial::new("PlaneMaterial", ctx)),
+            Rc::new(BlinnPhongMaterial::new("PlaneMaterial")),
             ctx,
         );
         plane.transform_mut().position = DVec3::new(0.0, -5.0, 0.0);

@@ -57,18 +57,18 @@ fn albedo_encodings_match_equivalent_linear_constants() {
     .write_to(&mut png, image::ImageFormat::Png)
     .unwrap();
     let texture = Rc::new(Texture::<Srgb>::new("Gray", png.get_ref(), &gpu));
-    let mut textured = PbrMaterial::new("Textured", &gpu);
+    let mut textured = PbrMaterial::new("Textured");
     textured.set_albedo_texture(texture);
-    let mut constant = PbrMaterial::new("Constant", &gpu);
+    let mut constant = PbrMaterial::new("Constant");
     // sRGB byte 128 represents approximately 0.2158605 in linear space.
     constant.set_albedo_color(0.2158605, 0.2158605, 0.2158605);
-    let mut linear_textured = PbrMaterial::new("Linear Textured", &gpu);
+    let mut linear_textured = PbrMaterial::new("Linear Textured");
     linear_textured.set_albedo_texture(Rc::new(Texture::<Linear>::new(
         "Linear Gray",
         png.get_ref(),
         &gpu,
     )));
-    let mut linear_constant = PbrMaterial::new("Linear Constant", &gpu);
+    let mut linear_constant = PbrMaterial::new("Linear Constant");
     let linear_gray = 128.0 / 255.0;
     linear_constant.set_albedo_color(linear_gray, linear_gray, linear_gray);
     let mut meshes = [constant, textured, linear_constant, linear_textured].map(|material| {

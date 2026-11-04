@@ -31,7 +31,7 @@ impl App for TerrainView {
             let d = 5.0 * (x * x + z * z).sqrt();
             3.0 * (d.sin() / d).min(1.0)
         });
-        let mut material = BlinnPhongMaterial::new("sincMaterial", ctx);
+        let mut material = BlinnPhongMaterial::new("sincMaterial");
         material.set_diffuse_color(0.5, 0.2, 1.0);
         let terrain = Mesh::from_cpu_buffers("sinc", cpu_buffers, Rc::new(material), ctx);
 

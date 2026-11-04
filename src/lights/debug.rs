@@ -9,7 +9,7 @@ use std::rc::Rc;
 
 pub fn create_point_light_debug_mesh(point_light: &PointLight, wgpu_context: &WGPUContext) -> Mesh {
     let (r, g, b) = point_light.color().into();
-    let mut material = BlinnPhongMaterial::new("PointLightDebugMaterial", wgpu_context);
+    let mut material = BlinnPhongMaterial::new("PointLightDebugMaterial");
     material.set_ambient_color(r, g, b);
     material.set_diffuse_color(0.0, 0.0, 0.0);
     material.set_specular_color(0.0, 0.0, 0.0);

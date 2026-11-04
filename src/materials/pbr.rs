@@ -26,60 +26,41 @@ pub struct PbrUniforms {
     _padding: [u32; 3],
 }
 
-impl Default for PbrUniforms {
-    fn default() -> Self {
-        Self {
-            albedo_color: [1.0, 1.0, 1.0],
-            has_albedo_texture: 0,
-            ambient_color: [0.0, 0.0, 0.0],
-            has_ambient_texture: 0,
-            metallic: 0.7,
-            has_metallic_texture: 0,
-            roughness: 0.4,
-            has_roughness_texture: 0,
-            has_normal_map: 0,
-            _padding: [0; 3],
-        }
-    }
-}
-
 pub struct PbrMaterial {
     name: String,
 
     prepared: OnceCell<PreparedMaterial>,
 
-    pbr_uniforms: PbrUniforms,
+    albedo_color: [f32; 3],
+    ambient_color: [f32; 3],
+    metallic: f32,
+    roughness: f32,
 
-    diffuse_texture: Rc<dyn SampledTexture>,
-    ambient_texture: Rc<dyn SampledTexture>,
-    normal_map: Rc<Texture<Linear>>,
-    metallic_texture: Rc<Texture<Linear>>,
-    roughness_texture: Rc<Texture<Linear>>,
+    diffuse_texture: Option<Rc<dyn SampledTexture>>,
+    ambient_texture: Option<Rc<dyn SampledTexture>>,
+    normal_map: Option<Rc<Texture<Linear>>>,
+    metallic_texture: Option<Rc<Texture<Linear>>>,
+    roughness_texture: Option<Rc<Texture<Linear>>>,
 
     pipeline_config: PipelineConfig,
 }
 
 impl PbrMaterial {
-    pub fn new(name: &str, wgpu_context: &WGPUContext) -> Self {
-        let pbr_uniforms = PbrUniforms::default();
-
-        let diffuse_texture = wgpu_context.empty_texture();
-        let ambient_texture = wgpu_context.empty_texture();
-        let normal_map = wgpu_context.empty_texture();
-        let metallic_texture = wgpu_context.empty_texture();
-        let roughness_texture = wgpu_context.empty_texture();
-
+    pub fn new(name: &str) -> Self {
         PbrMaterial {
             name: name.to_string(),
             prepared: OnceCell::new(),
 
-            pbr_uniforms,
+            albedo_color: [1.0, 1.0, 1.0],
+            ambient_color: [0.0, 0.0, 0.0],
+            metallic: 0.7,
+            roughness: 0.4,
 
-            diffuse_texture,
-            ambient_texture,
-            normal_map,
-            metallic_texture,
-            roughness_texture,
+            diffuse_texture: None,
+            ambient_texture: None,
+            normal_map: None,
+            metallic_texture: None,
+            roughness_texture: None,
 
             pipeline_config: PipelineConfig {
                 shader_source: include_str!("../shader/pbr.wgsl"),
@@ -91,24 +72,22 @@ impl PbrMaterial {
 
     pub fn set_albedo_texture<Encoding: ColorEncoding>(&mut self, texture: Rc<Texture<Encoding>>) {
         self.prepared.take();
-        self.diffuse_texture = texture;
-        self.pbr_uniforms.has_albedo_texture = 1;
+        self.diffuse_texture = Some(texture);
     }
 
     pub fn set_albedo_color(&mut self, r: f32, g: f32, b: f32) {
         self.prepared.take();
-        self.pbr_uniforms.albedo_color = [r, g, b];
+        self.albedo_color = [r, g, b];
     }
 
     pub fn set_ambient_texture<Encoding: ColorEncoding>(&mut self, texture: Rc<Texture<Encoding>>) {
         self.prepared.take();
-        self.ambient_texture = texture;
-        self.pbr_uniforms.has_ambient_texture = 1;
+        self.ambient_texture = Some(texture);
     }
 
     pub fn set_ambient_color(&mut self, r: f32, g: f32, b: f32) {
         self.prepared.take();
-        self.pbr_uniforms.ambient_color = [r, g, b];
+        self.ambient_color = [r, g, b];
     }
 
     pub fn set_polygon_mode(&mut self, polygon_mode: wgpu::PolygonMode) {
@@ -120,16 +99,32 @@ impl PbrMaterial {
         self.prepared.take();
         self.pipeline_config.back_face_culling = back_face_culling;
     }
+
+    fn uniforms(&self) -> PbrUniforms {
+        PbrUniforms {
+            albedo_color: self.albedo_color,
+            has_albedo_texture: u32::from(self.diffuse_texture.is_some()),
+            ambient_color: self.ambient_color,
+            has_ambient_texture: u32::from(self.ambient_texture.is_some()),
+            metallic: self.metallic,
+            has_metallic_texture: u32::from(self.metallic_texture.is_some()),
+            roughness: self.roughness,
+            has_roughness_texture: u32::from(self.roughness_texture.is_some()),
+            has_normal_map: u32::from(self.normal_map.is_some()),
+            _padding: [0; 3],
+        }
+    }
 }
 
 impl Material for PbrMaterial {
     fn prepare(&self, renderer: &mut Renderer, ctx: &WGPUContext) -> &PreparedMaterial {
         self.prepared.get_or_init(|| {
+            let uniforms = self.uniforms();
             let buffer = ctx
                 .device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: Some(&self.name),
-                    contents: bytemuck::bytes_of(&self.pbr_uniforms),
+                    contents: bytemuck::bytes_of(&uniforms),
                     usage: wgpu::BufferUsages::UNIFORM,
                 });
             PreparedMaterial::new(
@@ -137,11 +132,17 @@ impl Material for PbrMaterial {
                 self.pipeline_config,
                 &buffer,
                 &[
-                    self.diffuse_texture.as_ref(),
-                    self.ambient_texture.as_ref(),
-                    self.normal_map.as_ref(),
-                    self.metallic_texture.as_ref(),
-                    self.roughness_texture.as_ref(),
+                    self.diffuse_texture.as_deref(),
+                    self.ambient_texture.as_deref(),
+                    self.normal_map
+                        .as_deref()
+                        .map(|texture| texture as &dyn SampledTexture),
+                    self.metallic_texture
+                        .as_deref()
+                        .map(|texture| texture as &dyn SampledTexture),
+                    self.roughness_texture
+                        .as_deref()
+                        .map(|texture| texture as &dyn SampledTexture),
                 ],
                 renderer,
                 ctx,
@@ -152,7 +153,35 @@ impl Material for PbrMaterial {
 
 #[cfg(test)]
 mod tests {
-    use super::PbrUniforms;
+    use super::{PbrMaterial, PbrUniforms};
+
+    #[test]
+    fn constant_colors_can_be_configured_without_texture_resources() {
+        let mut material = PbrMaterial::new("Constant");
+        assert!(material.diffuse_texture.is_none());
+        assert!(material.ambient_texture.is_none());
+        assert!(material.normal_map.is_none());
+        assert!(material.metallic_texture.is_none());
+        assert!(material.roughness_texture.is_none());
+        material.set_albedo_color(0.2, 0.3, 0.4);
+        material.set_ambient_color(0.1, 0.0, 0.2);
+
+        let uniforms = material.uniforms();
+        assert_eq!(uniforms.albedo_color, [0.2, 0.3, 0.4]);
+        assert_eq!(uniforms.ambient_color, [0.1, 0.0, 0.2]);
+        assert_eq!(uniforms.metallic, 0.7);
+        assert_eq!(uniforms.roughness, 0.4);
+        assert_eq!(
+            [
+                uniforms.has_albedo_texture,
+                uniforms.has_ambient_texture,
+                uniforms.has_normal_map,
+                uniforms.has_metallic_texture,
+                uniforms.has_roughness_texture,
+            ],
+            [0; 5],
+        );
+    }
 
     #[test]
     fn gpu_uniforms_match_shader_layout() {
