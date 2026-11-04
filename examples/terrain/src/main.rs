@@ -1,8 +1,8 @@
 use gilgamesh::camera::{Camera, CameraProjection, Perspective};
 use gilgamesh::core::app::{App, FrameContext};
-use gilgamesh::core::engine::Engine;
 use gilgamesh::core::render_context::FrameBindingsData;
 use gilgamesh::core::wgpu_context::WGPUContext;
+use gilgamesh::core::window_runtime::WindowRuntime;
 use gilgamesh::geometry::mesh::Mesh;
 use gilgamesh::geometry::procedural;
 use gilgamesh::input::orbit_control::OrbitControl;
@@ -11,7 +11,7 @@ use gilgamesh::materials::blinn_phong::BlinnPhongMaterial;
 use std::rc::Rc;
 
 fn main() {
-    Engine::<TerrainView>::run("Sinc function", 1000, 800);
+    WindowRuntime::<TerrainView>::run(1000, 800);
 }
 
 struct TerrainView {
@@ -43,6 +43,10 @@ impl App for TerrainView {
         }
     }
 
+    fn name(&self) -> &str {
+        "Sinc function"
+    }
+
     fn update_before_render(&mut self, frame: &FrameContext<'_>) {
         self.camera.projection.aspect_ratio =
             frame.render_width as f64 / frame.render_height as f64;
@@ -50,7 +54,7 @@ impl App for TerrainView {
             .update(&mut self.camera, frame.mouse, frame.delta_seconds);
     }
 
-    fn get_frame_bindings_data(&mut self) -> FrameBindingsData<'_, impl CameraProjection> {
+    fn get_frame_bindings_data(&self) -> FrameBindingsData<'_, impl CameraProjection> {
         FrameBindingsData::new(&self.camera, &self.directional_light, &[])
     }
 

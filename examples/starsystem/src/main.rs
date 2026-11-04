@@ -1,8 +1,8 @@
 use gilgamesh::camera::{Camera, CameraProjection, Perspective};
 use gilgamesh::core::app::{App, FrameContext};
-use gilgamesh::core::engine::Engine;
 use gilgamesh::core::render_context::FrameBindingsData;
 use gilgamesh::core::wgpu_context::WGPUContext;
+use gilgamesh::core::window_runtime::WindowRuntime;
 use gilgamesh::geometry::mesh::Mesh;
 use gilgamesh::geometry::primitive;
 use gilgamesh::input::orbit_control::OrbitControl;
@@ -18,7 +18,7 @@ use glam::{DQuat, DVec3};
 use std::rc::Rc;
 
 fn main() {
-    Engine::<StarSystemDemo>::run("Gilgamesh", 1000, 800);
+    WindowRuntime::<StarSystemDemo>::run(1000, 800);
 }
 
 struct StarSystemDemo {
@@ -114,6 +114,10 @@ impl App for StarSystemDemo {
         }
     }
 
+    fn name(&self) -> &str {
+        "Gilgamesh"
+    }
+
     fn update_before_render(&mut self, frame: &FrameContext<'_>) {
         self.camera.projection.aspect_ratio =
             frame.render_width as f64 / frame.render_height as f64;
@@ -131,7 +135,7 @@ impl App for StarSystemDemo {
         yellow_light.transform_mut().position = DVec3::new(15.0 * orbit_sin, 0.0, 15.0 * orbit_cos);
     }
 
-    fn get_frame_bindings_data(&mut self) -> FrameBindingsData<'_, impl CameraProjection> {
+    fn get_frame_bindings_data(&self) -> FrameBindingsData<'_, impl CameraProjection> {
         FrameBindingsData::new(&self.camera, &self.directional_light, &self.point_lights)
     }
 

@@ -56,7 +56,7 @@ Here is a procedural terrain example:
 ```rust,no_run
 use gilgamesh::camera::{Camera, CameraProjection, Perspective};
 use gilgamesh::core::app::{App, FrameContext};
-use gilgamesh::core::engine::Engine;
+use gilgamesh::core::window_runtime::WindowRuntime;
 use gilgamesh::core::render_context::FrameBindingsData;
 use gilgamesh::core::wgpu_context::WGPUContext;
 use gilgamesh::geometry::mesh::Mesh;
@@ -92,6 +92,10 @@ impl App for TerrainApp {
         Self { camera, orbit_control, terrain, directional_light: DirectionalLight::default() }
     }
 
+    fn name(&self) -> &str {
+        "Sinc function"
+    }
+
     fn update_before_render(&mut self, frame: &FrameContext<'_>) {
         self.camera.projection.aspect_ratio = frame.render_width as f64 / frame.render_height as f64;
         self.orbit_control.update(&mut self.camera, frame.mouse, frame.delta_seconds);
@@ -102,13 +106,13 @@ impl App for TerrainApp {
         [&self.terrain]
     }
 
-    fn get_frame_bindings_data(&mut self) -> FrameBindingsData<'_, impl CameraProjection> {
+    fn get_frame_bindings_data(&self) -> FrameBindingsData<'_, impl CameraProjection> {
         FrameBindingsData::new(&self.camera, &self.directional_light, &[])
     }
 }
 
 fn main() {
-    Engine::<TerrainApp>::run("Sinc function", 1000, 800);
+    WindowRuntime::<TerrainApp>::run(1000, 800);
 }
 ```
 

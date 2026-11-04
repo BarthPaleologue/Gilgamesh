@@ -19,15 +19,28 @@ impl WGPUContext {
     /// let gpu = pollster::block_on(WGPUContext::new(wgpu::Instance::default(), None));
     /// ```
     pub async fn new(instance: Instance, compatible_surface: Option<&Surface<'_>>) -> WGPUContext {
-        let adapter = instance
-            .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::default(),
-                compatible_surface,
-                force_fallback_adapter: false,
-                ..Default::default()
-            })
-            .await
-            .unwrap();
+        let options = wgpu::RequestAdapterOptions {
+            compatible_surface,
+            ..Default::default()
+        };
+        let adapter = instance.request_adapter(&options).await;
+        #[cfg(target_arch = "wasm32")]
+        let adapter = if compatible_surface.is_none() && adapter.is_err() {
+            // WebGL selects its adapter from a canvas, even when no image is presented.
+            let canvas = web_sys::OffscreenCanvas::new(1, 1).unwrap();
+            let surface = instance
+                .create_surface(wgpu::SurfaceTarget::OffscreenCanvas(canvas))
+                .unwrap();
+            instance
+                .request_adapter(&wgpu::RequestAdapterOptions {
+                    compatible_surface: Some(&surface),
+                    ..options
+                })
+                .await
+        } else {
+            adapter
+        };
+        let adapter = adapter.unwrap();
 
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
