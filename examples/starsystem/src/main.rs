@@ -52,7 +52,7 @@ impl App for StarSystemDemo {
         .map(|(r, g, b)| {
             let mut light = PointLight::default();
             light.set_color(r, g, b);
-            light.set_intensity(0.2);
+            light.set_intensity(200.0);
             light
         });
         let point_light_meshes = point_lights

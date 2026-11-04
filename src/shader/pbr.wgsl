@@ -190,10 +190,10 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     }
 
     for (var i: u32 = 0u; i < point_lights_count.x; i = i + 1u) {
-        let L: vec3<f32> = normalize(point_lights[i].position - in.vPositionW);
+        let light_offset = point_lights[i].position - in.vPositionW;
+        let distance = max(length(light_offset), 0.001);
+        let L = light_offset / distance;
         let H: vec3<f32> = normalize(V + L);
-
-        let distance: f32 = 1.0; //length(point_lights[i].position - in.vPositionW);
 
         Lo += pbr_radiance(L, H, V, N, point_lights[i].color, distance, albedo, metallic, roughness) * point_lights[i].intensity;
     }
