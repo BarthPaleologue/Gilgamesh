@@ -11,4 +11,5 @@ pub(crate) mod material_pipeline;
 pub(crate) mod object_bindings;
 pub(crate) mod prepared_material;
 pub mod raster_renderer;
+pub mod readback;
 pub(crate) mod uniforms;

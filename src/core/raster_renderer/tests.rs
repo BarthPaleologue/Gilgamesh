@@ -7,9 +7,6 @@ use crate::materials::blinn_phong::BlinnPhongMaterial;
 use crate::materials::pbr::PbrMaterial;
 use glam::{DVec3, dcamera::rh};
 
-#[path = "../../../tests/common/mod.rs"]
-mod common;
-
 #[test]
 #[ignore = "GPU end-to-end check; run explicitly with approval"]
 fn shared_materials_have_renderer_local_runtime() {
@@ -173,7 +170,13 @@ fn render(
         },
     );
     gpu.queue.submit([encoder.finish()]);
-    common::read_rgba8(&gpu.device, &gpu.queue, color)
+    pollster::block_on(crate::core::readback::read_rgba8(
+        &gpu.device,
+        &gpu.queue,
+        color,
+    ))
+    .unwrap()
+    .into_raw()
 }
 
 fn pixel(image: &[u8], x: usize) -> &[u8] {
