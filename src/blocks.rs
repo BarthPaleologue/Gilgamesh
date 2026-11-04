@@ -5,6 +5,7 @@ mod pyramid_blur;
 mod rasterize;
 mod resize_bilinear;
 mod resize_nearest;
+mod resize_pass;
 mod tone_map;
 mod vertical_split_screen;
 mod visualize_depth;

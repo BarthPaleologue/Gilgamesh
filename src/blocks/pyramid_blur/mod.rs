@@ -1,11 +1,13 @@
 use super::resize_bilinear;
 use crate::core::render_graph::{Image, ImageSize, RenderGraph};
 
+mod downsample;
 mod merge_levels;
+use downsample::downsample;
 use merge_levels::merge_levels;
 
 /// Blurs RGBA using a normalized pyramid of `levels` half-resolution images.
-/// Uses bilinear resizing in both directions, blending adjacent levels equally.
+/// Uses a 13-tap reduction filter and bilinear reconstruction, blending levels equally.
 /// Preserves the source size and format; uniform colors stay unchanged.
 /// Requires a filterable color format. Zero levels returns the source unchanged.
 pub fn pyramid_blur(source: Image, levels: u32, graph: &mut RenderGraph<'_>) -> Image {
@@ -16,7 +18,7 @@ pub fn pyramid_blur(source: Image, levels: u32, graph: &mut RenderGraph<'_>) -> 
     let mut image = source;
     for _ in 0..levels {
         let size = half_size(graph.image_descriptor(image).size);
-        image = resize_bilinear(image, size, graph);
+        image = downsample(image, size, graph);
         pyramid.push(image);
         if matches!(
             size,
