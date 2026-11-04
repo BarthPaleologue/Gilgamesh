@@ -16,6 +16,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v7
+      with:
+        lfs: true
     - name: Update Rust stable
       run: rustup update stable --no-self-update
     - name: Check formatting

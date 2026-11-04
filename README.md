@@ -35,6 +35,8 @@ cargo test --locked
 cargo build --locked --target wasm32-unknown-unknown
 ```
 
+Example textures use [Git LFS](https://git-lfs.com/). After cloning, run `git lfs install` and `git lfs pull`.
+
 Run the examples on desktop:
 
 ```sh
