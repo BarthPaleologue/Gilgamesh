@@ -1,6 +1,7 @@
 use crate::core::app::{App, FrameContext};
 use crate::core::renderer::Renderer;
 use crate::core::wgpu_context::WGPUContext;
+use crate::core::window_surface::WindowSurface;
 use crate::input::mouse::Mouse;
 use std::sync::Arc;
 use web_time::Instant;
@@ -15,6 +16,7 @@ pub struct Engine<Application: App> {
     pub app: Application,
     pub window: Arc<Window>,
     pub wgpu_context: WGPUContext,
+    pub window_surface: WindowSurface,
 
     renderer: Renderer,
     clock: Instant,
@@ -69,9 +71,15 @@ impl<Application: App> Engine<Application> {
     }
 
     async fn new(window: Arc<Window>, display: winit::event_loop::OwnedDisplayHandle) -> Self {
-        let wgpu_context = WGPUContext::new(window.clone(), display).await;
+        let instance = wgpu::util::new_instance_with_webgpu_detection(
+            wgpu::InstanceDescriptor::new_with_display_handle(Box::new(display)),
+        )
+        .await;
+        let surface = instance.create_surface(window.clone()).unwrap();
+        let wgpu_context = WGPUContext::new(instance, Some(&surface)).await;
+        let window_surface = WindowSurface::new(&wgpu_context, surface, window.inner_size());
 
-        let renderer = Renderer::new(&wgpu_context);
+        let renderer = Renderer::new(&wgpu_context, window_surface.config.format);
         let app = Application::new(&wgpu_context);
 
         Engine {
@@ -79,6 +87,7 @@ impl<Application: App> Engine<Application> {
             renderer,
             window,
             wgpu_context,
+            window_surface,
             clock: Instant::now(),
             elapsed_seconds: 0.0,
             delta_seconds: 0.0,
@@ -87,7 +96,8 @@ impl<Application: App> Engine<Application> {
     }
 
     pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
-        self.wgpu_context.resize(new_size);
+        self.window_surface
+            .resize(&self.wgpu_context.device, new_size);
     }
 
     fn manage_event(&mut self, event: &WindowEvent) {
@@ -102,16 +112,20 @@ impl<Application: App> Engine<Application> {
         let frame = FrameContext {
             elapsed_seconds: self.elapsed_seconds,
             delta_seconds: self.delta_seconds,
-            surface_width: self.wgpu_context.config.width,
-            surface_height: self.wgpu_context.config.height,
+            surface_width: self.window_surface.config.width,
+            surface_height: self.window_surface.config.height,
             mouse: &self.mouse,
             wgpu_context: &self.wgpu_context,
         };
         self.app.update_before_render(&frame);
         self.renderer
             .update_frame_bindings(self.app.get_frame_bindings_data(), &self.wgpu_context);
-        self.renderer
-            .render(self.app.get_meshes(), &self.wgpu_context, &output);
+        self.renderer.render(
+            self.app.get_meshes(),
+            &self.wgpu_context,
+            &output,
+            &self.window_surface.depth_view,
+        );
         self.mouse.reset();
         self.window.pre_present_notify();
         self.wgpu_context.queue.present(output);
@@ -196,7 +210,7 @@ impl<Application: App + 'static> ApplicationHandler<Engine<Application>>
                 engine.elapsed_seconds = new_elapsed_seconds;
 
                 use wgpu::CurrentSurfaceTexture;
-                match engine.wgpu_context.surface.get_current_texture() {
+                match engine.window_surface.surface.get_current_texture() {
                     CurrentSurfaceTexture::Success(output) => engine.render(output),
                     CurrentSurfaceTexture::Suboptimal(output) => {
                         engine.render(output);
@@ -206,7 +220,9 @@ impl<Application: App + 'static> ApplicationHandler<Engine<Application>>
                         engine.resize(engine.window.inner_size());
                     }
                     CurrentSurfaceTexture::Lost => {
-                        engine.wgpu_context.recreate_surface(engine.window.clone());
+                        engine
+                            .window_surface
+                            .recreate_surface(&engine.wgpu_context, engine.window.clone());
                     }
                     CurrentSurfaceTexture::Timeout | CurrentSurfaceTexture::Occluded => {}
                     CurrentSurfaceTexture::Validation => {

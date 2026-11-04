@@ -14,7 +14,6 @@ pub struct PipelineConfig {
 pub(crate) struct PipelineKey {
     pub(crate) config: PipelineConfig,
     pub(crate) texture_count: usize,
-    pub(crate) target_format: wgpu::TextureFormat,
 }
 
 /// Pipeline state and material layout shared by compatible materials.
@@ -27,6 +26,7 @@ impl MaterialPipeline {
     pub(crate) fn new(
         config: PipelineConfig,
         texture_count: usize,
+        target_format: wgpu::TextureFormat,
         frame_layout: &wgpu::BindGroupLayout,
         ctx: &WGPUContext,
     ) -> Self {
@@ -69,7 +69,7 @@ impl MaterialPipeline {
                     entry_point: Some("fs_main"),
                     compilation_options: Default::default(),
                     targets: &[Some(wgpu::ColorTargetState {
-                        format: ctx.config.format,
+                        format: target_format,
                         blend: Some(wgpu::BlendState {
                             color: wgpu::BlendComponent::REPLACE,
                             alpha: wgpu::BlendComponent::REPLACE,

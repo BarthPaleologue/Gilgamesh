@@ -11,13 +11,15 @@ use std::rc::Rc;
 pub struct Renderer {
     pub(crate) frame: FrameBindings,
     pipelines: HashMap<PipelineKey, Rc<MaterialPipeline>>,
+    target_format: wgpu::TextureFormat,
 }
 
 impl Renderer {
-    pub fn new(ctx: &WGPUContext) -> Self {
+    pub fn new(ctx: &WGPUContext, target_format: wgpu::TextureFormat) -> Self {
         Self {
             frame: FrameBindings::new(ctx),
             pipelines: HashMap::new(),
+            target_format,
         }
     }
 
@@ -30,7 +32,6 @@ impl Renderer {
         let key = PipelineKey {
             config,
             texture_count,
-            target_format: ctx.config.format,
         };
         self.pipelines
             .entry(key)
@@ -38,6 +39,7 @@ impl Renderer {
                 Rc::new(MaterialPipeline::new(
                     config,
                     texture_count,
+                    self.target_format,
                     &self.frame.layout,
                     ctx,
                 ))
@@ -65,6 +67,7 @@ impl Renderer {
         render_objects: RenderObjects,
         wgpu_context: &WGPUContext,
         output: &wgpu::SurfaceTexture,
+        depth_view: &wgpu::TextureView,
     ) where
         RenderObjects: IntoIterator<Item = &'a mut Mesh>,
     {
@@ -97,7 +100,7 @@ impl Renderer {
                     },
                 })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &wgpu_context.depth_view,
+                    view: depth_view,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(0.0),
                         store: wgpu::StoreOp::Discard,
