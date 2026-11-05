@@ -87,8 +87,8 @@ pub fn cube() -> CpuMeshBuffers {
     let mut colors = Vec::with_capacity(faces.len() * 4);
     let mut indices = Vec::with_capacity(faces.len() * 6);
 
-    for (corners, normal) in faces {
-        let base = positions.len() as u32;
+    for (face, (corners, normal)) in (0_u32..).zip(faces) {
+        let base = face * 4;
         for (corner, uv) in corners.into_iter().zip(face_uvs) {
             positions.push(corner_positions[corner]);
             normals.push(normal);
@@ -174,6 +174,8 @@ pub fn sphere(resolution: u32) -> CpuMeshBuffers {
     }
 }
 
+/// # Panics
+/// Panics if the generated vertex count exceeds `u32::MAX`.
 pub fn ico_sphere(nb_subdivisions: u32) -> CpuMeshBuffers {
     let mut positions = Vec::new();
     let mut normals = Vec::new();
@@ -219,7 +221,7 @@ pub fn ico_sphere(nb_subdivisions: u32) -> CpuMeshBuffers {
             let v12 = (v1 + v2).normalize();
             let v20 = (v2 + v0).normalize();
 
-            let i01 = base_positions.len() as u32;
+            let i01 = u32::try_from(base_positions.len()).expect("Sphere vertex count exceeds u32");
             let i12 = i01 + 1;
             let i20 = i12 + 1;
 

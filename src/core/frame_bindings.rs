@@ -41,9 +41,9 @@ impl FrameBindings {
             &point_light_count,
         ]
         .into_iter()
-        .enumerate()
-        .map(|(binding, buffer)| wgpu::BindGroupEntry {
-            binding: binding as u32,
+        .zip(0_u32..)
+        .map(|(buffer, binding)| wgpu::BindGroupEntry {
+            binding,
             resource: buffer.as_entire_binding(),
         })
         .collect();
@@ -85,7 +85,12 @@ impl FrameBindings {
         queue.write_buffer(
             &self.point_light_count,
             0,
-            bytemuck::bytes_of(&[point_lights.len() as u32, 0, 0, 0]),
+            bytemuck::bytes_of(&[
+                u32::try_from(point_lights.len()).expect("Point light count fits in u32"),
+                0,
+                0,
+                0,
+            ]),
         );
     }
 

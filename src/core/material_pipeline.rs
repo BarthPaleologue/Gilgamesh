@@ -110,9 +110,11 @@ impl MaterialPipeline {
 
 fn material_bind_group_layout_entries(texture_count: usize) -> Vec<wgpu::BindGroupLayoutEntry> {
     let mut entries = vec![uniform_layout_entry(0)];
-    entries.extend(
-        (0..texture_count).flat_map(|i| texture::bind_group_layout_entries(1 + 2 * i as u32)),
-    );
+    entries.extend((0..texture_count).flat_map(|i| {
+        texture::bind_group_layout_entries(
+            1 + 2 * u32::try_from(i).expect("Material texture index fits in u32"),
+        )
+    }));
     entries
 }
 

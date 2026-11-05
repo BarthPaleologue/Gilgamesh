@@ -48,7 +48,12 @@ impl GpuMeshBuffers {
     }
 
     /// Uploads vertex attributes and indices without retaining the CPU data.
+    ///
+    /// # Panics
+    /// Panics if the mesh index count exceeds `u32::MAX`.
     pub fn from_cpu_buffers(cpu_buffers: &CpuMeshBuffers, wgpu_context: &WGPUContext) -> Self {
+        let index_count =
+            u32::try_from(cpu_buffers.indices.len()).expect("Mesh index count exceeds u32");
         let vertex_buffer =
             wgpu_context
                 .device
@@ -65,11 +70,7 @@ impl GpuMeshBuffers {
                     contents: cast_slice(&cpu_buffers.indices),
                     usage: wgpu::BufferUsages::INDEX,
                 });
-        Self::new(
-            vertex_buffer,
-            index_buffer,
-            cpu_buffers.indices.len() as u32,
-        )
+        Self::new(vertex_buffer, index_buffer, index_count)
     }
 
     #[must_use]

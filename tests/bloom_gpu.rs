@@ -66,9 +66,9 @@ fn bilinear_interpolates_rgba_in_linear_space_and_clamps_edges() {
                     let mut expected = [0_u8; 4];
                     for (c, value) in expected.iter_mut().enumerate() {
                         let sample = |ix: i32, iy: i32| {
-                            let v = f32::from(
-                                texels[(iy.clamp(0, 1) * 2 + ix.clamp(0, 1)) as usize][c],
-                            ) / 255.0;
+                            let index =
+                                usize::try_from(iy.clamp(0, 1) * 2 + ix.clamp(0, 1)).unwrap();
+                            let v = f32::from(texels[index][c]) / 255.0;
                             if format.is_srgb() && c < 3 {
                                 srgb_decode(v)
                             } else {

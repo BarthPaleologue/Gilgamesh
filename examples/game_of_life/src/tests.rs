@@ -29,7 +29,7 @@ mod gpu {
             let population = live_cells(&seed).len();
             assert!(
                 (GRID_SIZE * GRID_SIZE / 2..GRID_SIZE * GRID_SIZE * 3 / 4)
-                    .contains(&(population as u32))
+                    .contains(&(u32::try_from(population).unwrap()))
             );
             assert_eq!(runtime.app().seed, 1);
             let block = [(8, 8), (9, 8), (8, 9), (9, 9)];
@@ -142,7 +142,7 @@ mod gpu {
             let population = live_cells(&reset).len();
             assert!(
                 (GRID_SIZE * GRID_SIZE / 2..GRID_SIZE * GRID_SIZE * 3 / 4)
-                    .contains(&(population as u32))
+                    .contains(&(u32::try_from(population).unwrap()))
             );
             assert_eq!(
                 runtime.render_image(GRID_SIZE, GRID_SIZE).await.unwrap(),

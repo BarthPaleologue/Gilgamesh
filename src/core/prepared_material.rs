@@ -143,7 +143,9 @@ impl PreparedMaterial {
         entries.extend(textures.iter().enumerate().flat_map(|(i, texture)| {
             texture
                 .unwrap_or(&renderer.fallback_texture)
-                .create_bind_group_entries(1 + 2 * i as u32)
+                .create_bind_group_entries(
+                    1 + 2 * u32::try_from(i).expect("Material texture index fits in u32"),
+                )
         }));
         let material_bind_group = ctx.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some(name),

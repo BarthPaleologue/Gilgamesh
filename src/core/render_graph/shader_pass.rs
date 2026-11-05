@@ -334,7 +334,7 @@ fn bind(
                 _ => unreachable!("Cached bindings must match their key"),
             };
             wgpu::BindGroupEntry {
-                binding: binding as u32,
+                binding: u32::try_from(binding).expect("Shader binding index fits in u32"),
                 resource,
             }
         })

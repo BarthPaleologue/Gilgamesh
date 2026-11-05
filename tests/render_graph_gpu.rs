@@ -499,7 +499,7 @@ fn swap_images<'a>(
                 .into_iter()
                 .enumerate()
                 .map(|(binding, image)| wgpu::BindGroupEntry {
-                    binding: binding as u32,
+                    binding: u32::try_from(binding).expect("Shader binding index fits in u32"),
                     resource: wgpu::BindingResource::TextureView(context.images.get(image)),
                 })
                 .collect();
