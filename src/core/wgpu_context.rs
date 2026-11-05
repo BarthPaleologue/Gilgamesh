@@ -52,10 +52,7 @@ impl WGPUContext {
                 required_features: if cfg!(target_arch = "wasm32") {
                     wgpu::Features::empty()
                 } else {
-                    wgpu::Features::POLYGON_MODE_LINE
-                        | wgpu::Features::BUFFER_BINDING_ARRAY
-                        | wgpu::Features::POLYGON_MODE_POINT
-                        | wgpu::Features::ADDRESS_MODE_CLAMP_TO_BORDER
+                    wgpu::Features::POLYGON_MODE_LINE | wgpu::Features::BUFFER_BINDING_ARRAY
                 },
                 required_limits: if cfg!(target_arch = "wasm32")
                     && adapter.get_info().backend == wgpu::Backend::Gl
