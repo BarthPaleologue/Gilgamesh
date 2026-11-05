@@ -222,7 +222,7 @@ mod pbr_tests {
         let uniforms = PbrUniforms::from(&material);
         assert_eq!(uniforms.albedo_color, [0.2, 0.3, 0.4]);
         assert_eq!(uniforms.emissive_color, [0.2, 0.0, 0.4]);
-        assert_eq!(uniforms.metallic, 0.7);
+        assert_eq!(uniforms.metallic, 0.0);
         assert_eq!(uniforms.roughness, 0.4);
         assert_eq!(
             [

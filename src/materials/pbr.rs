@@ -32,7 +32,7 @@ impl PbrMaterial {
             albedo_color: [1.0, 1.0, 1.0],
             emissive_color: [1.0, 1.0, 1.0],
             emissive_luminance: Nits::new(0.0),
-            metallic: 0.7,
+            metallic: 0.0,
             roughness: 0.4,
 
             albedo_texture: None,
