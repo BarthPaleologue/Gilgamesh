@@ -108,33 +108,7 @@ impl GraphExecutor {
         let plan = graph.compile()?;
         let output = target.output().texture();
         let (width, height) = (output.width(), output.height());
-        let limits = self.wgpu_context.device.limits();
-        let mut keys = Vec::with_capacity(graph.images.len());
-        for (image, &usage) in graph.images.iter().zip(&plan.usages) {
-            let (width, height) = image.descriptor.size.resolve(width, height)?;
-            if width > limits.max_texture_dimension_2d || height > limits.max_texture_dimension_2d {
-                return Err(GraphError::new(format!(
-                    "{}: image exceeds device dimensions",
-                    image.label
-                )));
-            }
-            let features = image
-                .descriptor
-                .format
-                .guaranteed_format_features(self.wgpu_context.device.features());
-            if !features.allowed_usages.contains(usage) {
-                return Err(GraphError::new(format!(
-                    "{}: {:?} does not support usages {usage:?}",
-                    image.label, image.descriptor.format
-                )));
-            }
-            keys.push(ImageKey {
-                width,
-                height,
-                format: image.descriptor.format,
-                usage,
-            });
-        }
+        let keys = self.image_keys(&graph, &plan, width, height)?;
         let output_key = keys[plan.output.index];
         if (output_key.width, output_key.height) != (width, height) {
             return Err(GraphError::new(
@@ -208,6 +182,43 @@ impl GraphExecutor {
             cache.end_render();
         }
         Ok(())
+    }
+
+    fn image_keys(
+        &self,
+        graph: &RenderGraph<'_>,
+        plan: &GraphPlan,
+        width: u32,
+        height: u32,
+    ) -> Result<Vec<ImageKey>, GraphError> {
+        let limits = self.wgpu_context.device.limits();
+        let mut keys = Vec::with_capacity(graph.images.len());
+        for (image, &usage) in graph.images.iter().zip(&plan.usages) {
+            let (width, height) = image.descriptor.size.resolve(width, height)?;
+            if width > limits.max_texture_dimension_2d || height > limits.max_texture_dimension_2d {
+                return Err(GraphError::new(format!(
+                    "{}: image exceeds device dimensions",
+                    image.label
+                )));
+            }
+            let features = image
+                .descriptor
+                .format
+                .guaranteed_format_features(self.wgpu_context.device.features());
+            if !features.allowed_usages.contains(usage) {
+                return Err(GraphError::new(format!(
+                    "{}: {:?} does not support usages {usage:?}",
+                    image.label, image.descriptor.format
+                )));
+            }
+            keys.push(ImageKey {
+                width,
+                height,
+                format: image.descriptor.format,
+                usage,
+            });
+        }
+        Ok(keys)
     }
 }
 

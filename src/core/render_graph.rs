@@ -254,6 +254,77 @@ impl<'a> RenderGraph<'a> {
                 "Export the final image version, or copy an older version before overwriting it",
             ));
         }
+        let (producers, usages) = self.validate_accesses(output)?;
+        let mut successors = vec![Vec::new(); self.passes.len()];
+        let mut pending = vec![0; self.passes.len()];
+        let mut depend = |before: usize, after: usize| {
+            if !successors[before].contains(&after) {
+                successors[before].push(after);
+                pending[after] += 1;
+            }
+        };
+        for (index, pass) in self.passes.iter().enumerate() {
+            for &(image, _) in &pass.reads {
+                if let Some(producer) = producers[image.index] {
+                    depend(producer, index);
+                }
+            }
+        }
+        for (index, image) in self.images.iter().enumerate() {
+            if let Some(previous) = image.previous {
+                let writer = producers[index].expect("Successor versions require a writer");
+                if let Some(producer) = producers[previous] {
+                    depend(producer, writer);
+                }
+                for (reader, pass) in self.passes.iter().enumerate() {
+                    if pass.reads.iter().any(|&(image, _)| image.index == previous) {
+                        depend(reader, writer);
+                    }
+                }
+            }
+        }
+        let mut ready: VecDeque<_> = pending
+            .iter()
+            .enumerate()
+            .filter_map(|(index, &count)| (count == 0).then_some(index))
+            .collect();
+        let mut order = Vec::with_capacity(self.passes.len());
+        while let Some(index) = ready.pop_front() {
+            order.push(index);
+            for &next in &successors[index] {
+                pending[next] -= 1;
+                if pending[next] == 0 {
+                    ready.push_back(next);
+                }
+            }
+        }
+        if order.len() != self.passes.len() {
+            return Err(GraphError::new("Graph contains a dependency cycle"));
+        }
+        let mut lifetimes = vec![None; self.images.len()];
+        for (position, &pass) in order.iter().enumerate() {
+            for &(image, _) in self.passes[pass]
+                .reads
+                .iter()
+                .chain(&self.passes[pass].writes)
+            {
+                let allocation = self.images[image.index].allocation;
+                let lifetime = lifetimes[allocation].get_or_insert((position, position));
+                lifetime.1 = position;
+            }
+        }
+        Ok(GraphPlan {
+            lifetimes,
+            output,
+            usages,
+            order,
+        })
+    }
+
+    fn validate_accesses(
+        &self,
+        output: Image,
+    ) -> Result<(Vec<Option<usize>>, Vec<wgpu::TextureUsages>), GraphError> {
         let mut producers = vec![None; self.images.len()];
         let mut usages = vec![wgpu::TextureUsages::empty(); self.images.len()];
         for (index, pass) in self.passes.iter().enumerate() {
@@ -334,70 +405,7 @@ impl<'a> RenderGraph<'a> {
                 )));
             }
         }
-        let mut successors = vec![Vec::new(); self.passes.len()];
-        let mut pending = vec![0; self.passes.len()];
-        let mut depend = |before: usize, after: usize| {
-            if !successors[before].contains(&after) {
-                successors[before].push(after);
-                pending[after] += 1;
-            }
-        };
-        for (index, pass) in self.passes.iter().enumerate() {
-            for &(image, _) in &pass.reads {
-                if let Some(producer) = producers[image.index] {
-                    depend(producer, index);
-                }
-            }
-        }
-        for (index, image) in self.images.iter().enumerate() {
-            if let Some(previous) = image.previous {
-                let writer = producers[index].expect("Successor versions require a writer");
-                if let Some(producer) = producers[previous] {
-                    depend(producer, writer);
-                }
-                for (reader, pass) in self.passes.iter().enumerate() {
-                    if pass.reads.iter().any(|&(image, _)| image.index == previous) {
-                        depend(reader, writer);
-                    }
-                }
-            }
-        }
-        let mut ready: VecDeque<_> = pending
-            .iter()
-            .enumerate()
-            .filter_map(|(index, &count)| (count == 0).then_some(index))
-            .collect();
-        let mut order = Vec::with_capacity(self.passes.len());
-        while let Some(index) = ready.pop_front() {
-            order.push(index);
-            for &next in &successors[index] {
-                pending[next] -= 1;
-                if pending[next] == 0 {
-                    ready.push_back(next);
-                }
-            }
-        }
-        if order.len() != self.passes.len() {
-            return Err(GraphError::new("Graph contains a dependency cycle"));
-        }
-        let mut lifetimes = vec![None; self.images.len()];
-        for (position, &pass) in order.iter().enumerate() {
-            for &(image, _) in self.passes[pass]
-                .reads
-                .iter()
-                .chain(&self.passes[pass].writes)
-            {
-                let allocation = self.images[image.index].allocation;
-                let lifetime = lifetimes[allocation].get_or_insert((position, position));
-                lifetime.1 = position;
-            }
-        }
-        Ok(GraphPlan {
-            lifetimes,
-            output,
-            usages,
-            order,
-        })
+        Ok((producers, usages))
     }
 
     fn check_image(&self, image: Image) -> Result<(), GraphError> {
