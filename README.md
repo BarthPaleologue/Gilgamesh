@@ -139,16 +139,6 @@ fn main() {
 }
 ```
 
-The rasterization block derives the camera's aspect ratio from its render target,
-including when resizing or rendering a separate capture. For direct matrix access,
-pass the view's width/height ratio to `camera.projection_matrix(aspect_ratio)` or
-`camera.projection_view(aspect_ratio)`.
-
-`Perspective::frustum_offset` shifts the frustum center in units of half-width and
-half-height (positive right/up). Its default is zero; values outside `[-1, 1]` are
-valid. `fov_vertical` is the opening before this shift, not the angle between the
-shifted top and bottom rays.
-
 ## About
 
 Loosely based

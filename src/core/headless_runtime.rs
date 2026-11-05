@@ -94,19 +94,14 @@ impl<Application: App> HeadlessRuntime<Application> {
         self.frame.read_image(self.executor.wgpu_context())
     }
 
-    /// Renders a separate image at the current time, with zero delta and neutral input.
+    /// Renders a separate image from the current state without calling `App::update_before_frame`.
+    /// The main frame is preserved, but graph passes may modify persistent GPU resources.
     pub fn render_image(
         &mut self,
         width: u32,
         height: u32,
     ) -> impl std::future::Future<Output = std::io::Result<image::RgbaImage>> + use<Application>
     {
-        render_image(
-            &mut self.app,
-            &mut self.executor,
-            self.elapsed_seconds,
-            width,
-            height,
-        )
+        render_image(&self.app, &mut self.executor, width, height)
     }
 }

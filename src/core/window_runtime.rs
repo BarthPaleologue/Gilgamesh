@@ -200,17 +200,17 @@ impl WindowContext<'_> {
         self.frame.read_image(self.executor.wgpu_context())
     }
 
-    /// Prepares and renders a separate image, preserving the main frame and simulation time.
-    /// The application receives the requested dimensions, zero delta, and neutral mouse input.
-    /// Preparation and rendering happen immediately; the returned future only waits for the pixels.
+    /// Renders a separate image from the current state without calling `App::update_before_frame`.
+    /// The main frame is preserved, but graph passes may modify persistent GPU resources.
+    /// Rendering happens immediately; the returned future only waits for the pixels.
     pub fn render_image<Application: App>(
         &mut self,
-        app: &mut Application,
+        app: &Application,
         width: u32,
         height: u32,
     ) -> impl std::future::Future<Output = std::io::Result<image::RgbaImage>> + use<Application>
     {
-        render_image(app, self.executor, self.elapsed_seconds, width, height)
+        render_image(app, self.executor, width, height)
     }
 }
 

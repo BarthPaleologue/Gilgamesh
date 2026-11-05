@@ -24,11 +24,12 @@ pub trait App: Sized {
     fn name(&self) -> &str;
 
     /// Prepares the application once before building and executing the frame's entire graph.
-    /// Separate image renders also prepare a frame, with zero delta and neutral mouse input.
+    /// Separate image renders reuse the current state without calling this hook.
     fn update_before_frame(&mut self, _frame: &FrameContext<'_>) {}
 
     /// Describes the entire frame prepared by `update_before_frame`, borrowing its scenes and parameters.
     /// Export one color image at the render dimensions for presentation and capture.
+    /// Separate image renders also call this method without updating the application.
     fn frame_graph(&self) -> RenderGraph<'_>;
 
     fn on_window_event(&mut self, _event: &WindowEvent, _context: &mut WindowContext<'_>) {}
@@ -54,14 +55,12 @@ pub(crate) fn prepare_frame(
 }
 
 pub(crate) fn render_image<Application: App>(
-    app: &mut Application,
+    app: &Application,
     executor: &mut GraphExecutor,
-    elapsed_seconds: f64,
     width: u32,
     height: u32,
 ) -> impl std::future::Future<Output = std::io::Result<image::RgbaImage>> + use<Application> {
     let mut target = executor.create_target(width, height);
-    prepare_frame(app, executor, &target, elapsed_seconds, 0.0, &Mouse::new());
     executor
         .execute(app.frame_graph(), &mut target)
         .expect("Render graph execution failed");

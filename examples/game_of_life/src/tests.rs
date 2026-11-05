@@ -100,7 +100,7 @@ mod gpu {
             }
             assert_eq!(runtime.app().current, 0);
             assert_eq!(runtime.app().accumulated_seconds, remainder);
-            assert!(!runtime.app().step_due);
+            assert!(runtime.app().step_due);
             assert_eq!(runtime.app().seed, 1);
             assert_eq!(runtime.capture_frame().await.unwrap(), second);
 
@@ -153,6 +153,7 @@ mod gpu {
                 reset
             );
             assert!(!runtime.app().step_due);
+            assert!(runtime.app().randomize_due);
             assert_eq!(runtime.app().seed, 2);
 
             runtime.app_mut().reset_requested = true;

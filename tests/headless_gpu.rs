@@ -74,16 +74,16 @@ fn graph_execution_and_captures_keep_targets_and_hooks_independent() {
             };
             assert_eq!(context.capture_frame().await.unwrap(), first);
             assert_eq!(app.frames.len(), 2);
-            let custom = context.render_image(&mut app, 65, 129).await.unwrap();
+            let custom = context.render_image(&app, 65, 129).await.unwrap();
             assert_eq!(custom.dimensions(), (65, 129));
             assert_square_footprint(&custom);
             assert_pixel(custom.get_pixel(32, 64).0, [253, 182, 158, 255]);
             assert_eq!(context.capture_frame().await.unwrap(), first);
-            assert_eq!(app.frames[2], (0.02, 0.0, 65, 129));
-            assert_eq!(app.name(), "65x129 at 0.02");
+            assert_eq!(app.frames, [(0.0, 0.0, 67, 33), (0.02, 0.02, 67, 33)]);
+            assert_eq!(app.name(), "67x33 at 0.02");
             assert_eq!(app.camera.projection, projection);
         }
-        assert_eq!(app.frames.len(), 3);
+        assert_eq!(app.frames.len(), 2);
         render_frame(&mut executor, &mut app, &mut target, 0.04, 0.02);
         assert_eq!(app.name(), "67x33 at 0.04");
         assert_eq!(app.camera.projection, projection);
@@ -106,7 +106,7 @@ fn graph_execution_and_captures_keep_targets_and_hooks_independent() {
         assert_eq!(blit_and_read(&executor, &target).await, image);
         assert_eq!(first_view.texture().width(), 67);
         assert_eq!(first_view.texture().height(), 33);
-        assert_eq!(app.frames.len(), 5);
+        assert_eq!(app.frames.len(), 4);
 
         first
     });
@@ -127,7 +127,10 @@ fn graph_execution_and_captures_keep_targets_and_hooks_independent() {
         let main = runtime.capture_frame().await.unwrap();
         assert_pixel(main.get_pixel(33, 16).0, [150, 150, 253, 255]);
         let custom = runtime.render_image(129, 65);
-        assert_eq!(runtime.app().frames[2], (0.04, 0.0, 129, 65));
+        assert_eq!(
+            runtime.app().frames,
+            [(0.02, 0.02, 67, 33), (0.04, 0.02, 67, 33)]
+        );
         runtime.render(Duration::ZERO);
         assert_eq!(custom.await.unwrap().dimensions(), (129, 65));
         assert_eq!(runtime.capture_frame().await.unwrap(), main);
