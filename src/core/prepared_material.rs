@@ -159,7 +159,7 @@ impl PreparedMaterial {
         }
     }
 
-    pub fn bind(&self, pass: &mut RenderPass<'_>) {
+    pub(crate) fn bind(&self, pass: &mut RenderPass<'_>) {
         pass.set_pipeline(&self.pipeline.pipeline);
         pass.set_bind_group(1, &self.material_bind_group, &[]);
     }

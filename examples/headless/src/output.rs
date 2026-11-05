@@ -1,12 +1,12 @@
 #[cfg(not(target_arch = "wasm32"))]
-pub fn save(screenshot: &image::RgbaImage, filename: &str) {
+pub(crate) fn save(screenshot: &image::RgbaImage, filename: &str) {
     let path = std::env::current_dir().unwrap().join(filename);
     screenshot.save(&path).unwrap();
     println!("Screenshot saved to {}", path.display());
 }
 
 #[cfg(target_arch = "wasm32")]
-pub fn save(screenshot: &image::RgbaImage, filename: &str) {
+pub(crate) fn save(screenshot: &image::RgbaImage, filename: &str) {
     use std::io::Cursor;
     use wasm_bindgen::{JsCast, closure::Closure};
     use web_sys::{Blob, BlobPropertyBag, HtmlAnchorElement, Url};

@@ -1,11 +1,11 @@
 use crate::core::wgpu_context::WGPUContext;
 use wgpu::BufferAddress;
 
-pub fn create_buffer<T>(name: &str, wgpu_context: &WGPUContext) -> wgpu::Buffer {
+pub(crate) fn create_buffer<T>(name: &str, wgpu_context: &WGPUContext) -> wgpu::Buffer {
     create_array_buffer::<T>(name, 1, wgpu_context)
 }
 
-pub fn create_array_buffer<T>(
+pub(crate) fn create_array_buffer<T>(
     name: &str,
     nb_elements: usize,
     wgpu_context: &WGPUContext,

@@ -1,6 +1,6 @@
 use gilgamesh::core::render_graph::{Binding, Dispatch, Image, RenderGraph, compute_pass};
 
-pub fn evolve(previous: Image, current: Image, graph: &mut RenderGraph<'_>) -> Image {
+pub(crate) fn evolve(previous: Image, current: Image, graph: &mut RenderGraph<'_>) -> Image {
     let current = graph.next_version(current);
     compute_pass(
         "Evolve Game of Life",

@@ -11,6 +11,9 @@ license = "Apache-2.0"
 [workspace]
 members = ["examples/game_of_life", "examples/headless", "examples/splitscreen", "examples/starsystem", "examples/terrain"]
 
+[workspace.lints.rust]
+unreachable_pub = "warn"
+
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -1 }
 allow_attributes_without_reason = "warn"
