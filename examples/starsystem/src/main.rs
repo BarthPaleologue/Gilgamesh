@@ -5,6 +5,7 @@ use gilgamesh::core::render_context::FrameBindingsData;
 use gilgamesh::core::render_graph::{RenderGraph, TextureFormat};
 use gilgamesh::core::wgpu_context::WGPUContext;
 use gilgamesh::core::window_runtime::WindowRuntime;
+use gilgamesh::embed_texture;
 use gilgamesh::geometry::mesh::Mesh;
 use gilgamesh::geometry::primitive;
 use gilgamesh::input::orbit_control::OrbitControl;
@@ -13,7 +14,7 @@ use gilgamesh::lights::directional_light::DirectionalLight;
 use gilgamesh::lights::light::Light;
 use gilgamesh::lights::point_light::PointLight;
 use gilgamesh::materials::pbr::PbrMaterial;
-use gilgamesh::texture::{Linear, Srgb, Texture};
+use gilgamesh::texture::{Linear, Srgb};
 use gilgamesh::transform::{Transform, Transformable};
 use glam::{DQuat, DVec3};
 use std::cell::RefCell;
@@ -59,11 +60,7 @@ impl App for StarSystemDemo {
             .each_ref()
             .map(|light| create_point_light_debug_mesh(light, ctx));
 
-        let sun_texture = Rc::new(Texture::<Srgb>::new(
-            "Sun texture",
-            include_bytes!("../assets/sun.jpg"),
-            ctx,
-        ));
+        let sun_texture = Rc::new(embed_texture!("Sun", "../assets/sun.jpg", Srgb, ctx));
         let mut sun_material = PbrMaterial::new("SunMaterial");
         sun_material.set_albedo_color(0.0, 0.0, 0.0);
         sun_material.metallic = 0.0;
@@ -84,20 +81,23 @@ impl App for StarSystemDemo {
 
         let mut earth_material = PbrMaterial::new("EarthMaterial");
         earth_material.metallic = 0.0;
-        let earth_diffuse_texture = Rc::new(Texture::<Srgb>::new(
-            "Earth diffuse texture",
-            include_bytes!("../assets/2k_earth_daymap.jpg"),
+        let earth_diffuse_texture = Rc::new(embed_texture!(
+            "Earth diffuse",
+            "../assets/2k_earth_daymap.jpg",
+            Srgb,
             ctx,
         ));
         earth_material.set_albedo_texture(earth_diffuse_texture);
-        earth_material.set_normal_map(Rc::new(Texture::<Linear>::new(
-            "Earth normal map",
-            include_bytes!("../assets/2k_earth_normal_map.png"),
+        earth_material.set_normal_map(Rc::new(embed_texture!(
+            "Earth normal",
+            "../assets/2k_earth_normal_map.png",
+            Linear,
             ctx,
         )));
-        earth_material.set_roughness_map(Rc::new(Texture::<Linear>::new(
-            "Earth roughness map",
-            include_bytes!("../assets/2k_earth_roughness_map.png"),
+        earth_material.set_roughness_map(Rc::new(embed_texture!(
+            "Earth roughness",
+            "../assets/2k_earth_roughness_map.png",
+            Linear,
             ctx,
         )));
         let earth = Mesh::from_cpu_buffers(

@@ -3,6 +3,21 @@ use image::GenericImageView;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
+/// Embeds an image file at compile time and creates a texture at runtime.
+///
+/// Use `embed_texture!(name, path, encoding, context)`, with a literal path
+/// relative to the calling source file and an encoding of [`Srgb`] or [`Linear`].
+/// Returns a [`Texture`] without wrapping it in an [`Rc`].
+///
+/// # Panics
+/// Panics if the embedded bytes cannot be decoded as a supported image.
+#[macro_export]
+macro_rules! embed_texture {
+    ($name:expr, $path:literal, $encoding:ty, $context:expr $(,)?) => {
+        $crate::texture::Texture::<$encoding>::new($name, ::core::include_bytes!($path), $context)
+    };
+}
+
 /// Color images decoded from sRGB when sampled.
 pub struct Srgb;
 
