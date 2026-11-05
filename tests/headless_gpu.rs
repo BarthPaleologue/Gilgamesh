@@ -235,7 +235,7 @@ impl App for TestApp {
     fn frame_graph(&self) -> RenderGraph<'_> {
         let mut graph = RenderGraph::new();
         let scene = rasterize(
-            FrameBindingsData::new(&self.camera, &self.light, &[]),
+            FrameBindingsData::new(&self.camera, std::slice::from_ref(&self.light), &[]),
             [&self.mesh],
             TextureFormat::Rgba16Float,
             &mut graph,

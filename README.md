@@ -10,8 +10,8 @@ A small 3D WGPU engine written in Rust that does not rely on the ECS pattern.
 
 ## Features
 
-- Up to 128 point lights per material
-- Up to 128 directional lights per material
+- Up to 64 point lights per render pass
+- Up to 64 directional lights per render pass
 - Built-in Phong shading
 - Normal mapping
 - Procedural mesh generation
@@ -87,7 +87,7 @@ struct TerrainApp {
     camera: Camera<Perspective>,
     orbit_control: OrbitControl,
     terrain: Mesh,
-    directional_light: DirectionalLight,
+    directional_lights: [DirectionalLight; 1],
 }
 
 impl App for TerrainApp {
@@ -104,7 +104,7 @@ impl App for TerrainApp {
         material.set_diffuse_color(0.5, 0.2, 1.0);
         let terrain = Mesh::from_cpu_buffers("sinc", &cpu_buffers, Rc::new(material.into()), ctx);
 
-        Self { camera, orbit_control, terrain, directional_light: DirectionalLight::default() }
+        Self { camera, orbit_control, terrain, directional_lights: [DirectionalLight::default()] }
     }
 
     fn name(&self) -> &str {
@@ -119,7 +119,7 @@ impl App for TerrainApp {
     fn frame_graph(&self) -> RenderGraph<'_> {
         let mut graph = RenderGraph::new();
         let scene = rasterize(
-            FrameBindingsData::new(&self.camera, &self.directional_light, &[]),
+            FrameBindingsData::new(&self.camera, &self.directional_lights, &[]),
             [&self.terrain],
             TextureFormat::Rgba16Float,
             &mut graph,

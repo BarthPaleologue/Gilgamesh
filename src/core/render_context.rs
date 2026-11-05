@@ -2,24 +2,29 @@ use crate::camera::uniforms::CameraUniforms;
 use crate::camera::{Camera, CameraProjection};
 use crate::lights::directional_light::DirectionalLight;
 use crate::lights::point_light::PointLight;
-use crate::settings::MAX_POINT_LIGHTS;
+use crate::settings::{MAX_DIRECTIONAL_LIGHTS, MAX_POINT_LIGHTS};
 
 /// Borrows the application's camera and lights for a render pass.
 /// Camera uniforms are resolved using the rendered view's aspect ratio.
 pub struct FrameBindingsData<'a> {
     camera_uniforms: Box<dyn Fn(f64) -> CameraUniforms + 'a>,
-    pub(crate) directional_light: &'a DirectionalLight,
+    pub(crate) directional_lights: &'a [DirectionalLight],
     pub(crate) point_lights: &'a [PointLight],
 }
 
 impl<'a> FrameBindingsData<'a> {
     /// # Panics
-    /// Panics if more than [`MAX_POINT_LIGHTS`] lights are supplied.
+    /// Panics if either slice exceeds [`MAX_DIRECTIONAL_LIGHTS`] or [`MAX_POINT_LIGHTS`].
     pub fn new(
         camera: &'a Camera<impl CameraProjection>,
-        directional_light: &'a DirectionalLight,
+        directional_lights: &'a [DirectionalLight],
         point_lights: &'a [PointLight],
     ) -> Self {
+        assert!(
+            directional_lights.len() <= MAX_DIRECTIONAL_LIGHTS,
+            "A render context supports at most {MAX_DIRECTIONAL_LIGHTS} directional lights, got {}.",
+            directional_lights.len(),
+        );
         assert!(
             point_lights.len() <= MAX_POINT_LIGHTS,
             "A render context supports at most {MAX_POINT_LIGHTS} point lights, got {}.",
@@ -31,7 +36,7 @@ impl<'a> FrameBindingsData<'a> {
                 uniforms.update(camera, aspect_ratio);
                 uniforms
             }),
-            directional_light,
+            directional_lights,
             point_lights,
         }
     }
@@ -52,15 +57,16 @@ mod tests {
     #[test]
     fn borrows_the_app_lights() {
         let camera: Camera = Camera::default();
-        let directional_light = DirectionalLight::default();
+        let directional_lights = [DirectionalLight::default(), DirectionalLight::default()];
         let mut point_lights = [PointLight::default()];
         point_lights[0].set_intensity(0.2);
 
-        let context = FrameBindingsData::new(&camera, &directional_light, &point_lights);
+        let context = FrameBindingsData::new(&camera, &directional_lights, &point_lights);
         assert!(std::ptr::eq(
-            context.directional_light,
-            &raw const directional_light
+            context.directional_lights.as_ptr(),
+            directional_lights.as_ptr()
         ));
+        assert_eq!(context.directional_lights.len(), 2);
         assert!(std::ptr::eq(
             context.point_lights.as_ptr(),
             point_lights.as_ptr()
@@ -73,7 +79,7 @@ mod tests {
         let camera: Camera<Perspective> = Camera::default();
         camera.transform_mut().position = DVec3::new(3.0, 4.0, 5.0);
         let light = DirectionalLight::default();
-        let context = FrameBindingsData::new(&camera, &light, &[]);
+        let context = FrameBindingsData::new(&camera, std::slice::from_ref(&light), &[]);
 
         for aspect_ratio in [1.0, 2.0, 0.5] {
             let resolved: [f32; 20] = bytemuck::cast(context.camera_uniforms(aspect_ratio));
@@ -109,9 +115,9 @@ mod tests {
         }));
         let light = DirectionalLight::default();
         let frames = [
-            FrameBindingsData::new(&perspective, &light, &[]),
-            FrameBindingsData::new(&orthographic, &light, &[]),
-            FrameBindingsData::new(&custom, &light, &[]),
+            FrameBindingsData::new(&perspective, std::slice::from_ref(&light), &[]),
+            FrameBindingsData::new(&orthographic, std::slice::from_ref(&light), &[]),
+            FrameBindingsData::new(&custom, std::slice::from_ref(&light), &[]),
         ];
         let matrices = [
             perspective.projection_view(1.5),
@@ -125,10 +131,37 @@ mod tests {
     }
 
     #[test]
+    fn accepts_no_lights() {
+        let camera: Camera = Camera::default();
+        let context = FrameBindingsData::new(&camera, &[], &[]);
+        assert!(context.directional_lights.is_empty());
+        assert!(context.point_lights.is_empty());
+    }
+
+    #[test]
+    fn accepts_the_maximum_directional_light_count() {
+        let camera: Camera = Camera::default();
+        let lights =
+            std::array::from_fn::<_, MAX_DIRECTIONAL_LIGHTS, _>(|_| DirectionalLight::default());
+        let context = FrameBindingsData::new(&camera, &lights, &[]);
+        assert_eq!(context.directional_lights.len(), MAX_DIRECTIONAL_LIGHTS);
+    }
+
+    #[test]
+    #[should_panic(expected = "directional lights")]
+    fn rejects_more_directional_lights_than_material_buffers_support() {
+        let camera: Camera = Camera::default();
+        let lights = std::array::from_fn::<_, { MAX_DIRECTIONAL_LIGHTS + 1 }, _>(|_| {
+            DirectionalLight::default()
+        });
+        FrameBindingsData::new(&camera, &lights, &[]);
+    }
+
+    #[test]
     fn accepts_no_point_lights() {
         let camera: Camera = Camera::default();
         let light = DirectionalLight::default();
-        let context = FrameBindingsData::new(&camera, &light, &[]);
+        let context = FrameBindingsData::new(&camera, std::slice::from_ref(&light), &[]);
         assert!(context.point_lights.is_empty());
     }
 
@@ -137,7 +170,7 @@ mod tests {
         let camera: Camera = Camera::default();
         let light = DirectionalLight::default();
         let point_lights = std::array::from_fn::<_, MAX_POINT_LIGHTS, _>(|_| PointLight::default());
-        let context = FrameBindingsData::new(&camera, &light, &point_lights);
+        let context = FrameBindingsData::new(&camera, std::slice::from_ref(&light), &point_lights);
         assert_eq!(context.point_lights.len(), MAX_POINT_LIGHTS);
     }
 
@@ -148,6 +181,6 @@ mod tests {
         let light = DirectionalLight::default();
         let point_lights =
             std::array::from_fn::<_, { MAX_POINT_LIGHTS + 1 }, _>(|_| PointLight::default());
-        FrameBindingsData::new(&camera, &light, &point_lights);
+        FrameBindingsData::new(&camera, std::slice::from_ref(&light), &point_lights);
     }
 }

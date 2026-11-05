@@ -16,7 +16,7 @@ struct TerrainView {
     camera: Camera<Perspective>,
     orbit_control: OrbitControl,
     terrain: Mesh,
-    directional_light: DirectionalLight,
+    directional_lights: [DirectionalLight; 1],
 }
 
 impl App for TerrainView {
@@ -37,7 +37,7 @@ impl App for TerrainView {
             camera,
             orbit_control,
             terrain,
-            directional_light: DirectionalLight::default(),
+            directional_lights: [DirectionalLight::default()],
         }
     }
 
@@ -53,7 +53,7 @@ impl App for TerrainView {
     fn frame_graph(&self) -> RenderGraph<'_> {
         let mut graph = RenderGraph::new();
         let scene = rasterize(
-            FrameBindingsData::new(&self.camera, &self.directional_light, &[]),
+            FrameBindingsData::new(&self.camera, &self.directional_lights, &[]),
             [&self.terrain],
             TextureFormat::Rgba16Float,
             &mut graph,

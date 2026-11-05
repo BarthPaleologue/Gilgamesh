@@ -21,7 +21,7 @@ struct SplitScreenDemo {
     camera: Camera<Perspective>,
     orbit_control: OrbitControl,
     meshes: [Mesh; 3],
-    light: DirectionalLight,
+    directional_lights: [DirectionalLight; 1],
     split: f32,
 }
 
@@ -63,7 +63,7 @@ impl App for SplitScreenDemo {
             camera: Camera::default(),
             orbit_control: OrbitControl::default(),
             meshes: [ground, sphere, cube],
-            light: DirectionalLight::default(),
+            directional_lights: [DirectionalLight::default()],
             split: 0.5,
         }
     }
@@ -80,7 +80,7 @@ impl App for SplitScreenDemo {
     fn frame_graph(&self) -> RenderGraph<'_> {
         let mut graph = RenderGraph::new();
         let scene = rasterize(
-            FrameBindingsData::new(&self.camera, &self.light, &[]),
+            FrameBindingsData::new(&self.camera, &self.directional_lights, &[]),
             &self.meshes,
             TextureFormat::Rgba16Float,
             &mut graph,

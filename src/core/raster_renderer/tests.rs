@@ -48,7 +48,7 @@ fn shared_materials_have_renderer_local_runtime() {
         .map(|format| {
             let mut renderer = RasterRenderer::new(&gpu, format);
             renderer.update_frame_bindings(
-                &FrameBindingsData::new(&camera, &light, &[]),
+                &FrameBindingsData::new(&camera, std::slice::from_ref(&light), &[]),
                 1.0,
                 &gpu,
             );
@@ -130,6 +130,56 @@ fn shared_materials_have_renderer_local_runtime() {
             assert!(renderer.materials.is_empty());
             assert!(renderer.transforms.is_empty());
         }
+    }
+}
+
+#[test]
+#[ignore = "GPU end-to-end check; run explicitly with approval"]
+fn directional_lights_accumulate_and_can_be_removed_between_frames() {
+    let gpu = pollster::block_on(WGPUContext::new(wgpu::Instance::default(), None));
+    let camera = Camera::new(Orthographic {
+        size_vertical: 4.0,
+        near: 0.1,
+        far: 10.0,
+    });
+    camera.transform_mut().position = DVec3::new(0.0, 3.0, 0.0);
+    camera.transform_mut().look_at(DVec3::ZERO, DVec3::NEG_Z);
+    let lights = [0.2, 0.3].map(|intensity| {
+        let mut light = DirectionalLight::default();
+        light.set_intensity(intensity);
+        light
+    });
+    let color = attachment(&gpu.device, wgpu::TextureFormat::Rgba8Unorm);
+    let depth = attachment(&gpu.device, wgpu::TextureFormat::Depth32Float);
+    for material in [
+        Material::from(PbrMaterial::new("PBR")),
+        Material::from(BlinnPhongMaterial::new("Blinn-Phong")),
+    ] {
+        let mesh =
+            Mesh::from_cpu_buffers("Plane", &primitive::plane(2, 2.0), Rc::new(material), &gpu);
+        let mut renderer = RasterRenderer::new(&gpu, color.format());
+        let mut draw = |lights: &[DirectionalLight]| {
+            renderer.update_frame_bindings(
+                &FrameBindingsData::new(&camera, lights, &[]),
+                1.0,
+                &gpu,
+            );
+            let image = render(&gpu, &mut renderer, &[&mesh], &color, &depth);
+            let center: [u8; 4] = pixel(&image, 32).try_into().unwrap();
+            center
+        };
+        assert_eq!(draw(&[]), [0, 0, 0, 255]);
+        let first = draw(&lights[..1]);
+        let second = draw(&lights[1..]);
+        let combined = draw(&lights);
+        for channel in 0..3 {
+            assert!(first[channel] > 0 && second[channel] > 0);
+            let sum = u16::from(first[channel]) + u16::from(second[channel]);
+            assert!(sum < 255, "The additive comparison must not clip");
+            assert!(u16::from(combined[channel]).abs_diff(sum) <= 1);
+        }
+        assert_eq!(draw(&lights[..1]), first);
+        assert_eq!(draw(&[]), [0, 0, 0, 255]);
     }
 }
 

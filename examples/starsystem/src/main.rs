@@ -6,7 +6,7 @@ use gilgamesh::embed_texture;
 use gilgamesh::geometry::{Mesh, primitive};
 use gilgamesh::input::OrbitControl;
 use gilgamesh::lights::debug::create_point_light_debug_mesh;
-use gilgamesh::lights::{DirectionalLight, Light, PointLight};
+use gilgamesh::lights::{Light, PointLight};
 use gilgamesh::materials::PbrMaterial;
 use gilgamesh::texture::{Linear, Srgb};
 use gilgamesh::transform::{Transform, Transformable};
@@ -24,7 +24,6 @@ struct StarSystemDemo {
     sun: Mesh,
     earth: Mesh,
     plane: Mesh,
-    directional_light: DirectionalLight,
     point_lights: [PointLight; 5],
     point_light_meshes: [Mesh; 4],
 }
@@ -34,9 +33,6 @@ impl App for StarSystemDemo {
         let camera = Camera::default();
         let mut orbit_control = OrbitControl::default();
         orbit_control.set_radius(2.0);
-
-        let mut directional_light = DirectionalLight::default();
-        directional_light.set_intensity(0.0);
 
         let point_lights = [
             (1.0, 0.0, 0.0),
@@ -125,7 +121,6 @@ impl App for StarSystemDemo {
             sun,
             earth,
             plane,
-            directional_light,
             point_lights,
             point_light_meshes,
         }
@@ -153,7 +148,7 @@ impl App for StarSystemDemo {
     fn frame_graph(&self) -> RenderGraph<'_> {
         let mut graph = RenderGraph::new();
         let scene = rasterize(
-            FrameBindingsData::new(&self.camera, &self.directional_light, &self.point_lights),
+            FrameBindingsData::new(&self.camera, &[], &self.point_lights),
             self.point_light_meshes
                 .iter()
                 .chain([&self.sun, &self.earth, &self.plane]),

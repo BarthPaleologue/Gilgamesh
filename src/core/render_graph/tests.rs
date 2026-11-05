@@ -15,7 +15,7 @@ fn blocks_compose_in_nested_calls_without_a_gpu() {
     let mut graph = RenderGraph::new();
     let output = tone_map(
         rasterize(
-            FrameBindingsData::new(&camera, &light, &[]),
+            FrameBindingsData::new(&camera, std::slice::from_ref(&light), &[]),
             [],
             TextureFormat::Rgba16Float,
             &mut graph,

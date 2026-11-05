@@ -20,7 +20,7 @@ struct DirectionalLightUniforms {
     intensity: f32
 }
 @group(0) @binding(1)
-var<uniform> directionalLight: DirectionalLightUniforms;
+var<uniform> directional_lights: array<DirectionalLightUniforms, 64>;
 
 struct PointLightUniforms {
     color: vec3<f32>,
@@ -28,7 +28,12 @@ struct PointLightUniforms {
     intensity: f32
 }
 @group(0) @binding(2) var<uniform> point_lights : array<PointLightUniforms, 64>;
-@group(0) @binding(3) var<uniform> point_lights_count : vec4<u32>;
+struct LightCounts {
+    directional: u32,
+    point: u32,
+    _padding: vec2<u32>,
+}
+@group(0) @binding(3) var<uniform> light_counts: LightCounts;
 
 struct PhongUniforms {
     diffuse_color: vec3<f32>,
@@ -110,18 +115,21 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     let view_dir: vec3<f32> = normalize(camera.position - in.vPositionW);
 
-    let reflect_dir: vec3<f32> = reflect(directionalLight.direction, normal);
-    let specular_strength: f32 = pow(max(0.0, dot(view_dir, reflect_dir)), 32.0);
-    var specular: vec3<f32> = specular_strength * directionalLight.color * directionalLight.intensity * phong.specular_color;
-    if(phong.has_specular_texture > 0u) {
-        specular = specular * textureSample(specular_texture, specular_sampler, in.vUV).r;
+    var color = vec3<f32>(0.0);
+    for (var i: u32 = 0u; i < light_counts.directional; i = i + 1u) {
+        let light = directional_lights[i];
+        let reflect_dir: vec3<f32> = reflect(light.direction, normal);
+        let specular_strength: f32 = pow(max(0.0, dot(view_dir, reflect_dir)), 32.0);
+        var specular: vec3<f32> = specular_strength * light.color * light.intensity * phong.specular_color;
+        if(phong.has_specular_texture > 0u) {
+            specular = specular * textureSample(specular_texture, specular_sampler, in.vUV).r;
+        }
+
+        let ndl = max(0.0, dot(normal, -light.direction));
+        color += (diffuse * light.color * light.intensity + specular) * ndl;
     }
 
-    let ndl = max(0.0, dot(normal, -directionalLight.direction));
-    var color = diffuse * directionalLight.color * directionalLight.intensity + specular;
-    color *= ndl;
-
-    for (var i: u32 = 0u; i < point_lights_count.x; i = i + 1u) {
+    for (var i: u32 = 0u; i < light_counts.point; i = i + 1u) {
         let light_dir: vec3<f32> = normalize(point_lights[i].position - in.vPositionW);
         let ndl = max(0.0, dot(normal, light_dir));
 

@@ -27,7 +27,7 @@ struct HeadlessScene {
     camera: Camera<Perspective>,
     plane: Mesh,
     sphere: Mesh,
-    directional_light: DirectionalLight,
+    directional_lights: [DirectionalLight; 1],
 }
 
 impl App for HeadlessScene {
@@ -63,7 +63,7 @@ impl App for HeadlessScene {
             camera,
             plane,
             sphere,
-            directional_light: DirectionalLight::default(),
+            directional_lights: [DirectionalLight::default()],
         }
     }
 
@@ -74,7 +74,7 @@ impl App for HeadlessScene {
     fn frame_graph(&self) -> RenderGraph<'_> {
         let mut graph = RenderGraph::new();
         let scene = rasterize(
-            FrameBindingsData::new(&self.camera, &self.directional_light, &[]),
+            FrameBindingsData::new(&self.camera, &self.directional_lights, &[]),
             [&self.plane, &self.sphere],
             TextureFormat::Rgba16Float,
             &mut graph,

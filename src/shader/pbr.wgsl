@@ -20,7 +20,7 @@ struct DirectionalLightUniforms {
     intensity: f32
 }
 @group(0) @binding(1)
-var<uniform> directionalLight: DirectionalLightUniforms;
+var<uniform> directional_lights: array<DirectionalLightUniforms, 64>;
 
 struct PointLightUniforms {
     color: vec3<f32>,
@@ -28,7 +28,12 @@ struct PointLightUniforms {
     intensity: f32
 }
 @group(0) @binding(2) var<uniform> point_lights : array<PointLightUniforms, 64>;
-@group(0) @binding(3) var<uniform> point_lights_count : vec4<u32>;
+struct LightCounts {
+    directional: u32,
+    point: u32,
+    _padding: vec2<u32>,
+}
+@group(0) @binding(3) var<uniform> light_counts: LightCounts;
 
 struct PbrUniforms {
     albedo_color: vec3<f32>,
@@ -185,14 +190,15 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let V: vec3<f32> = normalize(camera.position - in.vPositionW);
     let N: vec3<f32> = normal;
 
-    {
-        let L: vec3<f32> = -normalize(directionalLight.direction);
+    for (var i: u32 = 0u; i < light_counts.directional; i = i + 1u) {
+        let light = directional_lights[i];
+        let L: vec3<f32> = -normalize(light.direction);
         let H: vec3<f32> = normalize(V + L);
 
-        Lo += pbr_radiance(L, H, V, N, directionalLight.color, 1.0, albedo, metallic, roughness) * directionalLight.intensity;
+        Lo += pbr_radiance(L, H, V, N, light.color, 1.0, albedo, metallic, roughness) * light.intensity;
     }
 
-    for (var i: u32 = 0u; i < point_lights_count.x; i = i + 1u) {
+    for (var i: u32 = 0u; i < light_counts.point; i = i + 1u) {
         let light_offset = point_lights[i].position - in.vPositionW;
         let distance = max(length(light_offset), 0.001);
         let L = light_offset / distance;

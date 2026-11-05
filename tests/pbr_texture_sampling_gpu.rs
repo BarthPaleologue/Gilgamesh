@@ -84,7 +84,11 @@ fn albedo_encodings_match_equivalent_linear_constants() {
     camera.transform_mut().look_at(DVec3::ZERO, DVec3::Y);
     let light = DirectionalLight::default();
     let mut renderer = RasterRenderer::new(&gpu, wgpu::TextureFormat::Rgba8UnormSrgb);
-    renderer.update_frame_bindings(&FrameBindingsData::new(&camera, &light, &[]), 1.0, &gpu);
+    renderer.update_frame_bindings(
+        &FrameBindingsData::new(&camera, std::slice::from_ref(&light), &[]),
+        1.0,
+        &gpu,
+    );
     let mut images = Vec::new();
     for mesh in &meshes {
         let mut encoder = gpu
@@ -157,7 +161,7 @@ fn roughness_and_normal_maps_match_equivalent_linear_surface_properties() {
                 );
                 let mut graph = RenderGraph::new();
                 let scene = rasterize(
-                    FrameBindingsData::new(&camera, &light, &[]),
+                    FrameBindingsData::new(&camera, std::slice::from_ref(&light), &[]),
                     [&mesh],
                     wgpu::TextureFormat::Rgba16Float,
                     &mut graph,
@@ -216,7 +220,7 @@ fn roughness_and_normal_maps_match_equivalent_linear_surface_properties() {
             );
             let mut graph = RenderGraph::new();
             let scene = rasterize(
-                FrameBindingsData::new(&camera, &light, &[]),
+                FrameBindingsData::new(&camera, std::slice::from_ref(&light), &[]),
                 [&mesh],
                 wgpu::TextureFormat::Rgba16Float,
                 &mut graph,
@@ -309,7 +313,7 @@ fn emissive_textures_multiply_linear_hdr_factors_without_received_light() {
                 );
                 let mut graph = RenderGraph::new();
                 let scene = rasterize(
-                    FrameBindingsData::new(&camera, &light, &[]),
+                    FrameBindingsData::new(&camera, std::slice::from_ref(&light), &[]),
                     [&mesh],
                     wgpu::TextureFormat::Rgba16Float,
                     &mut graph,

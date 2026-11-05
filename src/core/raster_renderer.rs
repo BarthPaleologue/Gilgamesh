@@ -89,7 +89,7 @@ impl RasterRenderer {
     ) {
         self.frame.update(
             &context.camera_uniforms(aspect_ratio),
-            context.directional_light,
+            context.directional_lights,
             context.point_lights,
             &wgpu_context.queue,
         );

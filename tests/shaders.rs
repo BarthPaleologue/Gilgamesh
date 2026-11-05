@@ -85,6 +85,24 @@ fn uniform_bindings_have_webgl_compatible_sizes() {
                         std::mem::size_of::<gilgamesh::transform::TransformUniforms>()
                     );
                 }
+                let expected_size = match variable.name.as_deref() {
+                    Some("directional_lights") => Some(
+                        gilgamesh::settings::MAX_DIRECTIONAL_LIGHTS
+                            * std::mem::size_of::<
+                                gilgamesh::lights::directional_light::DirectionalLightUniform,
+                            >(),
+                    ),
+                    Some("point_lights") => Some(
+                        gilgamesh::settings::MAX_POINT_LIGHTS
+                            * std::mem::size_of::<gilgamesh::lights::point_light::PointLightUniforms>(
+                            ),
+                    ),
+                    Some("light_counts") => Some(std::mem::size_of::<[u32; 4]>()),
+                    _ => None,
+                };
+                if let Some(expected_size) = expected_size {
+                    assert_eq!(layouter[variable.ty].size as usize, expected_size);
+                }
             }
         }
     }
@@ -111,9 +129,9 @@ fn shader_bindings_separate_frame_material_and_object_data() {
         assert_eq!(bindings, expected);
         for (name, group, binding) in [
             ("camera", 0, 0),
-            ("directionalLight", 0, 1),
+            ("directional_lights", 0, 1),
             ("point_lights", 0, 2),
-            ("point_lights_count", 0, 3),
+            ("light_counts", 0, 3),
             ("transform", 2, 0),
         ] {
             let variable = module

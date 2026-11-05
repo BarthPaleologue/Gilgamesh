@@ -157,13 +157,13 @@ fn custom_blocks_mrt_compute_caches_and_independent_raster_inputs() {
         for format in [Format::Rgba16Float, Format::Rgba8Unorm] {
             let mut graph = RenderGraph::new();
             let left = rasterize(
-                FrameBindingsData::new(&camera, &light, &[]),
+                FrameBindingsData::new(&camera, std::slice::from_ref(&light), &[]),
                 [&mesh],
                 format,
                 &mut graph,
             );
             let right = rasterize(
-                FrameBindingsData::new(&other_camera, &light, &[]),
+                FrameBindingsData::new(&other_camera, std::slice::from_ref(&light), &[]),
                 [&mesh],
                 format,
                 &mut graph,
