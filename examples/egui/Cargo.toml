@@ -1,0 +1,14 @@
+[package]
+name = "egui_demo"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+gilgamesh = { workspace = true }
+gilgamesh-egui = { path = "../../crates/gilgamesh-egui" }
+glam = { workspace = true }
+winit = "0.30"

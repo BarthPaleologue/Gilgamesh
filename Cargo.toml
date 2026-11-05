@@ -9,7 +9,7 @@ license = "AGPL-3.0-only"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace]
-members = ["crates/gilgamesh-egui", "examples/game_of_life", "examples/headless", "examples/splitscreen", "examples/starsystem", "examples/terrain"]
+members = ["crates/gilgamesh-egui", "examples/egui", "examples/game_of_life", "examples/headless", "examples/splitscreen", "examples/starsystem", "examples/terrain"]
 
 [workspace.lints.rust]
 warnings = "deny"
