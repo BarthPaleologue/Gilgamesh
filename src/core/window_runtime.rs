@@ -32,6 +32,9 @@ pub struct WindowRuntime<Application: App> {
 
 impl<Application: App> WindowRuntime<Application> {
     /// Creates the window and application, then drives rendering and presentation.
+    ///
+    /// # Panics
+    /// Panics if logging or the event loop cannot be initialized, or the event loop fails.
     pub fn run(width: u32, height: u32)
     where
         Application: 'static,

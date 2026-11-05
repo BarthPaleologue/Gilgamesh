@@ -11,6 +11,9 @@ use upsample::upsample;
 /// Uses a 13-tap reduction filter and 3×3 tent reconstruction, blending levels equally.
 /// Preserves the source size and format; uniform colors stay unchanged.
 /// Requires a filterable color format. Zero levels returns the source unchanged.
+///
+/// # Panics
+/// Panics if a pyramid level overflows the image scale denominator.
 pub fn pyramid_blur(source: Image, levels: u32, graph: &mut RenderGraph<'_>) -> Image {
     if levels == 0 {
         return source;

@@ -9,6 +9,13 @@ use std::time::Duration;
 /// Accepts a single-sample, single-layer 2D texture with `COPY_SRC` usage.
 /// Preserves the stored bytes without applying a color-space conversion.
 /// Returns `Unsupported` on WebGL; browser readback requires WebGPU.
+///
+/// # Errors
+/// Returns an error if the backend does not support readback, device polling fails,
+/// or the staging buffer cannot be mapped.
+///
+/// # Panics
+/// Panics if the texture is not RGBA8.
 pub fn read_rgba8(
     device: &wgpu::Device,
     queue: &wgpu::Queue,

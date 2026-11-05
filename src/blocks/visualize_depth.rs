@@ -2,6 +2,9 @@ use crate::core::render_graph::{Binding, Image, ImageDescriptor, RenderGraph, fr
 use wgpu::{TextureFormat, TextureSampleType};
 
 /// Displays raw depth as grayscale in an sRGB image, without linearization.
+///
+/// # Panics
+/// Panics if the source belongs to another graph or does not have a depth format.
 pub fn visualize_depth(source: Image, graph: &mut RenderGraph<'_>) -> Image {
     let descriptor = graph.image_descriptor(source);
     assert_eq!(

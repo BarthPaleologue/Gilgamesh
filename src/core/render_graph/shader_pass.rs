@@ -43,6 +43,8 @@ pub enum Dispatch {
 }
 
 impl Dispatch {
+    /// # Panics
+    /// Panics if either workgroup dimension is zero.
     pub fn for_image(image: Image, workgroup_size: [u32; 2]) -> Self {
         assert!(
             workgroup_size.into_iter().all(|n| n > 0),
@@ -72,6 +74,9 @@ impl Dispatch {
 /// Outputs correspond to fragment locations 0..N and must have matching dimensions.
 /// The pass clears and replaces all outputs. Bindings must match the shader's group 0;
 /// uniforms and samplers are cached, while texture views are resolved each execution.
+///
+/// # Panics
+/// Panics if no output is supplied or an output belongs to another graph.
 pub fn fragment_pass<'a>(
     label: impl Into<String>,
     shader: impl Into<Cow<'static, str>>,

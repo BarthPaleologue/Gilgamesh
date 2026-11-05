@@ -138,6 +138,8 @@ impl<Encoding: ColorEncoding> Texture<Encoding> {
         }
     }
 
+    /// # Panics
+    /// Panics if `bytes` cannot be decoded as a supported image.
     pub fn new(name: &str, bytes: &[u8], wgpu_context: &WGPUContext) -> Self {
         let image = image::load_from_memory(bytes).unwrap();
         let image_rgba = image.to_rgba8();

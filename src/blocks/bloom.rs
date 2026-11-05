@@ -5,6 +5,9 @@ use crate::core::render_graph::{Binding, Image, RenderGraph, fragment_pass};
 /// Mixes a normalized pyramidal blur with the source RGB by `weight` in [0, 1],
 /// preserving source alpha, size and format. Use a filterable HDR format such as `Rgba16Float`.
 /// Zero levels or zero weight returns the source unchanged.
+///
+/// # Panics
+/// Panics if `weight` is outside [0, 1] or NaN.
 pub fn bloom(source: Image, levels: u32, weight: f32, graph: &mut RenderGraph<'_>) -> Image {
     assert!(
         (0.0..=1.0).contains(&weight),

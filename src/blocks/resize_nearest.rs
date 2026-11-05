@@ -7,6 +7,9 @@ use wgpu::TextureSampleType;
 /// Preserves its channels, format and color space, including HDR values.
 /// The source format must support render attachments.
 /// `size` is resolved relative to the frame target, as for other graph images.
+///
+/// # Panics
+/// Panics if the source belongs to another graph or is not a float-sampled color image.
 pub fn resize_nearest(source: Image, size: ImageSize, graph: &mut RenderGraph<'_>) -> Image {
     let descriptor = graph.image_descriptor(source);
     assert!(

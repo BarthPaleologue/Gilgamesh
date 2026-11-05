@@ -18,6 +18,9 @@ impl WGPUContext {
     ///
     /// let gpu = pollster::block_on(WGPUContext::new(wgpu::Instance::default(), None));
     /// ```
+    ///
+    /// # Panics
+    /// Panics if no compatible adapter is available or the requested device cannot be created.
     pub async fn new(instance: Instance, compatible_surface: Option<&Surface<'_>>) -> WGPUContext {
         let options = wgpu::RequestAdapterOptions {
             compatible_surface,

@@ -128,6 +128,9 @@ impl<'a> RenderGraph<'a> {
     /// Passes may read or write it according to the texture's creation usages.
     /// Reads depend on its writer, if any; otherwise they see its existing contents.
     /// Importing the same texture again returns its initial handle, not its latest version.
+    ///
+    /// # Panics
+    /// Panics unless the texture is 2D, single-layer, single-mip and single-sample.
     pub fn import_texture(
         &mut self,
         label: impl Into<String>,
@@ -168,6 +171,9 @@ impl<'a> RenderGraph<'a> {
     /// Its writer waits for the previous writer and every reader of the old version.
     /// Each version may have only one successor. Versions cannot be read and written
     /// together in one pass; use separate textures for a compute ping-pong step.
+    ///
+    /// # Panics
+    /// Panics if the image belongs to another graph or already has a successor.
     pub fn next_version(&mut self, image: Image) -> Image {
         self.check_image(image).expect("Invalid image version");
         assert!(
@@ -187,6 +193,8 @@ impl<'a> RenderGraph<'a> {
         next
     }
 
+    /// # Panics
+    /// Panics if the image belongs to another graph.
     pub fn image_descriptor(&self, image: Image) -> ImageDescriptor {
         assert_eq!(image.graph, self.id, "Image belongs to another graph");
         self.images[image.index].descriptor
@@ -218,6 +226,10 @@ impl<'a> RenderGraph<'a> {
     }
 
     /// Checks resource access and dependencies without creating GPU resources.
+    ///
+    /// # Errors
+    /// Returns an error for invalid image handles, resource usages, writers, exports,
+    /// or cyclic pass dependencies.
     pub fn validate(&self) -> Result<(), GraphError> {
         self.compile().map(|_| ())
     }
@@ -424,6 +436,8 @@ pub struct PassImages<'a> {
 }
 
 impl PassImages<'_> {
+    /// # Panics
+    /// Panics if the image does not belong to this graph or was not declared by this pass.
     pub fn get(&self, image: Image) -> &wgpu::TextureView {
         assert!(
             image.graph == self.graph

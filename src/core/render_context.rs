@@ -12,6 +12,8 @@ pub struct FrameBindingsData<'a> {
 }
 
 impl<'a> FrameBindingsData<'a> {
+    /// # Panics
+    /// Panics if more than [`MAX_POINT_LIGHTS`] lights are supplied.
     pub fn new(
         camera: &Camera<impl CameraProjection>,
         directional_light: &'a DirectionalLight,

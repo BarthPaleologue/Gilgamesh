@@ -4,6 +4,10 @@ use wgpu::TextureSampleType;
 /// Combines color images across a vertical divider, preserving the left image's size and format.
 /// `split` is a fraction in [0, 1] measured from the left. The right image is resampled
 /// with nearest-neighbor lookup when its dimensions differ. HDR stays HDR.
+///
+/// # Panics
+/// Panics if `split` is outside [0, 1] or NaN, either image belongs to another graph,
+/// or either format is not a float-sampled color format.
 pub fn vertical_split_screen(
     left: Image,
     right: Image,

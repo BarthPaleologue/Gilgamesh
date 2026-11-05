@@ -58,6 +58,9 @@ impl<Application: App> HeadlessRuntime<Application> {
     }
 
     /// Advances by the caller's timestep and renders the main frame with neutral input.
+    ///
+    /// # Panics
+    /// Panics if the application produces an invalid or unsupported render graph.
     pub fn render(&mut self, delta: Duration) {
         let delta_seconds = delta.as_secs_f64();
         self.elapsed_seconds += delta_seconds;

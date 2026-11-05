@@ -45,6 +45,8 @@ impl GraphExecutor {
         &self.wgpu_context
     }
 
+    /// # Panics
+    /// Panics if either dimension is zero.
     pub fn create_target(&self, width: u32, height: u32) -> FrameTarget {
         assert!(
             width > 0 && height > 0,
@@ -75,6 +77,10 @@ impl GraphExecutor {
     }
 
     /// Validates dependencies and image descriptors, then encodes and submits the graph.
+    ///
+    /// # Errors
+    /// Returns an error for invalid graph dependencies, unsupported image usages,
+    /// or image dimensions incompatible with the device or frame target.
     pub fn execute(
         &mut self,
         graph: RenderGraph<'_>,
