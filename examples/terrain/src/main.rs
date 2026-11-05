@@ -5,7 +5,7 @@ use gilgamesh::core::{App, FrameBindingsData, FrameContext, WGPUContext, WindowR
 use gilgamesh::geometry::{Mesh, procedural};
 use gilgamesh::input::OrbitControl;
 use gilgamesh::lights::DirectionalLight;
-use gilgamesh::materials::BlinnPhongMaterial;
+use gilgamesh::materials::PbrMaterial;
 use std::rc::Rc;
 
 fn main() {
@@ -29,9 +29,9 @@ impl App for TerrainView {
             let d = 5.0 * (x * x + z * z).sqrt();
             3.0 * (d.sin() / d).min(1.0)
         });
-        let mut material = BlinnPhongMaterial::new("sincMaterial");
-        material.set_diffuse_color(0.5, 0.2, 1.0);
-        let terrain = Mesh::from_cpu_buffers("sinc", &cpu_buffers, Rc::new(material.into()), ctx);
+        let mut material = PbrMaterial::new("sincMaterial");
+        material.set_albedo_color(0.5, 0.2, 1.0);
+        let terrain = Mesh::from_cpu_buffers("sinc", &cpu_buffers, Rc::new(material), ctx);
 
         Self {
             camera,

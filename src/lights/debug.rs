@@ -3,18 +3,17 @@ use crate::geometry::mesh::Mesh;
 use crate::geometry::primitive;
 use crate::lights::light::Light;
 use crate::lights::point_light::PointLight;
-use crate::materials::blinn_phong::BlinnPhongMaterial;
+use crate::materials::PbrMaterial;
 use crate::photometry::Nits;
 use crate::transform::Transformable;
 use std::rc::Rc;
 
 pub fn create_point_light_debug_mesh(point_light: &PointLight, wgpu_context: &WGPUContext) -> Mesh {
     let (r, g, b) = point_light.color().into();
-    let mut material = BlinnPhongMaterial::new("PointLightDebugMaterial");
-    material.set_ambient_luminance(Nits::new(100_000.0));
-    material.set_ambient_color(r, g, b);
-    material.set_diffuse_color(0.0, 0.0, 0.0);
-    material.set_specular_color(0.0, 0.0, 0.0);
+    let mut material = PbrMaterial::new("PointLightDebugMaterial");
+    material.set_emissive_luminance(Nits::new(100_000.0));
+    material.set_emissive_color(r, g, b);
+    material.set_albedo_color(0.0, 0.0, 0.0);
     let mut buffers = primitive::sphere(16);
     for position in &mut buffers.vertices.positions {
         for coordinate in position {
@@ -24,7 +23,7 @@ pub fn create_point_light_debug_mesh(point_light: &PointLight, wgpu_context: &WG
     let mesh = Mesh::from_cpu_buffers(
         "PointLightDebugMesh",
         &buffers,
-        Rc::new(material.into()),
+        Rc::new(material),
         wgpu_context,
     );
     mesh.transform_mut().parent = Some(point_light.transform_rc());

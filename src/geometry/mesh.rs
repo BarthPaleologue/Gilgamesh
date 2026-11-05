@@ -5,7 +5,7 @@ use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::cpu_mesh_buffers::CpuMeshBuffers;
 use crate::geometry::gpu_mesh_buffers::GpuMeshBuffers;
 
-use crate::materials::material::Material;
+use crate::materials::pbr::PbrMaterial;
 use crate::transform::{Transform, Transformable};
 
 #[must_use]
@@ -13,7 +13,7 @@ pub struct Mesh {
     name: String,
     transform: Rc<RefCell<Transform>>,
     gpu_buffers: GpuMeshBuffers,
-    material: Rc<Material>,
+    material: Rc<PbrMaterial>,
 }
 
 impl Transformable for Mesh {
@@ -34,7 +34,7 @@ impl Mesh {
     pub fn from_cpu_buffers(
         name: &str,
         cpu_buffers: &CpuMeshBuffers,
-        material: Rc<Material>,
+        material: Rc<PbrMaterial>,
         wgpu_context: &WGPUContext,
     ) -> Mesh {
         let gpu_buffers = GpuMeshBuffers::from_cpu_buffers(cpu_buffers, wgpu_context);
@@ -45,7 +45,7 @@ impl Mesh {
     pub fn from_gpu_buffers(
         name: &str,
         gpu_buffers: GpuMeshBuffers,
-        material: Rc<Material>,
+        material: Rc<PbrMaterial>,
     ) -> Mesh {
         Mesh {
             name: name.to_string(),
@@ -55,7 +55,7 @@ impl Mesh {
         }
     }
 
-    pub fn set_material(&mut self, material: Rc<Material>) {
+    pub fn set_material(&mut self, material: Rc<PbrMaterial>) {
         self.material = material;
     }
 
@@ -65,7 +65,7 @@ impl Mesh {
     }
 
     #[must_use]
-    pub fn material(&self) -> &Rc<Material> {
+    pub fn material(&self) -> &Rc<PbrMaterial> {
         &self.material
     }
 

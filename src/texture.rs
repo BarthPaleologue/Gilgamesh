@@ -57,28 +57,22 @@ impl ColorEncoding for Linear {
 /// Color inputs accept either encoding; data inputs require [`Linear`].
 ///
 /// ```no_run
-/// use gilgamesh::materials::{blinn_phong::BlinnPhongMaterial, pbr::PbrMaterial};
+/// use gilgamesh::materials::PbrMaterial;
 /// use gilgamesh::texture::{Linear, Srgb, Texture};
 /// use std::rc::Rc;
 ///
 /// fn bind(
-///     pbr: &mut PbrMaterial,
-///     phong: &mut BlinnPhongMaterial,
+///     material: &mut PbrMaterial,
 ///     srgb: Rc<Texture<Srgb>>,
 ///     linear: Rc<Texture<Linear>>,
 /// ) {
-///     pbr.set_albedo_texture(srgb.clone());
-///     pbr.set_albedo_texture(linear.clone());
-///     pbr.set_emissive_luminance(gilgamesh::photometry::Nits::new(100.0));
-///     pbr.set_emissive_color(1.0, 1.0, 1.0);
-///     pbr.set_emissive_texture(srgb.clone());
-///     pbr.set_emissive_texture(linear.clone());
-///     phong.set_diffuse_texture(srgb.clone());
-///     phong.set_diffuse_texture(linear.clone());
-///     phong.set_ambient_texture(srgb);
-///     phong.set_ambient_texture(linear.clone());
-///     phong.set_specular_texture(linear.clone());
-///     phong.set_normal_map(linear);
+///     material.set_albedo_texture(srgb.clone());
+///     material.set_albedo_texture(linear.clone());
+///     material.set_emissive_luminance(gilgamesh::photometry::Nits::new(100.0));
+///     material.set_emissive_color(1.0, 1.0, 1.0);
+///     material.set_emissive_texture(srgb.clone());
+///     material.set_emissive_texture(linear.clone());
+///     material.set_normal_map(linear);
 /// }
 /// ```
 #[must_use]

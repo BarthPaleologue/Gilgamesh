@@ -6,15 +6,8 @@ use crate::texture;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct PipelineConfig {
-    pub shader_source: &'static str,
     pub polygon_mode: wgpu::PolygonMode,
     pub back_face_culling: bool,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub(crate) struct PipelineKey {
-    pub(crate) config: PipelineConfig,
-    pub(crate) texture_count: usize,
 }
 
 /// Pipeline state and material layout shared by compatible materials.
@@ -26,7 +19,6 @@ pub(crate) struct MaterialPipeline {
 impl MaterialPipeline {
     pub(crate) fn new(
         config: PipelineConfig,
-        texture_count: usize,
         target_format: wgpu::TextureFormat,
         frame_layout: &wgpu::BindGroupLayout,
         object_layout: &wgpu::BindGroupLayout,
@@ -36,13 +28,13 @@ impl MaterialPipeline {
             .device
             .create_shader_module(wgpu::ShaderModuleDescriptor {
                 label: Some("Material Shader"),
-                source: wgpu::ShaderSource::Wgsl(config.shader_source.into()),
+                source: wgpu::ShaderSource::Wgsl(include_str!("../shader/pbr.wgsl").into()),
             });
         let material_layout =
             ctx.device
                 .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                     label: Some("Material Bind Group Layout"),
-                    entries: &material_bind_group_layout_entries(texture_count),
+                    entries: &material_bind_group_layout_entries(),
                 });
         let pipeline_layout = ctx
             .device
@@ -105,9 +97,9 @@ impl MaterialPipeline {
     }
 }
 
-fn material_bind_group_layout_entries(texture_count: usize) -> Vec<wgpu::BindGroupLayoutEntry> {
+fn material_bind_group_layout_entries() -> Vec<wgpu::BindGroupLayoutEntry> {
     let mut entries = vec![uniform_layout_entry(0)];
-    entries.extend((0..texture_count).flat_map(|i| {
+    entries.extend((0..5).flat_map(|i| {
         texture::bind_group_layout_entries(
             1 + 2 * u32::try_from(i).expect("Material texture index fits in u32"),
         )
@@ -121,74 +113,61 @@ mod tests {
 
     #[test]
     fn material_layouts_match_the_shader_binding_types_and_uniform_sizes() {
-        for (source, texture_count, uniform_size) in [
-            (
-                include_str!("../shader/blinn_phong.wgsl"),
-                4,
-                std::mem::size_of::<crate::core::prepared_material::BlinnPhongUniforms>(),
-            ),
-            (
-                include_str!("../shader/pbr.wgsl"),
-                5,
-                std::mem::size_of::<crate::core::prepared_material::PbrUniforms>(),
-            ),
-        ] {
-            let module = naga::front::wgsl::parse_str(source).unwrap();
-            let mut layouter = naga::proc::Layouter::default();
-            layouter.update(module.to_ctx()).unwrap();
-            let entries = material_bind_group_layout_entries(texture_count);
-            let variables: Vec<_> = module
-                .global_variables
+        let source = include_str!("../shader/pbr.wgsl");
+        let uniform_size = std::mem::size_of::<crate::core::prepared_material::PbrUniforms>();
+        let module = naga::front::wgsl::parse_str(source).unwrap();
+        let mut layouter = naga::proc::Layouter::default();
+        layouter.update(module.to_ctx()).unwrap();
+        let entries = material_bind_group_layout_entries();
+        let variables: Vec<_> = module
+            .global_variables
+            .iter()
+            .filter(|(_, variable)| {
+                variable
+                    .binding
+                    .as_ref()
+                    .is_some_and(|binding| binding.group == 1)
+            })
+            .collect();
+        assert_eq!(entries.len(), variables.len());
+        for entry in entries {
+            let variable = variables
                 .iter()
-                .filter(|(_, variable)| {
-                    variable
-                        .binding
-                        .as_ref()
-                        .is_some_and(|binding| binding.group == 1)
-                })
-                .collect();
-            assert_eq!(entries.len(), variables.len());
-            for entry in entries {
-                let variable = variables
-                    .iter()
-                    .find(|(_, variable)| {
-                        variable.binding.as_ref().unwrap().binding == entry.binding
-                    })
-                    .unwrap()
-                    .1;
-                match (&module.types[variable.ty].inner, entry.ty) {
-                    (
-                        naga::TypeInner::Struct { .. },
-                        wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            ..
-                        },
-                    ) => {
-                        assert_eq!(variable.space, naga::AddressSpace::Uniform);
-                        assert_eq!(layouter[variable.ty].size as usize, uniform_size);
-                    }
-                    (
-                        naga::TypeInner::Image {
-                            dim: naga::ImageDimension::D2,
-                            arrayed: false,
-                            class:
-                                naga::ImageClass::Sampled {
-                                    kind: naga::ScalarKind::Float,
-                                    multi: false,
-                                },
-                        },
-                        wgpu::BindingType::Texture {
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            multisampled: false,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        },
-                    )
-                    | (
-                        naga::TypeInner::Sampler { comparison: false },
-                        wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    ) => {}
-                    _ => panic!("incompatible material binding {}", entry.binding),
+                .find(|(_, variable)| variable.binding.as_ref().unwrap().binding == entry.binding)
+                .unwrap()
+                .1;
+            match (&module.types[variable.ty].inner, entry.ty) {
+                (
+                    naga::TypeInner::Struct { .. },
+                    wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        ..
+                    },
+                ) => {
+                    assert_eq!(variable.space, naga::AddressSpace::Uniform);
+                    assert_eq!(layouter[variable.ty].size as usize, uniform_size);
                 }
+                (
+                    naga::TypeInner::Image {
+                        dim: naga::ImageDimension::D2,
+                        arrayed: false,
+                        class:
+                            naga::ImageClass::Sampled {
+                                kind: naga::ScalarKind::Float,
+                                multi: false,
+                            },
+                    },
+                    wgpu::BindingType::Texture {
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        multisampled: false,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    },
+                )
+                | (
+                    naga::TypeInner::Sampler { comparison: false },
+                    wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                ) => {}
+                _ => panic!("incompatible material binding {}", entry.binding),
             }
         }
     }

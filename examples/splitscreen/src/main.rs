@@ -7,7 +7,7 @@ use gilgamesh::core::{
 use gilgamesh::geometry::{Mesh, primitive};
 use gilgamesh::input::OrbitControl;
 use gilgamesh::lights::DirectionalLight;
-use gilgamesh::materials::BlinnPhongMaterial;
+use gilgamesh::materials::PbrMaterial;
 use gilgamesh::photometry::Nits;
 use gilgamesh::transform::Transformable;
 use glam::DVec3;
@@ -28,39 +28,34 @@ struct SplitScreenDemo {
 
 impl App for SplitScreenDemo {
     fn new(ctx: &WGPUContext) -> Self {
-        let mut ground_material = BlinnPhongMaterial::new("Ground");
-        ground_material.set_diffuse_color(0.3, 0.35, 0.4);
-        ground_material.set_ambient_luminance(Nits::new(10_000.0));
-        ground_material.set_ambient_color(0.02, 0.02, 0.02);
+        let mut ground_material = PbrMaterial::new("Ground");
+        ground_material.set_albedo_color(0.3, 0.35, 0.4);
+        ground_material.set_emissive_luminance(Nits::new(10_000.0));
+        ground_material.set_emissive_color(0.02, 0.02, 0.02);
         let ground = Mesh::from_cpu_buffers(
             "Ground",
             &primitive::plane(2, 14.0),
-            Rc::new(ground_material.into()),
+            Rc::new(ground_material),
             ctx,
         );
 
-        let mut sphere_material = BlinnPhongMaterial::new("Amber");
-        sphere_material.set_diffuse_color(0.9, 0.2, 0.05);
-        sphere_material.set_ambient_luminance(Nits::new(10_000.0));
-        sphere_material.set_ambient_color(0.03, 0.01, 0.005);
+        let mut sphere_material = PbrMaterial::new("Amber");
+        sphere_material.set_albedo_color(0.9, 0.2, 0.05);
+        sphere_material.set_emissive_luminance(Nits::new(10_000.0));
+        sphere_material.set_emissive_color(0.03, 0.01, 0.005);
         let sphere = Mesh::from_cpu_buffers(
             "Sphere",
             &primitive::sphere(32),
-            Rc::new(sphere_material.into()),
+            Rc::new(sphere_material),
             ctx,
         );
         sphere.transform_mut().position = DVec3::Y;
 
-        let mut cube_material = BlinnPhongMaterial::new("Blue");
-        cube_material.set_diffuse_color(0.1, 0.45, 0.9);
-        cube_material.set_ambient_luminance(Nits::new(10_000.0));
-        cube_material.set_ambient_color(0.01, 0.02, 0.03);
-        let cube = Mesh::from_cpu_buffers(
-            "Cube",
-            &primitive::cube(),
-            Rc::new(cube_material.into()),
-            ctx,
-        );
+        let mut cube_material = PbrMaterial::new("Blue");
+        cube_material.set_albedo_color(0.1, 0.45, 0.9);
+        cube_material.set_emissive_luminance(Nits::new(10_000.0));
+        cube_material.set_emissive_color(0.01, 0.02, 0.03);
+        let cube = Mesh::from_cpu_buffers("Cube", &primitive::cube(), Rc::new(cube_material), ctx);
         cube.transform_mut().position = DVec3::new(1.0, 0.5, 1.4);
 
         Self {

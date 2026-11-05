@@ -2,7 +2,7 @@ use crate::photometry::Nits;
 use crate::texture::{ColorTexture, Linear, Texture};
 use std::rc::Rc;
 
-/// Surface properties, shared independently of any renderer.
+/// Metallic-roughness PBR surface properties, shared independently of any renderer.
 #[derive(Clone)]
 #[must_use]
 pub struct PbrMaterial {
@@ -69,7 +69,7 @@ impl PbrMaterial {
     }
 
     /// ```compile_fail,E0308
-    /// use gilgamesh::materials::pbr::PbrMaterial;
+    /// use gilgamesh::materials::PbrMaterial;
     /// use gilgamesh::texture::{Srgb, Texture};
     /// use std::rc::Rc;
     /// fn bind(material: &mut PbrMaterial, srgb: Rc<Texture<Srgb>>) {

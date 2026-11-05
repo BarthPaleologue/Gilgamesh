@@ -57,12 +57,7 @@ impl App for StarSystemDemo {
         sun_material.metallic = 0.0;
         sun_material.set_emissive_texture(sun_texture);
         sun_material.set_emissive_luminance(Nits::new(800_000.0));
-        let sun = Mesh::from_cpu_buffers(
-            "Sun",
-            &primitive::sphere(32),
-            Rc::new(sun_material.into()),
-            ctx,
-        );
+        let sun = Mesh::from_cpu_buffers("Sun", &primitive::sphere(32), Rc::new(sun_material), ctx);
 
         let mut sun_light = PointLight::default();
         sun_light.set_intensity(Candela::new(8_000_000.0));
@@ -94,7 +89,7 @@ impl App for StarSystemDemo {
         let earth = Mesh::from_cpu_buffers(
             "Earth",
             &primitive::sphere(32),
-            Rc::new(earth_material.into()),
+            Rc::new(earth_material),
             ctx,
         );
         let earth_orbit = Rc::new(RefCell::new(Transform {
@@ -111,7 +106,7 @@ impl App for StarSystemDemo {
         let plane = Mesh::from_cpu_buffers(
             "Plane",
             &primitive::plane(10, 40.0),
-            Rc::new(plane_material.into()),
+            Rc::new(plane_material),
             ctx,
         );
         plane.transform_mut().position = DVec3::new(0.0, -15.0, 0.0);

@@ -10,11 +10,6 @@ fn validate_shader(source: &str) -> naga::Module {
 }
 
 #[test]
-fn blinn_phong_shader_is_valid() {
-    validate_shader(include_str!("../src/shader/blinn_phong.wgsl"));
-}
-
-#[test]
 fn pbr_shader_is_valid() {
     validate_shader(include_str!("../src/shader/pbr.wgsl"));
 }
@@ -37,10 +32,10 @@ fn rendering_shaders_translate_to_webgl2() {
         include_str!("../src/core/image_blit.wgsl"),
     ]
     .map(|fragment| [include_str!("../src/core/fullscreen_pass.wgsl"), fragment].join("\n"));
-    for source in fullscreen_sources.into_iter().chain([
-        include_str!("../src/shader/blinn_phong.wgsl").to_owned(),
-        include_str!("../src/shader/pbr.wgsl").to_owned(),
-    ]) {
+    for source in fullscreen_sources
+        .into_iter()
+        .chain([include_str!("../src/shader/pbr.wgsl").to_owned()])
+    {
         let module = validate_shader(&source);
         let info = Validator::new(ValidationFlags::all(), Capabilities::empty())
             .validate(&module)
@@ -74,43 +69,38 @@ fn rendering_shaders_translate_to_webgl2() {
 
 #[test]
 fn uniform_bindings_have_webgl_compatible_sizes() {
-    for source in [
-        include_str!("../src/shader/blinn_phong.wgsl"),
-        include_str!("../src/shader/pbr.wgsl"),
-    ] {
-        let module = validate_shader(source);
-        let mut layouter = naga::proc::Layouter::default();
-        layouter.update(module.to_ctx()).unwrap();
-        for (_, variable) in module.global_variables.iter() {
-            if variable.space == naga::AddressSpace::Uniform {
-                assert_eq!(layouter[variable.ty].size % 16, 0, "{:?}", variable.name);
-                if variable.name.as_deref() == Some("transform") {
-                    assert_eq!(
-                        layouter[variable.ty].size as usize,
-                        std::mem::size_of::<gilgamesh::transform::TransformUniforms>()
-                    );
-                }
-                let expected_size = match variable.name.as_deref() {
-                    Some("directional_lights") => Some(
-                        gilgamesh::settings::MAX_DIRECTIONAL_LIGHTS
-                            * std::mem::size_of::<
-                                gilgamesh::lights::directional_light::DirectionalLightUniform,
-                            >(),
-                    ),
-                    Some("point_lights") => Some(
-                        gilgamesh::settings::MAX_POINT_LIGHTS
-                            * std::mem::size_of::<gilgamesh::lights::point_light::PointLightUniforms>(
-                            ),
-                    ),
-                    Some("camera") => Some(std::mem::size_of::<
-                        gilgamesh::camera::uniforms::CameraUniforms,
-                    >()),
-                    Some("light_counts") => Some(std::mem::size_of::<[u32; 4]>()),
-                    _ => None,
-                };
-                if let Some(expected_size) = expected_size {
-                    assert_eq!(layouter[variable.ty].size as usize, expected_size);
-                }
+    let source = include_str!("../src/shader/pbr.wgsl");
+    let module = validate_shader(source);
+    let mut layouter = naga::proc::Layouter::default();
+    layouter.update(module.to_ctx()).unwrap();
+    for (_, variable) in module.global_variables.iter() {
+        if variable.space == naga::AddressSpace::Uniform {
+            assert_eq!(layouter[variable.ty].size % 16, 0, "{:?}", variable.name);
+            if variable.name.as_deref() == Some("transform") {
+                assert_eq!(
+                    layouter[variable.ty].size as usize,
+                    std::mem::size_of::<gilgamesh::transform::TransformUniforms>()
+                );
+            }
+            let expected_size = match variable.name.as_deref() {
+                Some("directional_lights") => Some(
+                    gilgamesh::settings::MAX_DIRECTIONAL_LIGHTS
+                        * std::mem::size_of::<
+                            gilgamesh::lights::directional_light::DirectionalLightUniform,
+                        >(),
+                ),
+                Some("point_lights") => Some(
+                    gilgamesh::settings::MAX_POINT_LIGHTS
+                        * std::mem::size_of::<gilgamesh::lights::point_light::PointLightUniforms>(),
+                ),
+                Some("camera") => Some(std::mem::size_of::<
+                    gilgamesh::camera::uniforms::CameraUniforms,
+                >()),
+                Some("light_counts") => Some(std::mem::size_of::<[u32; 4]>()),
+                _ => None,
+            };
+            if let Some(expected_size) = expected_size {
+                assert_eq!(layouter[variable.ty].size as usize, expected_size);
             }
         }
     }
@@ -118,42 +108,38 @@ fn uniform_bindings_have_webgl_compatible_sizes() {
 
 #[test]
 fn shader_bindings_separate_frame_material_and_object_data() {
-    for (source, texture_count) in [
-        (include_str!("../src/shader/blinn_phong.wgsl"), 4),
-        (include_str!("../src/shader/pbr.wgsl"), 5),
+    let source = include_str!("../src/shader/pbr.wgsl");
+    let module = validate_shader(source);
+    let bindings: std::collections::BTreeSet<_> = module
+        .global_variables
+        .iter()
+        .filter_map(|(_, variable)| variable.binding.as_ref())
+        .map(|binding| (binding.group, binding.binding))
+        .collect();
+    let expected: std::collections::BTreeSet<_> = (0..4)
+        .map(|binding| (0, binding))
+        .chain((0..=10).map(|binding| (1, binding)))
+        .chain([(2, 0)])
+        .collect();
+    assert_eq!(bindings, expected);
+    for (name, group, binding) in [
+        ("camera", 0, 0),
+        ("directional_lights", 0, 1),
+        ("point_lights", 0, 2),
+        ("light_counts", 0, 3),
+        ("transform", 2, 0),
     ] {
-        let module = validate_shader(source);
-        let bindings: std::collections::BTreeSet<_> = module
+        let variable = module
             .global_variables
             .iter()
-            .filter_map(|(_, variable)| variable.binding.as_ref())
-            .map(|binding| (binding.group, binding.binding))
-            .collect();
-        let expected: std::collections::BTreeSet<_> = (0..4)
-            .map(|binding| (0, binding))
-            .chain((0..=(2 * texture_count)).map(|binding| (1, binding)))
-            .chain([(2, 0)])
-            .collect();
-        assert_eq!(bindings, expected);
-        for (name, group, binding) in [
-            ("camera", 0, 0),
-            ("directional_lights", 0, 1),
-            ("point_lights", 0, 2),
-            ("light_counts", 0, 3),
-            ("transform", 2, 0),
-        ] {
-            let variable = module
-                .global_variables
-                .iter()
-                .find(|(_, variable)| variable.name.as_deref() == Some(name))
-                .unwrap()
-                .1;
-            let resource = variable.binding.as_ref().unwrap();
-            assert_eq!(
-                (resource.group, resource.binding),
-                (group, binding),
-                "{name}"
-            );
-        }
+            .find(|(_, variable)| variable.name.as_deref() == Some(name))
+            .unwrap()
+            .1;
+        let resource = variable.binding.as_ref().unwrap();
+        assert_eq!(
+            (resource.group, resource.binding),
+            (group, binding),
+            "{name}"
+        );
     }
 }

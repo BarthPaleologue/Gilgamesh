@@ -4,7 +4,7 @@ use gilgamesh::core::render_graph::RenderGraph;
 use gilgamesh::core::{App, FrameBindingsData, HeadlessRuntime, WGPUContext};
 use gilgamesh::geometry::{Mesh, primitive};
 use gilgamesh::lights::DirectionalLight;
-use gilgamesh::materials::BlinnPhongMaterial;
+use gilgamesh::materials::PbrMaterial;
 use gilgamesh::photometry::Nits;
 use gilgamesh::transform::Transformable;
 use glam::DVec3;
@@ -39,25 +39,25 @@ impl App for HeadlessScene {
             .transform_mut()
             .look_at(DVec3::new(0.0, 0.75, 0.0), DVec3::Y);
 
-        let mut plane_material = BlinnPhongMaterial::new("Ground");
-        plane_material.set_diffuse_color(0.3, 0.35, 0.4);
-        plane_material.set_ambient_luminance(Nits::new(10_000.0));
-        plane_material.set_ambient_color(0.02, 0.02, 0.02);
+        let mut plane_material = PbrMaterial::new("Ground");
+        plane_material.set_albedo_color(0.3, 0.35, 0.4);
+        plane_material.set_emissive_luminance(Nits::new(10_000.0));
+        plane_material.set_emissive_color(0.02, 0.02, 0.02);
         let plane = Mesh::from_cpu_buffers(
             "Plane",
             &primitive::plane(2, 8.0),
-            Rc::new(plane_material.into()),
+            Rc::new(plane_material),
             ctx,
         );
 
-        let mut sphere_material = BlinnPhongMaterial::new("Sphere");
-        sphere_material.set_diffuse_color(0.9, 0.2, 0.05);
-        sphere_material.set_ambient_luminance(Nits::new(10_000.0));
-        sphere_material.set_ambient_color(0.03, 0.01, 0.005);
+        let mut sphere_material = PbrMaterial::new("Sphere");
+        sphere_material.set_albedo_color(0.9, 0.2, 0.05);
+        sphere_material.set_emissive_luminance(Nits::new(10_000.0));
+        sphere_material.set_emissive_color(0.03, 0.01, 0.005);
         let sphere = Mesh::from_cpu_buffers(
             "Sphere",
             &primitive::sphere(32),
-            Rc::new(sphere_material.into()),
+            Rc::new(sphere_material),
             ctx,
         );
         sphere.transform_mut().position = DVec3::Y;

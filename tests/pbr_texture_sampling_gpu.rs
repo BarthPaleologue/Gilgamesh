@@ -11,7 +11,7 @@ use gilgamesh::core::render_target::RenderTarget;
 use gilgamesh::core::wgpu_context::WGPUContext;
 use gilgamesh::geometry::{mesh::Mesh, primitive};
 use gilgamesh::lights::directional_light::DirectionalLight;
-use gilgamesh::materials::pbr::PbrMaterial;
+use gilgamesh::materials::PbrMaterial;
 use gilgamesh::texture::{Linear, Srgb, Texture};
 use gilgamesh::transform::Transformable;
 use glam::DVec3;
@@ -73,12 +73,7 @@ fn albedo_encodings_match_equivalent_linear_constants() {
     let linear_gray = 128.0 / 255.0;
     linear_constant.set_albedo_color(linear_gray, linear_gray, linear_gray);
     let meshes = [constant, textured, linear_constant, linear_textured].map(|material| {
-        Mesh::from_cpu_buffers(
-            "Albedo",
-            &primitive::plane(2, 4.0),
-            Rc::new(material.into()),
-            &gpu,
-        )
+        Mesh::from_cpu_buffers("Albedo", &primitive::plane(2, 4.0), Rc::new(material), &gpu)
     });
     let camera: Camera = Camera::default();
     camera.transform_mut().position = DVec3::new(0.0, 3.0, 3.0);
@@ -160,7 +155,7 @@ fn roughness_and_normal_maps_match_equivalent_linear_surface_properties() {
                 let mesh = Mesh::from_cpu_buffers(
                     "Plane",
                     &primitive::plane(2, 4.0),
-                    Rc::new(material.into()),
+                    Rc::new(material),
                     executor.wgpu_context(),
                 );
                 let mut graph = RenderGraph::new();
@@ -220,7 +215,7 @@ fn roughness_and_normal_maps_match_equivalent_linear_surface_properties() {
             let mesh = Mesh::from_cpu_buffers(
                 "Plane",
                 &geometry,
-                Rc::new(material.into()),
+                Rc::new(material),
                 executor.wgpu_context(),
             );
             let mut graph = RenderGraph::new();
@@ -316,7 +311,7 @@ fn emissive_textures_multiply_linear_hdr_factors_without_received_light() {
                 let mesh = Mesh::from_cpu_buffers(
                     "Emitter",
                     &primitive::plane(2, 4.0),
-                    Rc::new(material.into()),
+                    Rc::new(material),
                     executor.wgpu_context(),
                 );
                 let mut graph = RenderGraph::new();

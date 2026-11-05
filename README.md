@@ -12,7 +12,7 @@ A small 3D WGPU engine written in Rust that does not rely on the ECS pattern.
 
 - Up to 64 point lights per render pass
 - Up to 64 directional lights per render pass
-- PBR and normalized Phong shading
+- PBR shading
 - Photometric lighting (candelas, lux, nits) and photographic camera exposure
 - Normal mapping
 - Procedural mesh generation
@@ -78,7 +78,7 @@ use gilgamesh::core::render_graph::RenderGraph;
 use gilgamesh::geometry::{Mesh, procedural};
 use gilgamesh::input::OrbitControl;
 use gilgamesh::lights::DirectionalLight;
-use gilgamesh::materials::BlinnPhongMaterial;
+use gilgamesh::materials::PbrMaterial;
 use gilgamesh::transform::Transformable;
 use glam::DQuat;
 use std::rc::Rc;
@@ -100,9 +100,9 @@ impl App for TerrainApp {
             let d = 5.0 * (x * x + z * z).sqrt();
             3.0 * (d.sin() / d).min(1.0)
         });
-        let mut material = BlinnPhongMaterial::new("sincMaterial");
-        material.set_diffuse_color(0.5, 0.2, 1.0);
-        let terrain = Mesh::from_cpu_buffers("sinc", &cpu_buffers, Rc::new(material.into()), ctx);
+        let mut material = PbrMaterial::new("sincMaterial");
+        material.set_albedo_color(0.5, 0.2, 1.0);
+        let terrain = Mesh::from_cpu_buffers("sinc", &cpu_buffers, Rc::new(material), ctx);
 
         Self { camera, orbit_control, terrain, directional_lights: [DirectionalLight::default()] }
     }

@@ -1,12 +1,12 @@
 use crate::core::frame_bindings::FrameBindings;
-use crate::core::material_pipeline::{MaterialPipeline, PipelineConfig, PipelineKey};
+use crate::core::material_pipeline::{MaterialPipeline, PipelineConfig};
 use crate::core::object_bindings::ObjectBindings;
 use crate::core::prepared_material::PreparedMaterial;
 use crate::core::render_context::FrameBindingsData;
 use crate::core::render_target::RenderTarget;
 use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::mesh::Mesh;
-use crate::materials::material::Material;
+use crate::materials::pbr::PbrMaterial;
 use crate::texture::{Linear, Texture};
 use crate::transform::{Transform, Transformable};
 use std::cell::RefCell;
@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 
 struct CachedMaterial {
-    source: Weak<Material>,
+    source: Weak<PbrMaterial>,
     prepared: PreparedMaterial,
 }
 
@@ -26,8 +26,8 @@ struct CachedTransform {
 #[must_use]
 pub struct RasterRenderer {
     pub(crate) frame: FrameBindings,
-    pipelines: HashMap<PipelineKey, Rc<MaterialPipeline>>,
-    materials: HashMap<*const Material, CachedMaterial>,
+    pipelines: HashMap<PipelineConfig, Rc<MaterialPipeline>>,
+    materials: HashMap<*const PbrMaterial, CachedMaterial>,
     transforms: HashMap<*const RefCell<Transform>, CachedTransform>,
     object_layout: wgpu::BindGroupLayout,
     pub(crate) fallback_texture: Texture<Linear>,
@@ -59,19 +59,13 @@ impl RasterRenderer {
     pub(crate) fn material_pipeline(
         &mut self,
         config: PipelineConfig,
-        texture_count: usize,
         ctx: &WGPUContext,
     ) -> Rc<MaterialPipeline> {
-        let key = PipelineKey {
-            config,
-            texture_count,
-        };
         self.pipelines
-            .entry(key)
+            .entry(config)
             .or_insert_with(|| {
                 Rc::new(MaterialPipeline::new(
                     config,
-                    texture_count,
                     self.target_format,
                     &self.frame.layout,
                     &self.object_layout,

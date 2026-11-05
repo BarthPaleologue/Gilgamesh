@@ -13,7 +13,7 @@ use gilgamesh::core::window_runtime::WindowContext;
 use gilgamesh::geometry::{mesh::Mesh, primitive};
 use gilgamesh::input::mouse::Mouse;
 use gilgamesh::lights::directional_light::DirectionalLight;
-use gilgamesh::materials::pbr::PbrMaterial;
+use gilgamesh::materials::PbrMaterial;
 use gilgamesh::photometry::{Lux, Nits};
 use gilgamesh::transform::Transformable;
 use glam::DVec3;
@@ -202,7 +202,7 @@ impl App for TestApp {
             mesh: Mesh::from_cpu_buffers(
                 "Plane",
                 &primitive::plane(2, 2.0),
-                Rc::new(material.into()),
+                Rc::new(material),
                 ctx,
             ),
             frames: Vec::new(),
@@ -224,7 +224,7 @@ impl App for TestApp {
             let mut blue = PbrMaterial::new("Blue");
             blue.set_emissive_luminance(Nits::new(1.0));
             blue.set_emissive_color(0.0, 0.0, 4.0);
-            self.mesh.set_material(Rc::new(blue.into()));
+            self.mesh.set_material(Rc::new(blue));
         }
         self.frames.push((
             frame.elapsed_seconds,
