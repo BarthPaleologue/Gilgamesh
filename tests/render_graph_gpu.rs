@@ -18,6 +18,38 @@ use wgpu::{TextureFormat as Format, TextureUsages as Usage};
 
 #[test]
 #[ignore = "GPU end-to-end check; run explicitly with approval"]
+fn raster_clear_color_preserves_rgba_between_frames() {
+    pollster::block_on(async {
+        let mut executor = GraphExecutor::new().await;
+        let camera: Camera = Camera::default();
+        let mut target = executor.create_target(8, 8);
+        for clear_color in [
+            [0.2, 0.4, 0.6, 0.25],
+            [0.7, 0.1, 0.3, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ] {
+            let mut graph = RenderGraph::new();
+            let scene = rasterize(
+                FrameBindingsData::new(&camera, &[], &[]),
+                [],
+                Format::Rgba8Unorm,
+                clear_color,
+                &mut graph,
+            );
+            graph.export(scene.color);
+            executor.execute(graph, &mut target).unwrap();
+            let image = target.read_image(executor.wgpu_context()).await.unwrap();
+            for pixel in image.pixels() {
+                for (actual, expected) in pixel.0.into_iter().zip(clear_color) {
+                    assert!((f32::from(actual) - expected * 255.0).abs() <= 1.0);
+                }
+            }
+        }
+    });
+}
+
+#[test]
+#[ignore = "GPU end-to-end check; run explicitly with approval"]
 #[expect(
     clippy::too_many_lines,
     reason = "Keeps GPU fixture setup, execution and assertions together"
@@ -161,12 +193,14 @@ fn custom_blocks_mrt_compute_caches_and_independent_raster_inputs() {
                 FrameBindingsData::new(&camera, std::slice::from_ref(&light), &[]),
                 [&mesh],
                 format,
+                [0.1, 0.1, 0.2, 1.0],
                 &mut graph,
             );
             let right = rasterize(
                 FrameBindingsData::new(&other_camera, std::slice::from_ref(&light), &[]),
                 [&mesh],
                 format,
+                [0.1, 0.1, 0.2, 1.0],
                 &mut graph,
             );
             let output =

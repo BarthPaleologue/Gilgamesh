@@ -104,6 +104,7 @@ fn albedo_encodings_match_equivalent_linear_constants() {
                 color: &color_view,
                 depth: &depth_view,
             },
+            [0.1, 0.1, 0.2, 1.0],
         );
         gpu.queue.submit([encoder.finish()]);
         images.push(read_rgba8(&gpu.device, &gpu.queue, &color));
@@ -167,6 +168,7 @@ fn roughness_and_normal_maps_match_equivalent_linear_surface_properties() {
                     FrameBindingsData::new(&camera, std::slice::from_ref(&light), &[]),
                     [&mesh],
                     wgpu::TextureFormat::Rgba16Float,
+                    [0.1, 0.1, 0.2, 1.0],
                     &mut graph,
                 );
                 let output = tone_map(scene.color, wgpu::TextureFormat::Rgba8UnormSrgb, &mut graph);
@@ -226,6 +228,7 @@ fn roughness_and_normal_maps_match_equivalent_linear_surface_properties() {
                 FrameBindingsData::new(&camera, std::slice::from_ref(&light), &[]),
                 [&mesh],
                 wgpu::TextureFormat::Rgba16Float,
+                [0.1, 0.1, 0.2, 1.0],
                 &mut graph,
             );
             let output = tone_map(scene.color, wgpu::TextureFormat::Rgba8UnormSrgb, &mut graph);
@@ -321,6 +324,7 @@ fn emissive_textures_multiply_linear_hdr_factors_without_received_light() {
                     FrameBindingsData::new(&camera, std::slice::from_ref(&light), &[]),
                     [&mesh],
                     wgpu::TextureFormat::Rgba16Float,
+                    [0.1, 0.1, 0.2, 1.0],
                     &mut graph,
                 );
                 let output = tone_map(scene.color, wgpu::TextureFormat::Rgba8UnormSrgb, &mut graph);

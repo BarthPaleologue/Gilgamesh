@@ -154,6 +154,7 @@ impl App for StarSystemDemo {
                 .iter()
                 .chain([&self.sun, &self.earth, &self.plane]),
             TextureFormat::Rgba32Float,
+            [0.0, 0.0, 0.0, 1.0],
             &mut graph,
         );
         let exposed = expose(

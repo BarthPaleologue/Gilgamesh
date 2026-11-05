@@ -80,6 +80,7 @@ impl App for HeadlessScene {
             FrameBindingsData::new(&self.camera, &self.directional_lights, &[]),
             [&self.plane, &self.sphere],
             TextureFormat::Rgba32Float,
+            [3_840.0, 3_840.0, 7_680.0, 1.0],
             &mut graph,
         );
         let exposed = expose(

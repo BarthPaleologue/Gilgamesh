@@ -102,6 +102,7 @@ impl RasterRenderer {
         wgpu_context: &WGPUContext,
         encoder: &mut wgpu::CommandEncoder,
         target: &RenderTarget<'_>,
+        clear_color: [f32; 4],
     ) where
         RenderObjects: IntoIterator<Item = &'a Mesh>,
     {
@@ -118,10 +119,10 @@ impl RasterRenderer {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.1,
-                            g: 0.1,
-                            b: 0.2,
-                            a: 1.0,
+                            r: f64::from(clear_color[0]),
+                            g: f64::from(clear_color[1]),
+                            b: f64::from(clear_color[2]),
+                            a: f64::from(clear_color[3]),
                         }),
                         store: wgpu::StoreOp::Store,
                     },

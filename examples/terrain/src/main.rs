@@ -56,6 +56,7 @@ impl App for TerrainView {
             FrameBindingsData::new(&self.camera, &self.directional_lights, &[]),
             [&self.terrain],
             TextureFormat::Rgba32Float,
+            [3_840.0, 3_840.0, 7_680.0, 1.0],
             &mut graph,
         );
         let exposed = expose(

@@ -13,11 +13,14 @@ pub struct RasterOutput {
 }
 
 /// Rasterizes scene data into scene-linear luminance and reverse depth.
+/// `clear_color` is linear RGBA: RGB uses the scene luminance scale and is subject
+/// to exposure; alpha is passed through unchanged in uncovered pixels.
 /// Use `Rgba32Float` for physical luminance, then apply [`super::expose`] before bloom and tone mapping.
 pub fn rasterize<'a>(
     bindings: FrameBindingsData<'a>,
     meshes: impl IntoIterator<Item = &'a Mesh> + 'a,
     color_format: TextureFormat,
+    clear_color: [f32; 4],
     graph: &mut RenderGraph<'a>,
 ) -> RasterOutput {
     let color = graph.create_image(
@@ -56,6 +59,7 @@ pub fn rasterize<'a>(
                     color: context.images.get(color),
                     depth: context.images.get(depth),
                 },
+                clear_color,
             );
         },
     );

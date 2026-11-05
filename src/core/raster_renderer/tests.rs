@@ -297,6 +297,7 @@ fn exposure_scales_lighting_and_emission_in_fullscreen_pass() {
                         FrameBindingsData::new(&camera, lights, &[]),
                         [&mesh],
                         wgpu::TextureFormat::Rgba32Float,
+                        [0.1, 0.1, 0.2, 1.0],
                         &mut graph,
                     );
                     let image = expose(
@@ -360,6 +361,7 @@ fn bright_emission_survives_float32_rasterization_and_fullscreen_exposure() {
                 FrameBindingsData::new(&camera, &[], &[]),
                 [&mesh],
                 wgpu::TextureFormat::Rgba32Float,
+                [0.1, 0.1, 0.2, 1.0],
                 &mut graph,
             );
             let exposed = expose(
@@ -431,6 +433,7 @@ fn render(
             color: &color.create_view(&wgpu::TextureViewDescriptor::default()),
             depth: &depth.create_view(&wgpu::TextureViewDescriptor::default()),
         },
+        [0.1, 0.1, 0.2, 1.0],
     );
     gpu.queue.submit([encoder.finish()]);
     pollster::block_on(crate::core::readback::read_rgba8(

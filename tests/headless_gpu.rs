@@ -240,6 +240,7 @@ impl App for TestApp {
             FrameBindingsData::new(&self.camera, std::slice::from_ref(&self.light), &[]),
             [&self.mesh],
             TextureFormat::Rgba16Float,
+            [0.1, 0.1, 0.2, 1.0],
             &mut graph,
         );
         let image = tone_map(scene.color, TextureFormat::Rgba8UnormSrgb, &mut graph);

@@ -18,6 +18,7 @@ fn blocks_compose_in_nested_calls_without_a_gpu() {
             FrameBindingsData::new(&camera, std::slice::from_ref(&light), &[]),
             [],
             TextureFormat::Rgba16Float,
+            [0.1, 0.1, 0.2, 1.0],
             &mut graph,
         )
         .color,
