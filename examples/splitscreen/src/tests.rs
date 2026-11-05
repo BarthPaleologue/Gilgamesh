@@ -85,7 +85,7 @@ mod gpu {
 
     fn render(app: &mut SplitScreenDemo, executor: &mut GraphExecutor, target: &mut FrameTarget) {
         let size = target.output().texture().size();
-        app.update_before_render(&FrameContext {
+        app.update_before_frame(&FrameContext {
             elapsed_seconds: 0.0,
             delta_seconds: 0.0,
             render_width: size.width,
@@ -93,7 +93,7 @@ mod gpu {
             mouse: &Mouse::new(),
             wgpu_context: executor.wgpu_context(),
         });
-        executor.execute(app.render_graph(), target).unwrap();
+        executor.execute(app.frame_graph(), target).unwrap();
     }
 
     #[expect(

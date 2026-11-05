@@ -23,12 +23,13 @@ pub trait App: Sized {
     /// Current display name, used by the window runtime after each frame preparation.
     fn name(&self) -> &str;
 
-    /// Prepares the application and camera for this render's dimensions and time.
-    fn update_before_render(&mut self, _frame: &FrameContext<'_>) {}
+    /// Prepares the application once before building and executing the frame's entire graph.
+    /// Separate image renders also prepare a frame, with zero delta and neutral mouse input.
+    fn update_before_frame(&mut self, _frame: &FrameContext<'_>) {}
 
-    /// Describes this render, borrowing any scenes and parameters it needs.
+    /// Describes the entire frame prepared by `update_before_frame`, borrowing its scenes and parameters.
     /// Export one color image at the render dimensions for presentation and capture.
-    fn render_graph(&self) -> RenderGraph<'_>;
+    fn frame_graph(&self) -> RenderGraph<'_>;
 
     fn on_window_event(&mut self, _event: &WindowEvent, _context: &mut WindowContext<'_>) {}
 }
@@ -42,7 +43,7 @@ pub(crate) fn prepare_frame(
     mouse: &Mouse,
 ) {
     let texture = target.output().texture();
-    app.update_before_render(&FrameContext {
+    app.update_before_frame(&FrameContext {
         elapsed_seconds,
         delta_seconds,
         render_width: texture.width(),
@@ -62,7 +63,7 @@ pub(crate) fn render_image<Application: App>(
     let mut target = executor.create_target(width, height);
     prepare_frame(app, executor, &target, elapsed_seconds, 0.0, &Mouse::new());
     executor
-        .execute(app.render_graph(), &mut target)
+        .execute(app.frame_graph(), &mut target)
         .expect("Render graph execution failed");
     target.read_image(executor.wgpu_context())
 }

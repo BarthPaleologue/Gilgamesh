@@ -74,7 +74,7 @@ impl App for HeadlessScene {
         "Headless scene"
     }
 
-    fn render_graph(&self) -> RenderGraph<'_> {
+    fn frame_graph(&self) -> RenderGraph<'_> {
         let mut graph = RenderGraph::new();
         let scene = rasterize(
             FrameBindingsData::new(&self.camera, &self.directional_light, &[]),

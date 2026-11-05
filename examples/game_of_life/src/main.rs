@@ -76,7 +76,7 @@ impl App for GameOfLife {
         }
     }
 
-    fn update_before_render(&mut self, frame: &FrameContext<'_>) {
+    fn update_before_frame(&mut self, frame: &FrameContext<'_>) {
         self.step_due = false;
         self.randomize_due = self.reset_requested;
         if self.reset_requested {
@@ -96,7 +96,7 @@ impl App for GameOfLife {
         }
     }
 
-    fn render_graph(&self) -> RenderGraph<'_> {
+    fn frame_graph(&self) -> RenderGraph<'_> {
         let mut graph = RenderGraph::new();
         let mut states = self
             .states

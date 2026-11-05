@@ -166,7 +166,7 @@ impl<Application: App> WindowRuntime<Application> {
             },
         );
         self.executor
-            .encode(self.app.render_graph(), &mut self.frame, &mut encoder)
+            .encode(self.app.frame_graph(), &mut self.frame, &mut encoder)
             .expect("Render graph execution failed");
         if previous_output != *self.frame.output() {
             self.ldr_source = self

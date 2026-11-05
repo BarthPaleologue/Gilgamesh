@@ -157,7 +157,7 @@ fn render_frame(
 ) {
     let texture = target.output().texture();
     let mouse = Mouse::new();
-    app.update_before_render(&FrameContext {
+    app.update_before_frame(&FrameContext {
         elapsed_seconds,
         delta_seconds,
         render_width: texture.width(),
@@ -166,7 +166,7 @@ fn render_frame(
         wgpu_context: executor.wgpu_context(),
     });
     executor
-        .execute(app.render_graph(), target)
+        .execute(app.frame_graph(), target)
         .expect("Failed to render the headless test frame");
 }
 
@@ -209,7 +209,7 @@ impl App for TestApp {
         &self.name
     }
 
-    fn update_before_render(&mut self, frame: &FrameContext<'_>) {
+    fn update_before_frame(&mut self, frame: &FrameContext<'_>) {
         self.name = format!(
             "{}x{} at {:.2}",
             frame.render_width, frame.render_height, frame.elapsed_seconds
@@ -229,7 +229,7 @@ impl App for TestApp {
         ));
     }
 
-    fn render_graph(&self) -> RenderGraph<'_> {
+    fn frame_graph(&self) -> RenderGraph<'_> {
         let mut graph = RenderGraph::new();
         let scene = rasterize(
             FrameBindingsData::new(&self.camera, &self.light, &[]),

@@ -73,7 +73,7 @@ impl<Application: App> HeadlessRuntime<Application> {
             &Mouse::new(),
         );
         self.executor
-            .execute(self.app.render_graph(), &mut self.frame)
+            .execute(self.app.frame_graph(), &mut self.frame)
             .expect("Render graph execution failed");
     }
 
