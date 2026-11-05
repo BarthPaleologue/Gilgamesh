@@ -22,11 +22,11 @@ fn radius_after_scroll(delta: MouseScrollDelta) -> f64 {
 
 #[test]
 fn trackpad_pixels_zoom_like_wheel_lines_in_both_directions() {
-    for direction in [-1.0, 1.0] {
-        let wheel = radius_after_scroll(MouseScrollDelta::LineDelta(0.0, direction as f32));
+    for direction in [-1.0_f32, 1.0] {
+        let wheel = radius_after_scroll(MouseScrollDelta::LineDelta(0.0, direction));
         let trackpad = radius_after_scroll(MouseScrollDelta::PixelDelta(PhysicalPosition::new(
             0.0,
-            direction * 40.0,
+            f64::from(direction) * 40.0,
         )));
         assert!((wheel - trackpad).abs() < 1e-12);
         if direction > 0.0 {

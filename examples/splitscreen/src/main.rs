@@ -69,13 +69,13 @@ impl App for SplitScreenDemo {
         }
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "Color | Raw reverse-Z depth — move mouse to split, drag to orbit, scroll to zoom"
     }
 
     fn update_before_render(&mut self, frame: &FrameContext<'_>) {
         self.camera.projection.aspect_ratio =
-            frame.render_width as f64 / frame.render_height as f64;
+            f64::from(frame.render_width) / f64::from(frame.render_height);
         self.orbit_control
             .update(&mut self.camera, frame.mouse, frame.delta_seconds);
     }
@@ -97,7 +97,7 @@ impl App for SplitScreenDemo {
 
     fn on_window_event(&mut self, event: &WindowEvent, context: &mut WindowContext<'_>) {
         if let WindowEvent::CursorMoved { position, .. } = event {
-            let width = context.frame.output().texture().width() as f64;
+            let width = f64::from(context.frame.output().texture().width());
             self.split = (position.x / width).clamp(0.0, 1.0) as f32;
         }
     }

@@ -67,13 +67,13 @@ impl App for HeadlessScene {
         }
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "Headless scene"
     }
 
     fn update_before_render(&mut self, frame: &FrameContext<'_>) {
         self.camera.projection.aspect_ratio =
-            frame.render_width as f64 / frame.render_height as f64;
+            f64::from(frame.render_width) / f64::from(frame.render_height);
     }
 
     fn render_graph(&self) -> RenderGraph<'_> {

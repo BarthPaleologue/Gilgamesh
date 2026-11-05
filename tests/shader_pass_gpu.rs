@@ -7,7 +7,7 @@ use gilgamesh::core::render_graph::{
 };
 use wgpu::TextureFormat;
 
-const MRT: &str = r#"
+const MRT: &str = r"
 struct Outputs {
     @location(0) left: vec4f,
     @location(1) right: vec4f,
@@ -15,8 +15,8 @@ struct Outputs {
 @fragment fn fs_main() -> Outputs {
     return Outputs(vec4f(1, 0, 0, 1), vec4f(0, 1, 0, 1));
 }
-"#;
-const COMPUTE: &str = r#"
+";
+const COMPUTE: &str = r"
 @group(0) @binding(0) var left: texture_2d<f32>;
 @group(0) @binding(1) var right: texture_2d<f32>;
 @group(0) @binding(2) var first: texture_storage_2d<rgba8unorm, write>;
@@ -30,7 +30,7 @@ const COMPUTE: &str = r#"
     textureStore(first, p, select(a, b, swap.x != 0u));
     textureStore(second, p, select(b, a, swap.x != 0u));
 }
-"#;
+";
 
 #[test]
 #[ignore = "GPU end-to-end check; run explicitly with approval"]

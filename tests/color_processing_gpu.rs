@@ -85,8 +85,11 @@ fn khronos_neutral_and_blit_preserve_colors_without_double_gamma() {
             })
         };
         let ldr = create_output(wgpu::TextureFormat::Rgba8UnormSrgb);
-        let ldr_view = ldr.create_view(&Default::default());
-        let hdr_source = tone_mapping.bind_source(&device, &hdr.create_view(&Default::default()));
+        let ldr_view = ldr.create_view(&wgpu::TextureViewDescriptor::default());
+        let hdr_source = tone_mapping.bind_source(
+            &device,
+            &hdr.create_view(&wgpu::TextureViewDescriptor::default()),
+        );
         for format in [
             wgpu::TextureFormat::Rgba8UnormSrgb,
             wgpu::TextureFormat::Rgba8Unorm,
@@ -94,12 +97,13 @@ fn khronos_neutral_and_blit_preserve_colors_without_double_gamma() {
             let output = create_output(format);
             let image_blit = ColorPass::image_blit(&device, format);
             let ldr_source = image_blit.bind_source(&device, &ldr_view);
-            let mut encoder = device.create_command_encoder(&Default::default());
+            let mut encoder =
+                device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
             tone_mapping.encode(&mut encoder, &hdr_source, &ldr_view);
             image_blit.encode(
                 &mut encoder,
                 &ldr_source,
-                &output.create_view(&Default::default()),
+                &output.create_view(&wgpu::TextureViewDescriptor::default()),
             );
             queue.submit([encoder.finish()]);
             for texture in [&ldr, &output] {

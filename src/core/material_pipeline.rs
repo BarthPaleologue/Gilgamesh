@@ -64,12 +64,12 @@ impl MaterialPipeline {
                     module: &shader,
                     entry_point: Some("vs_main"),
                     buffers: &[Some(Vertex::desc())],
-                    compilation_options: Default::default(),
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
                 },
                 fragment: Some(wgpu::FragmentState {
                     module: &shader,
                     entry_point: Some("fs_main"),
-                    compilation_options: Default::default(),
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
                     targets: &[Some(wgpu::ColorTargetState {
                         format: target_format,
                         blend: Some(wgpu::BlendState {
@@ -183,8 +183,8 @@ mod tests {
                             multisampled: false,
                             sample_type: wgpu::TextureSampleType::Float { filterable: true },
                         },
-                    ) => {}
-                    (
+                    )
+                    | (
                         naga::TypeInner::Sampler { comparison: false },
                         wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                     ) => {}

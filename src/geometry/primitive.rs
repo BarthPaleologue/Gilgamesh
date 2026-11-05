@@ -165,10 +165,10 @@ pub fn sphere(resolution: u32) -> CpuMeshBuffers {
     CpuMeshBuffers {
         vertices: CpuVertexBuffers {
             positions,
+            colors,
             normals,
             tangents,
             uvs,
-            colors,
         },
         indices,
     }
@@ -181,7 +181,7 @@ pub fn ico_sphere(nb_subdivisions: u32) -> CpuMeshBuffers {
     let mut uvs = Vec::new();
     let mut colors = Vec::new();
 
-    let t = (1.0 + 5.0_f32.sqrt()) / 2.0;
+    let t = f32::midpoint(1.0, 5.0_f32.sqrt());
 
     let mut base_positions = vec![
         Vec3::new(-1.0, t, 0.0).normalize(),
@@ -266,10 +266,10 @@ pub fn ico_sphere(nb_subdivisions: u32) -> CpuMeshBuffers {
     CpuMeshBuffers {
         vertices: CpuVertexBuffers {
             positions,
+            colors,
             normals,
             tangents,
             uvs,
-            colors,
         },
         indices: base_indices,
     }

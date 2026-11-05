@@ -9,7 +9,7 @@ fn assert_indexed_geometry(buffers: &CpuMeshBuffers) {
     assert_eq!(buffers.vertices.normals.len(), vertex_count);
     assert_eq!(buffers.vertices.tangents.len(), vertex_count);
     assert_eq!(buffers.vertices.uvs.len(), vertex_count);
-    assert!(!buffers.indices.is_empty());
+    assert!(buffers.indices.len() >= 3);
     assert_eq!(buffers.indices.len() % 3, 0);
     assert!(
         buffers

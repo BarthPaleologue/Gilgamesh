@@ -157,14 +157,16 @@ fn render(
     color: &wgpu::Texture,
     depth: &wgpu::Texture,
 ) -> Vec<u8> {
-    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    let mut encoder = gpu
+        .device
+        .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
     renderer.encode(
         meshes.iter().copied(),
         gpu,
         &mut encoder,
         RenderTarget {
-            color: &color.create_view(&Default::default()),
-            depth: &depth.create_view(&Default::default()),
+            color: &color.create_view(&wgpu::TextureViewDescriptor::default()),
+            depth: &depth.create_view(&wgpu::TextureViewDescriptor::default()),
         },
     );
     gpu.queue.submit([encoder.finish()]);

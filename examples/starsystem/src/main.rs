@@ -137,13 +137,13 @@ impl App for StarSystemDemo {
         }
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "Gilgamesh"
     }
 
     fn update_before_render(&mut self, frame: &FrameContext<'_>) {
         self.camera.projection.aspect_ratio =
-            frame.render_width as f64 / frame.render_height as f64;
+            f64::from(frame.render_width) / f64::from(frame.render_height);
         self.orbit_control
             .update(&mut self.camera, frame.mouse, frame.delta_seconds);
         self.sun.transform_mut().rotation = DQuat::from_rotation_y(0.2 * frame.elapsed_seconds);

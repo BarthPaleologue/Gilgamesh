@@ -3,7 +3,7 @@ use crate::core::render_graph::{Binding, Image, RenderGraph, fragment_pass};
 
 /// Threshold-free bloom in linear light, before tone mapping.
 /// Mixes a normalized pyramidal blur with the source RGB by `weight` in [0, 1],
-/// preserving source alpha, size and format. Use a filterable HDR format such as Rgba16Float.
+/// preserving source alpha, size and format. Use a filterable HDR format such as `Rgba16Float`.
 /// Zero levels or zero weight returns the source unchanged.
 pub fn bloom(source: Image, levels: u32, weight: f32, graph: &mut RenderGraph<'_>) -> Image {
     assert!(

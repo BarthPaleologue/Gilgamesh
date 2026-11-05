@@ -46,8 +46,8 @@ fn albedo_encodings_match_equivalent_linear_constants() {
         wgpu::TextureFormat::Depth32Float,
         wgpu::TextureUsages::RENDER_ATTACHMENT,
     );
-    let color_view = color.create_view(&Default::default());
-    let depth_view = depth.create_view(&Default::default());
+    let color_view = color.create_view(&wgpu::TextureViewDescriptor::default());
+    let depth_view = depth.create_view(&wgpu::TextureViewDescriptor::default());
     let mut png = Cursor::new(Vec::new());
     image::DynamicImage::ImageRgba8(image::RgbaImage::from_pixel(
         1,
@@ -61,7 +61,7 @@ fn albedo_encodings_match_equivalent_linear_constants() {
     textured.set_albedo_texture(texture);
     let mut constant = PbrMaterial::new("Constant");
     // sRGB byte 128 represents approximately 0.2158605 in linear space.
-    constant.set_albedo_color(0.2158605, 0.2158605, 0.2158605);
+    constant.set_albedo_color(0.215_860_5, 0.215_860_5, 0.215_860_5);
     let mut linear_textured = PbrMaterial::new("Linear Textured");
     linear_textured.set_albedo_texture(Rc::new(Texture::<Linear>::new(
         "Linear Gray",
@@ -87,7 +87,9 @@ fn albedo_encodings_match_equivalent_linear_constants() {
     renderer.update_frame_bindings(FrameBindingsData::new(&camera, &light, &[]), &gpu);
     let mut images = Vec::new();
     for mesh in &meshes {
-        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        let mut encoder = gpu
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
         renderer.encode(
             [mesh],
             &gpu,
@@ -181,10 +183,14 @@ fn roughness_and_normal_maps_match_equivalent_linear_surface_properties() {
         );
 
         let encoded = [128_u8, 218, 218, 255];
-        let tangent_normal =
-            (Vec3::new(encoded[0] as f32, encoded[1] as f32, encoded[2] as f32) / 255.0 * 2.0
-                - Vec3::ONE)
-                .normalize();
+        let tangent_normal = (Vec3::new(
+            f32::from(encoded[0]),
+            f32::from(encoded[1]),
+            f32::from(encoded[2]),
+        ) / 255.0
+            * 2.0
+            - Vec3::ONE)
+            .normalize();
         let expected_normal =
             Vec3::new(tangent_normal.x, tangent_normal.z, -tangent_normal.y).to_array();
         let mut images = Vec::new();
@@ -279,7 +285,7 @@ fn emissive_textures_multiply_linear_hdr_factors_without_received_light() {
                         executor.wgpu_context(),
                     ))
                     .into(),
-                    0.2158605,
+                    0.215_860_5,
                 )
             };
             let mut reference = PbrMaterial::new("Constant emission");

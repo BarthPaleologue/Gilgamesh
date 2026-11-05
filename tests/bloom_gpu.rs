@@ -8,16 +8,16 @@ use gilgamesh::core::render_graph::{
 use wgpu::util::{DeviceExt, TextureDataOrder};
 use wgpu::{TextureFormat as Format, TextureUsages};
 
-const CONSTANT: &str = r#"
+const CONSTANT: &str = r"
 @group(0) @binding(0) var<uniform> color: vec4f;
 @fragment fn fs_main() -> @location(0) vec4f { return color; }
-"#;
-const COPY: &str = r#"
+";
+const COPY: &str = r"
 @group(0) @binding(0) var source: texture_2d<f32>;
 @fragment fn fs_main(@builtin(position) p: vec4f) -> @location(0) vec4f {
     return textureLoad(source, vec2i(p.xy), 0);
 }
-"#;
+";
 
 #[test]
 #[ignore = "GPU end-to-end check; run explicitly with approval"]
@@ -66,9 +66,9 @@ fn bilinear_interpolates_rgba_in_linear_space_and_clamps_edges() {
                     let mut expected = [0_u8; 4];
                     for (c, value) in expected.iter_mut().enumerate() {
                         let sample = |ix: i32, iy: i32| {
-                            let v = texels[(iy.clamp(0, 1) * 2 + ix.clamp(0, 1)) as usize][c]
-                                as f32
-                                / 255.0;
+                            let v = f32::from(
+                                texels[(iy.clamp(0, 1) * 2 + ix.clamp(0, 1)) as usize][c],
+                            ) / 255.0;
                             if format.is_srgb() && c < 3 {
                                 srgb_decode(v)
                             } else {
@@ -125,10 +125,10 @@ fn bilinear_keeps_hdr_and_blur_and_bloom_preserve_uniform_light() {
         );
         fragment_pass(
             "HDR pair",
-            r#"
+            r"
             @fragment fn fs_main(@builtin(position) p: vec4f) -> @location(0) vec4f {
                 return select(vec4f(8, 0, 0, 0.25), vec4f(0, 4, 0, 0.75), p.x > 1.0);
-            }"#,
+            }",
             [],
             &[source],
             &mut graph,
@@ -217,11 +217,11 @@ fn bloom_diffuses_subunit_light_and_uses_a_final_lerp_preserving_alpha() {
             );
             fragment_pass(
                 "Dim patch",
-                r#"
+                r"
                 @fragment fn fs_main(@builtin(position) p: vec4f) -> @location(0) vec4f {
                     let inside = all(p.xy >= vec2f(7, 4)) && all(p.xy < vec2f(12, 9));
                     return vec4f(vec3f(select(0.0, 0.5, inside)), select(0.25, 0.75, inside));
-                }"#,
+                }",
                 [],
                 &[source],
                 &mut graph,
@@ -282,7 +282,7 @@ fn bloom_diffuses_subunit_light_and_uses_a_final_lerp_preserving_alpha() {
             let a = original.get_pixel(x, y);
             let b = diffuse.get_pixel(x, y);
             for c in 0..3 {
-                let expected = mix(a[c] as f32, b[c] as f32, 0.04).round() as u8;
+                let expected = mix(f32::from(a[c]), f32::from(b[c]), 0.04).round() as u8;
                 assert!(pixel[c].abs_diff(expected) <= 1);
             }
             assert_eq!(pixel[3], a[3]);
@@ -323,7 +323,7 @@ fn srgb_decode(v: f32) -> f32 {
     }
 }
 fn srgb_encode(v: f32) -> f32 {
-    if v <= 0.0031308 {
+    if v <= 0.003_130_8 {
         v * 12.92
     } else {
         1.055 * v.powf(1.0 / 2.4) - 0.055

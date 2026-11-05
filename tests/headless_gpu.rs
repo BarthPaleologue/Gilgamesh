@@ -210,7 +210,7 @@ impl App for TestApp {
         assert_eq!(frame.mouse.delta, [0.0; 2]);
         assert_eq!(frame.mouse.scroll_delta_lines, 0.0);
         self.camera.projection.aspect_ratio =
-            frame.render_width as f64 / frame.render_height as f64;
+            f64::from(frame.render_width) / f64::from(frame.render_height);
         if frame.elapsed_seconds >= 0.04 {
             let mut blue = PbrMaterial::new("Blue");
             blue.set_emissive_color(0.0, 0.0, 4.0);
@@ -252,11 +252,13 @@ async fn blit_and_read(executor: &GraphExecutor, target: &FrameTarget) -> image:
     });
     let blit = ColorPass::image_blit(&ctx.device, output.format());
     let source = blit.bind_source(&ctx.device, target.output());
-    let mut encoder = ctx.device.create_command_encoder(&Default::default());
+    let mut encoder = ctx
+        .device
+        .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
     blit.encode(
         &mut encoder,
         &source,
-        &output.create_view(&Default::default()),
+        &output.create_view(&wgpu::TextureViewDescriptor::default()),
     );
     ctx.queue.submit([encoder.finish()]);
     gilgamesh::core::readback::read_rgba8(&ctx.device, &ctx.queue, &output)

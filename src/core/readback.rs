@@ -47,7 +47,7 @@ fn start_readback(
         usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
         mapped_at_creation: false,
     });
-    let mut encoder = device.create_command_encoder(&Default::default());
+    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
     encoder.copy_texture_to_buffer(
         wgpu::TexelCopyTextureInfo {
             texture,
@@ -65,7 +65,9 @@ fn start_readback(
         },
         texture.size(),
     );
-    let _submission = queue.submit([encoder.finish()]);
+    let submission = queue.submit([encoder.finish()]);
+    #[cfg(target_arch = "wasm32")]
+    let _ = submission;
     let (sender, receiver) = oneshot::channel();
     buffer
         .slice(..)
@@ -76,7 +78,7 @@ fn start_readback(
     let device = device.clone();
     Ok(async move {
         #[cfg(not(target_arch = "wasm32"))]
-        wait_for_mapping(device, _submission, receiver).await?;
+        wait_for_mapping(device, submission, receiver).await?;
         #[cfg(target_arch = "wasm32")]
         receiver
             .await

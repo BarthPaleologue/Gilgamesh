@@ -43,7 +43,7 @@ fn surface_configuration(
         .formats
         .iter()
         .copied()
-        .find(|f| f.is_srgb())
+        .find(wgpu::TextureFormat::is_srgb)
         .unwrap_or(capabilities.formats[0]);
 
     SurfaceConfiguration {

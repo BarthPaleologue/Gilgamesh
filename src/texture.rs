@@ -66,7 +66,7 @@ impl ColorEncoding for Linear {
 /// }
 /// ```
 pub struct Texture<Encoding: ColorEncoding> {
-    texture_view: wgpu::TextureView,
+    view: wgpu::TextureView,
     sampler: wgpu::Sampler,
     encoding: PhantomData<Encoding>,
 }
@@ -120,7 +120,7 @@ impl<Encoding: ColorEncoding> Texture<Encoding> {
 
         // We don't need to configure the texture view much, so let's
         // let wgpu define it.
-        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
@@ -132,7 +132,7 @@ impl<Encoding: ColorEncoding> Texture<Encoding> {
         });
 
         Texture {
-            texture_view,
+            view,
             sampler,
             encoding: PhantomData,
         }
@@ -187,7 +187,7 @@ impl<Encoding: ColorEncoding> Texture<Encoding> {
 
         // We don't need to configure the texture view much, so let's
         // let wgpu define it.
-        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
         let sampler = wgpu_context
             .device
             .create_sampler(&wgpu::SamplerDescriptor {
@@ -201,7 +201,7 @@ impl<Encoding: ColorEncoding> Texture<Encoding> {
             });
 
         Texture {
-            texture_view,
+            view,
             sampler,
             encoding: PhantomData,
         }
@@ -236,7 +236,7 @@ impl<Encoding: ColorEncoding> SampledTexture for Texture<Encoding> {
         [
             wgpu::BindGroupEntry {
                 binding: start_index,
-                resource: wgpu::BindingResource::TextureView(&self.texture_view),
+                resource: wgpu::BindingResource::TextureView(&self.view),
             },
             wgpu::BindGroupEntry {
                 binding: start_index + 1,

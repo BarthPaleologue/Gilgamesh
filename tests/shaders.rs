@@ -105,7 +105,7 @@ fn shader_bindings_separate_frame_material_and_object_data() {
             .collect();
         let expected: std::collections::BTreeSet<_> = (0..4)
             .map(|binding| (0, binding))
-            .chain((0..1 + 2 * texture_count).map(|binding| (1, binding)))
+            .chain((0..=(2 * texture_count)).map(|binding| (1, binding)))
             .chain([(2, 0)])
             .collect();
         assert_eq!(bindings, expected);

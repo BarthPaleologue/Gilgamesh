@@ -48,7 +48,10 @@ mod tests {
         point_lights[0].set_intensity(0.2);
 
         let context = FrameBindingsData::new(&camera, &directional_light, &point_lights);
-        assert!(std::ptr::eq(context.directional_light, &directional_light));
+        assert!(std::ptr::eq(
+            context.directional_light,
+            &raw const directional_light
+        ));
         assert!(std::ptr::eq(
             context.point_lights.as_ptr(),
             point_lights.as_ptr()

@@ -25,7 +25,7 @@ fn custom_blocks_mrt_compute_caches_and_independent_raster_inputs() {
         let builds = Cell::new(0);
         let observed = RefCell::new(Vec::new());
         let mut previous = None;
-        for split in [0.5, 0.25] {
+        for (split, middle_pixel) in [(0.5, [150, 150, 253, 255]), (0.25, [253, 182, 158, 255])] {
             let mut graph = RenderGraph::new();
             let [amber, blue] = mrt(&builds, &observed, &mut graph);
             let [blue, amber] = swap_images([amber, blue], &builds, &observed, &mut graph);
@@ -36,14 +36,7 @@ fn custom_blocks_mrt_compute_caches_and_independent_raster_inputs() {
             let pixels = target.read_image(executor.wgpu_context()).await.unwrap();
             assert_pixel(pixels.get_pixel(8, 16).0, [150, 150, 253, 255]);
             assert_pixel(pixels.get_pixel(60, 16).0, [253, 182, 158, 255]);
-            assert_pixel(
-                pixels.get_pixel(20, 16).0,
-                if split == 0.5 {
-                    [150, 150, 253, 255]
-                } else {
-                    [253, 182, 158, 255]
-                },
-            );
+            assert_pixel(pixels.get_pixel(20, 16).0, middle_pixel);
             if let Some(previous) = previous {
                 assert_ne!(pixels, previous);
             }
@@ -223,7 +216,7 @@ fn imported_textures_keep_written_state_across_ping_pong_frames() {
             .create_shader_module(wgpu::ShaderModuleDescriptor {
                 label: Some("Increment State"),
                 source: wgpu::ShaderSource::Wgsl(
-                    r#"
+                    r"
                 @group(0) @binding(0) var previous: texture_2d<f32>;
                 @group(0) @binding(1) var next: texture_storage_2d<rgba8unorm, write>;
                 @compute @workgroup_size(8, 8)
@@ -232,7 +225,7 @@ fn imported_textures_keep_written_state_across_ping_pong_frames() {
                     let p = vec2i(id.xy);
                     textureStore(next, p, textureLoad(previous, p, 0) + vec4f(0.25, 0., 0., 0.));
                 }
-                "#
+                "
                     .into(),
                 ),
             });
@@ -243,7 +236,7 @@ fn imported_textures_keep_written_state_across_ping_pong_frames() {
                 layout: None,
                 module: &shader,
                 entry_point: Some("main"),
-                compilation_options: Default::default(),
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
                 cache: None,
             });
         let builds = Cell::new(0);
@@ -286,7 +279,9 @@ fn imported_textures_keep_written_state_across_ping_pong_frames() {
                                     },
                                 ],
                             });
-                    let mut pass = context.encoder.begin_compute_pass(&Default::default());
+                    let mut pass = context
+                        .encoder
+                        .begin_compute_pass(&wgpu::ComputePassDescriptor::default());
                     pass.set_pipeline(pipeline);
                     pass.set_bind_group(0, &bindings, &[]);
                     pass.dispatch_workgroups(1, 1, 1);
@@ -404,7 +399,7 @@ fn mrt<'a>(
         &[],
         &[(a, Usage::RENDER_ATTACHMENT), (b, Usage::RENDER_ATTACHMENT)],
         move |context| {
-            const SOURCE: &str = r#"
+            const SOURCE: &str = r"
             @vertex fn vs_main(@builtin(vertex_index) index: u32) -> @builtin(position) vec4f {
                 let positions = array(vec2f(-1., -1.), vec2f(3., -1.), vec2f(-1., 3.));
                 return vec4f(positions[index], 0., 1.);
@@ -413,7 +408,7 @@ fn mrt<'a>(
             @fragment fn fs_main() -> Outputs {
                 return Outputs(vec4f(4., 1., 0.25, 1.), vec4f(0., 0., 4., 1.));
             }
-        "#;
+        ";
             observed.borrow_mut().extend([
                 context.images.get(a).texture().clone(),
                 context.images.get(b).texture().clone(),
@@ -461,10 +456,7 @@ fn swap_images<'a>(
         &inputs.map(|image| (image, Usage::TEXTURE_BINDING)),
         &[(a, Usage::STORAGE_BINDING), (b, Usage::STORAGE_BINDING)],
         move |context| {
-            observed
-                .borrow_mut()
-                .extend([a, b].map(|image| context.images.get(image).texture().clone()));
-            const SOURCE: &str = r#"
+            const SOURCE: &str = r"
             @group(0) @binding(0) var first: texture_2d<f32>;
             @group(0) @binding(1) var second: texture_2d<f32>;
             @group(0) @binding(2) var left: texture_storage_2d<rgba16float, write>;
@@ -475,7 +467,11 @@ fn swap_images<'a>(
                 textureStore(left, p, textureLoad(second, p, 0));
                 textureStore(right, p, textureLoad(first, p, 0));
             }
-        "#;
+        ";
+            observed
+                .borrow_mut()
+                .extend([a, b].map(|image| context.images.get(image).texture().clone()));
+
             let pipeline = context.cache.get_or_insert_with(SOURCE, || {
                 builds.set(builds.get() + 1);
                 let shader =
@@ -494,7 +490,7 @@ fn swap_images<'a>(
                         layout: None,
                         module: &shader,
                         entry_point: Some("main"),
-                        compilation_options: Default::default(),
+                        compilation_options: wgpu::PipelineCompilationOptions::default(),
                         cache: None,
                     })
             });
@@ -516,7 +512,9 @@ fn swap_images<'a>(
                     entries: &entries,
                 });
             let texture = context.images.get(a).texture();
-            let mut pass = context.encoder.begin_compute_pass(&Default::default());
+            let mut pass = context
+                .encoder
+                .begin_compute_pass(&wgpu::ComputePassDescriptor::default());
             pass.set_pipeline(pipeline);
             pass.set_bind_group(0, &bindings, &[]);
             pass.dispatch_workgroups(texture.width().div_ceil(8), texture.height().div_ceil(8), 1);
@@ -535,8 +533,7 @@ fn vertical_split_screen<'a>(
 ) -> Image {
     let output = image("Split", Format::Rgba16Float, graph);
     graph.add_pass("Custom Split", &[(left, Usage::TEXTURE_BINDING), (right, Usage::TEXTURE_BINDING)], &[(output, Usage::RENDER_ATTACHMENT)], move |context| {
-            observed.borrow_mut().extend([output].map(|image| context.images.get(image).texture().clone()));
-        const SOURCE: &str = r#"
+        const SOURCE: &str = r"
             @group(0) @binding(0) var left: texture_2d<f32>;
             @group(0) @binding(1) var right: texture_2d<f32>;
             @group(0) @binding(2) var<uniform> split: f32;
@@ -548,7 +545,9 @@ fn vertical_split_screen<'a>(
                 if p.x < split * f32(textureDimensions(left).x) { return textureLoad(left, vec2i(p.xy), 0); }
                 return textureLoad(right, vec2i(p.xy), 0);
             }
-        "#;
+        ";
+            observed.borrow_mut().extend([output].map(|image| context.images.get(image).texture().clone()));
+
         let pipeline = render_pipeline(context, SOURCE, &[Format::Rgba16Float], builds);
         let uniform = context.gpu.device.create_buffer_init(&wgpu::util::BufferInitDescriptor { label: None, contents: bytemuck::bytes_of(&split), usage: wgpu::BufferUsages::UNIFORM });
         let bindings = context.gpu.device.create_bind_group(&wgpu::BindGroupDescriptor { label: None, layout: &pipeline.get_bind_group_layout(0), entries: &[
@@ -568,7 +567,7 @@ fn resized_copy<'a>(source: Image, builds: &'a Cell<usize>, graph: &mut RenderGr
         &[(source, Usage::TEXTURE_BINDING)],
         &[(output, Usage::RENDER_ATTACHMENT)],
         move |context| {
-            const SOURCE: &str = r#"
+            const SOURCE: &str = r"
             @group(0) @binding(0) var source: texture_2d<f32>;
             struct Vertex { @builtin(position) p: vec4f, @location(0) uv: vec2f }
             @vertex fn vs_main(@builtin(vertex_index) index: u32) -> Vertex {
@@ -579,7 +578,7 @@ fn resized_copy<'a>(source: Image, builds: &'a Cell<usize>, graph: &mut RenderGr
             @fragment fn fs_main(v: Vertex) -> @location(0) vec4f {
                 return textureLoad(source, vec2i(v.uv * vec2f(textureDimensions(source))), 0);
             }
-        "#;
+        ";
             let pipeline = render_pipeline(context, SOURCE, &[Format::Rgba8UnormSrgb], builds);
             let bindings = context
                 .gpu
@@ -635,17 +634,17 @@ fn render_pipeline(
                         module: &shader,
                         entry_point: Some("vs_main"),
                         buffers: &[],
-                        compilation_options: Default::default(),
+                        compilation_options: wgpu::PipelineCompilationOptions::default(),
                     },
                     fragment: Some(wgpu::FragmentState {
                         module: &shader,
                         entry_point: Some("fs_main"),
                         targets: &targets,
-                        compilation_options: Default::default(),
+                        compilation_options: wgpu::PipelineCompilationOptions::default(),
                     }),
-                    primitive: Default::default(),
+                    primitive: wgpu::PrimitiveState::default(),
                     depth_stencil: None,
-                    multisample: Default::default(),
+                    multisample: wgpu::MultisampleState::default(),
                     multiview_mask: None,
                     cache: None,
                 })

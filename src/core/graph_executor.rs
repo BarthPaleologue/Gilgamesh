@@ -168,7 +168,7 @@ impl GraphExecutor {
             } else if image.allocation == graph.images[plan.output.index].allocation {
                 target.output().clone()
             } else if let Some(imported) = image.imported {
-                imported.create_view(&Default::default())
+                imported.create_view(&wgpu::TextureViewDescriptor::default())
             } else {
                 self.images[transient.slots[index].expect("Created image needs a transient slot")]
                     .view
@@ -265,7 +265,7 @@ fn create_image(device: &wgpu::Device, label: &str, key: ImageKey) -> wgpu::Text
             usage: key.usage,
             view_formats: &[],
         })
-        .create_view(&Default::default())
+        .create_view(&wgpu::TextureViewDescriptor::default())
 }
 
 /// Owns the exported image independently of the executor's intermediate texture pool.

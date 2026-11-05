@@ -125,7 +125,7 @@ pub fn fragment_pass<'a>(
 }
 
 /// Adds a compute pass whose WGSL entry point is `main`.
-/// StorageTexture bindings declare writes; use next_version before overwriting an image.
+/// `StorageTexture` bindings declare writes; use `next_version` before overwriting an image.
 /// An image dispatch domain must also appear in the bindings. The shader must guard
 /// out-of-bounds invocations when dimensions are not multiples of its workgroup size.
 pub fn compute_pass<'a>(
@@ -156,7 +156,7 @@ pub fn compute_pass<'a>(
                         layout: None,
                         module: &module,
                         entry_point: Some("main"),
-                        compilation_options: Default::default(),
+                        compilation_options: wgpu::PipelineCompilationOptions::default(),
                         cache: None,
                     },
                 ),
@@ -175,7 +175,9 @@ pub fn compute_pass<'a>(
             &state.resources,
             &values,
         );
-        let mut pass = context.encoder.begin_compute_pass(&Default::default());
+        let mut pass = context
+            .encoder
+            .begin_compute_pass(&wgpu::ComputePassDescriptor::default());
         pass.set_pipeline(&state.pipeline);
         if let Some(group) = &group {
             pass.set_bind_group(0, group, &[]);

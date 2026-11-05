@@ -106,7 +106,7 @@ mod gpu {
         assert!(ground.x.abs() < 7.0 && ground.z.abs() < 7.0);
         let projected = camera.projection_view() * ground.extend(1.0);
         let depth = projected.z / projected.w;
-        let srgb = if depth <= 0.0031308 {
+        let srgb = if depth <= 0.003_130_8 {
             12.92 * depth
         } else {
             1.055 * depth.powf(1.0 / 2.4) - 0.055
