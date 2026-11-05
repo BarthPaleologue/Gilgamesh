@@ -16,11 +16,17 @@ A small 3D WGPU engine written in Rust that does not rely on the ECS pattern.
 - Photometric lighting (candelas, lux, nits) and photographic camera exposure
 - Normal mapping
 - Procedural mesh generation
+- Headless mode
 
 ## Coming Soon
 
 - Shadow mapping
+- Anti-aliasing
+- More tone-mappers
 - GLTF support
+- Physics plugin
+- Visual testing
+- MCP support
 
 ![sinc function](cover.png)
 
@@ -138,9 +144,3 @@ Applications can implement `materials::Material` to supply their own raster shad
 uniforms and textures. `PbrMaterial` uses this same contract. See the
 [headless checkerboard material](examples/headless/src/checker.rs) and its
 [WGSL shader](examples/headless/src/checker.wgsl) for an example.
-
-## About
-
-Loosely based
-on [Dr. Xu youtube series](https://www.youtube.com/watch?v=i6WMfY-XTZE&list=PL_UrKDEhALdJS0VrLPn7dqC5A4W1vCAUT)
-and the [WGPU tutorial](https://sotrh.github.io/learn-wgpu/).
