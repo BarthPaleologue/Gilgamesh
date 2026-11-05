@@ -13,8 +13,8 @@ use gilgamesh::core::window_runtime::WindowContext;
 use gilgamesh::geometry::{mesh::Mesh, primitive};
 use gilgamesh::input::mouse::Mouse;
 use gilgamesh::lights::directional_light::DirectionalLight;
-use gilgamesh::lights::light::Light;
 use gilgamesh::materials::pbr::PbrMaterial;
+use gilgamesh::photometry::Lux;
 use gilgamesh::transform::Transformable;
 use glam::DVec3;
 use std::cell::Cell;
@@ -191,7 +191,7 @@ impl App for TestApp {
         camera.transform_mut().position = DVec3::new(0.0, 3.0, 0.0);
         camera.transform_mut().look_at(DVec3::ZERO, DVec3::NEG_Z);
         let mut light = DirectionalLight::default();
-        light.set_intensity(0.0);
+        light.set_illuminance(Lux::new(0.0));
         let mut material = PbrMaterial::new("HDR");
         material.set_emissive_color(4.0, 1.0, 0.25);
         Self {

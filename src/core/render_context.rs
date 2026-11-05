@@ -50,7 +50,7 @@ impl<'a> FrameBindingsData<'a> {
 mod tests {
     use super::*;
     use crate::camera::{Orthographic, Perspective};
-    use crate::lights::light::Light;
+    use crate::photometry::Candela;
     use crate::transform::Transformable;
     use glam::{DMat4, DVec3};
 
@@ -59,7 +59,7 @@ mod tests {
         let camera: Camera = Camera::default();
         let directional_lights = [DirectionalLight::default(), DirectionalLight::default()];
         let mut point_lights = [PointLight::default()];
-        point_lights[0].set_intensity(0.2);
+        point_lights[0].set_intensity(Candela::new(0.2));
 
         let context = FrameBindingsData::new(&camera, &directional_lights, &point_lights);
         assert!(std::ptr::eq(
@@ -71,7 +71,7 @@ mod tests {
             context.point_lights.as_ptr(),
             point_lights.as_ptr()
         ));
-        assert_eq!(context.point_lights[0].intensity(), 0.2);
+        assert_eq!(context.point_lights[0].intensity(), Candela::new(0.2));
     }
 
     #[test]

@@ -7,8 +7,8 @@ use gilgamesh::core::render_context::FrameBindingsData;
 use gilgamesh::core::render_graph::{Image, ImageDescriptor, ImageSize, PassContext, RenderGraph};
 use gilgamesh::geometry::{mesh::Mesh, primitive};
 use gilgamesh::lights::directional_light::DirectionalLight;
-use gilgamesh::lights::light::Light;
 use gilgamesh::materials::pbr::PbrMaterial;
+use gilgamesh::photometry::Lux;
 use gilgamesh::transform::Transformable;
 use glam::DVec3;
 use std::cell::{Cell, RefCell};
@@ -145,7 +145,7 @@ fn custom_blocks_mrt_compute_caches_and_independent_raster_inputs() {
         let camera = camera_at(0.0);
         let other_camera = camera_at(10.0);
         let mut light = DirectionalLight::default();
-        light.set_intensity(0.0);
+        light.set_illuminance(Lux::new(0.0));
         let mut material = PbrMaterial::new("Amber");
         material.set_emissive_color(4.0, 1.0, 0.25);
         let mesh = Mesh::from_cpu_buffers(

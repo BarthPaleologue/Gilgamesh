@@ -1,9 +1,10 @@
 use crate::lights::light::Light;
+use crate::photometry::Lux;
 use bytemuck::{Pod, Zeroable};
 
 pub struct DirectionalLight {
     color: [f32; 3],
-    intensity: f32,
+    illuminance: Lux,
     direction: [f32; 3],
 }
 
@@ -22,7 +23,7 @@ pub struct DirectionalLightUniform {
 impl DirectionalLightUniform {
     pub fn update(&mut self, light: &DirectionalLight) {
         self.color = light.color;
-        self.intensity = light.intensity;
+        self.intensity = light.illuminance.value();
         self.direction = light.direction;
     }
 }
@@ -31,7 +32,7 @@ impl Default for DirectionalLight {
     fn default() -> Self {
         DirectionalLight {
             color: [1.0, 1.0, 1.0],
-            intensity: 1.0,
+            illuminance: Lux::new(1.0),
             direction: [0.707, -0.707, 0.0],
         }
     }
@@ -44,10 +45,15 @@ impl Light for DirectionalLight {
     fn set_color(&mut self, r: f32, g: f32, b: f32) {
         self.color = [r, g, b];
     }
-    fn intensity(&self) -> f32 {
-        self.intensity
+}
+
+impl DirectionalLight {
+    /// Illuminance on a surface perpendicular to the light direction.
+    #[must_use]
+    pub fn illuminance(&self) -> Lux {
+        self.illuminance
     }
-    fn set_intensity(&mut self, intensity: f32) {
-        self.intensity = intensity;
+    pub fn set_illuminance(&mut self, illuminance: Lux) {
+        self.illuminance = illuminance;
     }
 }

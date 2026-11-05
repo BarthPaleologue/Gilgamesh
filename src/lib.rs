@@ -8,6 +8,7 @@ pub mod geometry;
 pub mod input;
 pub mod lights;
 pub mod materials;
+pub mod photometry;
 pub mod settings;
 pub mod texture;
 pub mod transform;

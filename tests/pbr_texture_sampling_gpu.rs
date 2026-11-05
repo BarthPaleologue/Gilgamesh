@@ -1,5 +1,6 @@
 #![cfg(not(target_arch = "wasm32"))]
 
+use gilgamesh::photometry::Lux;
 mod common;
 
 use common::read_rgba8;
@@ -254,7 +255,6 @@ fn emissive_textures_multiply_linear_hdr_factors_without_received_light() {
     use gilgamesh::blocks::{rasterize, tone_map};
     use gilgamesh::core::graph_executor::GraphExecutor;
     use gilgamesh::core::render_graph::RenderGraph;
-    use gilgamesh::lights::light::Light;
     use gilgamesh::texture::ColorTexture;
 
     pollster::block_on(async {
@@ -263,7 +263,7 @@ fn emissive_textures_multiply_linear_hdr_factors_without_received_light() {
         camera.transform_mut().position = DVec3::new(0.0, 3.0, 3.0);
         camera.transform_mut().look_at(DVec3::ZERO, DVec3::Y);
         let mut light = DirectionalLight::default();
-        light.set_intensity(0.0);
+        light.set_illuminance(Lux::new(0.0));
         let mut target = executor.create_target(32, 32);
         let factor = [8.0, 2.0, 0.5];
         let mut png = Cursor::new(Vec::new());

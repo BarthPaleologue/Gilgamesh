@@ -2,9 +2,9 @@ use super::*;
 use crate::camera::{Camera, Orthographic};
 use crate::geometry::primitive;
 use crate::lights::directional_light::DirectionalLight;
-use crate::lights::light::Light;
 use crate::materials::blinn_phong::BlinnPhongMaterial;
 use crate::materials::pbr::PbrMaterial;
+use crate::photometry::Lux;
 use glam::DVec3;
 
 #[test]
@@ -23,7 +23,7 @@ fn shared_materials_have_renderer_local_runtime() {
     camera.transform_mut().position = DVec3::new(0.0, 3.0, 0.0);
     camera.transform_mut().look_at(DVec3::ZERO, DVec3::NEG_Z);
     let mut light = DirectionalLight::default();
-    light.set_intensity(0.0);
+    light.set_illuminance(Lux::new(0.0));
     let depth = attachment(&gpu.device, wgpu::TextureFormat::Depth32Float);
 
     for mut description in [
@@ -146,7 +146,7 @@ fn directional_lights_accumulate_and_can_be_removed_between_frames() {
     camera.transform_mut().look_at(DVec3::ZERO, DVec3::NEG_Z);
     let lights = [0.2, 0.3].map(|intensity| {
         let mut light = DirectionalLight::default();
-        light.set_intensity(intensity);
+        light.set_illuminance(Lux::new(intensity));
         light
     });
     let color = attachment(&gpu.device, wgpu::TextureFormat::Rgba8Unorm);

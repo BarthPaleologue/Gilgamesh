@@ -6,7 +6,7 @@ use std::rc::Rc;
 #[derive(Debug)]
 #[must_use]
 pub struct Transform {
-    /// Position in the parent's coordinate space.
+    /// Position in meters in the parent's coordinate space.
     pub position: DVec3,
     /// Local orientation as a unit quaternion.
     pub rotation: DQuat,

@@ -8,6 +8,7 @@ use gilgamesh::input::OrbitControl;
 use gilgamesh::lights::debug::create_point_light_debug_mesh;
 use gilgamesh::lights::{Light, PointLight};
 use gilgamesh::materials::PbrMaterial;
+use gilgamesh::photometry::Candela;
 use gilgamesh::texture::{Linear, Srgb};
 use gilgamesh::transform::{Transform, Transformable};
 use glam::{DQuat, DVec3};
@@ -43,7 +44,7 @@ impl App for StarSystemDemo {
         .map(|(r, g, b)| {
             let mut light = PointLight::default();
             light.set_color(r, g, b);
-            light.set_intensity(200.0);
+            light.set_intensity(Candela::new(200.0));
             light
         });
         let point_light_meshes = point_lights
@@ -64,7 +65,7 @@ impl App for StarSystemDemo {
         );
 
         let mut sun_light = PointLight::default();
-        sun_light.set_intensity(200.0);
+        sun_light.set_intensity(Candela::new(200.0));
         sun_light.transform_mut().parent = Some(sun.transform_rc());
         let [red_light, blue_light, green_light, yellow_light] = point_lights;
         let point_lights = [red_light, blue_light, green_light, yellow_light, sun_light];
@@ -166,7 +167,7 @@ impl App for StarSystemDemo {
 mod tests {
     use super::StarSystemDemo;
     use gilgamesh::core::HeadlessRuntime;
-    use gilgamesh::lights::Light;
+    use gilgamesh::photometry::Candela;
     use std::time::Duration;
 
     #[test]
@@ -177,7 +178,7 @@ mod tests {
 
         HeadlessRuntime::<StarSystemDemo>::run(400, 320, async |mut runtime| {
             for light in &mut runtime.app_mut().point_lights[..4] {
-                light.set_intensity(0.0);
+                light.set_intensity(Candela::new(0.0));
             }
             runtime.render(Duration::ZERO);
             let app = runtime.app();
@@ -243,7 +244,7 @@ mod tests {
         HeadlessRuntime::<StarSystemDemo>::run(400, 320, async |mut runtime| {
             let app = runtime.app_mut();
             for light in &mut app.point_lights[..4] {
-                light.set_intensity(0.0);
+                light.set_intensity(Candela::new(0.0));
             }
             let solar_light = &app.point_lights[4];
             assert!(Rc::ptr_eq(
@@ -257,7 +258,7 @@ mod tests {
             );
             runtime.render(Duration::ZERO);
             let lit = runtime.capture_frame().await.unwrap();
-            runtime.app_mut().point_lights[4].set_intensity(0.0);
+            runtime.app_mut().point_lights[4].set_intensity(Candela::new(0.0));
             runtime.render(Duration::ZERO);
             let unlit = runtime.capture_frame().await.unwrap();
             assert!(
@@ -276,7 +277,7 @@ mod tests {
     fn earth_maps_render_in_the_star_system_graph() {
         HeadlessRuntime::<StarSystemDemo>::run(400, 320, async |mut runtime| {
             for light in &mut runtime.app_mut().point_lights {
-                light.set_intensity(200.0);
+                light.set_intensity(Candela::new(200.0));
             }
             runtime.render(Duration::ZERO);
             let image = runtime.capture_frame().await.unwrap();

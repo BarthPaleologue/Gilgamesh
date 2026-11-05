@@ -8,6 +8,7 @@ use gilgamesh::input::orbit_control::OrbitControl;
 use gilgamesh::lights::directional_light::{DirectionalLight, DirectionalLightUniform};
 use gilgamesh::lights::light::Light;
 use gilgamesh::lights::point_light::{PointLight, PointLightUniforms};
+use gilgamesh::photometry::{Candela, Lux};
 use gilgamesh::transform::{Transform, TransformUniforms, Transformable};
 use glam::{DQuat, DVec3, DVec4};
 use std::cell::RefCell;
@@ -390,7 +391,7 @@ fn light_uniforms_preserve_lighting_values_and_narrow_only_positions() {
     let intensity: f32 = 1.0 / 3.0;
     let mut point = PointLight::default();
     point.set_color(1.0, 0.5, 0.25);
-    point.set_intensity(intensity);
+    point.set_intensity(Candela::new(intensity));
     point.transform_mut().position = DVec3::new(precise_position, 2.0, 3.0);
     let mut point_uniforms = PointLightUniforms::default();
     point_uniforms.update(&point);
@@ -399,12 +400,12 @@ fn light_uniforms_preserve_lighting_values_and_narrow_only_positions() {
     assert_eq!(&floats[..3], &[1.0, 0.5, 0.25]);
     assert_eq!(&floats[4..], &[1.0, 2.0, 3.0, intensity]);
     assert_eq!(point.color(), [1.0, 0.5, 0.25]);
-    assert_eq!(point.intensity(), intensity);
+    assert_eq!(point.intensity().value(), intensity);
     assert_eq!(point.transform().position.x, precise_position);
 
     let mut directional = DirectionalLight::default();
     directional.set_color(1.0, 0.5, 0.25);
-    directional.set_intensity(intensity);
+    directional.set_illuminance(Lux::new(intensity));
     let mut directional_uniforms = DirectionalLightUniform::default();
     directional_uniforms.update(&directional);
     assert_eq!(std::mem::size_of::<DirectionalLightUniform>(), 32);
@@ -413,5 +414,5 @@ fn light_uniforms_preserve_lighting_values_and_narrow_only_positions() {
     assert_eq!(&floats[4..7], &[0.707, -0.707, 0.0]);
     assert_eq!(floats[7], intensity);
     assert_eq!(directional.color(), [1.0, 0.5, 0.25]);
-    assert_eq!(directional.intensity(), intensity);
+    assert_eq!(directional.illuminance().value(), intensity);
 }

@@ -1,11 +1,12 @@
 use crate::lights::light::Light;
+use crate::photometry::Candela;
 use crate::transform::{Transform, Transformable};
 use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
 
 pub struct PointLight {
     color: [f32; 3],
-    intensity: f32,
+    intensity: Candela,
     transform: Rc<RefCell<Transform>>,
 }
 
@@ -24,7 +25,7 @@ pub struct PointLightUniforms {
 impl PointLightUniforms {
     pub fn update(&mut self, point_light: &PointLight) {
         self.color = point_light.color;
-        self.intensity = point_light.intensity;
+        self.intensity = point_light.intensity.value();
         self.position = point_light
             .transform()
             .world_position()
@@ -37,7 +38,7 @@ impl Default for PointLight {
     fn default() -> Self {
         PointLight {
             color: [1.0, 1.0, 1.0],
-            intensity: 1.0,
+            intensity: Candela::new(1.0),
             transform: Rc::new(RefCell::new(Transform::new())),
         }
     }
@@ -50,10 +51,14 @@ impl Light for PointLight {
     fn set_color(&mut self, r: f32, g: f32, b: f32) {
         self.color = [r, g, b];
     }
-    fn intensity(&self) -> f32 {
+}
+
+impl PointLight {
+    #[must_use]
+    pub fn intensity(&self) -> Candela {
         self.intensity
     }
-    fn set_intensity(&mut self, intensity: f32) {
+    pub fn set_intensity(&mut self, intensity: Candela) {
         self.intensity = intensity;
     }
 }
@@ -70,14 +75,3 @@ impl Transformable for PointLight {
         self.transform.clone()
     }
 }
-
-/*impl PointLight {
-    pub fn uniforms(&self) -> PointLightUniforms {
-        PointLightUniforms {
-            position: self.transform().position.into(),
-            color: self.color,
-            intensity: self.intensity,
-            ..PointLightUniforms::default()
-        }
-    }
-}*/
