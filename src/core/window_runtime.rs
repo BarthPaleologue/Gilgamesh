@@ -120,19 +120,21 @@ impl<Application: App> WindowRuntime<Application> {
             .resize(&self.executor.wgpu_context().device, new_size);
     }
 
-    fn manage_event(&mut self, event: &WindowEvent) {
-        self.mouse.listen_to_event(event);
-        self.app.on_window_event(
-            event,
-            &mut WindowContext {
-                executor: &mut self.executor,
-                frame: &self.frame,
-                elapsed_seconds: self.elapsed_seconds,
-            },
-        );
+    fn manage_event(&mut self, event: &WindowEvent) -> bool {
+        let mut context = WindowContext {
+            executor: &mut self.executor,
+            frame: &self.frame,
+            elapsed_seconds: self.elapsed_seconds,
+            window: Some(&self.window),
+            event_consumed: false,
+        };
+        self.app.on_window_event(event, &mut context);
+        let consumed = context.event_consumed;
+        self.mouse.listen_to_event_with_consumption(event, consumed);
         if let WindowEvent::Resized(physical_size) = event {
             self.resize(*physical_size);
         }
+        consumed
     }
 
     fn render(&mut self, output: wgpu::SurfaceTexture) {
@@ -190,9 +192,18 @@ pub struct WindowContext<'a> {
     pub executor: &'a mut GraphExecutor,
     pub frame: &'a FrameTarget,
     pub elapsed_seconds: f64,
+    /// Native window when dispatched by `WindowRuntime`; absent for headless event forwarding.
+    pub window: Option<&'a Arc<Window>>,
+    /// Suppresses default scene input and keyboard shortcuts for this event.
+    pub event_consumed: bool,
 }
 
 impl WindowContext<'_> {
+    /// Marks this event as handled by an input integration such as a UI.
+    pub fn consume_event(&mut self) {
+        self.event_consumed = true;
+    }
+
     /// Reads the last main frame without invoking application hooks or drawing again.
     pub fn capture_frame(
         &self,
@@ -288,11 +299,12 @@ impl<Application: App + 'static> ApplicationHandler<WindowRuntime<Application>>
             return;
         }
 
-        runtime.manage_event(&event);
+        let consumed = runtime.manage_event(&event);
 
         match event {
             WindowEvent::KeyboardInput { event, .. }
-                if event.state == ElementState::Pressed
+                if !consumed
+                    && event.state == ElementState::Pressed
                     && event.physical_key == PhysicalKey::Code(KeyCode::Escape) =>
             {
                 event_loop.exit();

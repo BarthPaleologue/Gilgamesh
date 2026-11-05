@@ -71,6 +71,8 @@ fn graph_execution_and_captures_keep_targets_and_hooks_independent() {
                 executor: &mut executor,
                 frame: &target,
                 elapsed_seconds: 0.02,
+                window: None,
+                event_consumed: false,
             };
             assert_eq!(context.capture_frame().await.unwrap(), first);
             assert_eq!(app.frames.len(), 2);

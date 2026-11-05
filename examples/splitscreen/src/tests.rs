@@ -79,6 +79,8 @@ mod gpu {
                 executor,
                 frame,
                 elapsed_seconds: 0.0,
+                window: None,
+                event_consumed: false,
             },
         );
     }
