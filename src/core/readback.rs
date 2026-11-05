@@ -25,6 +25,13 @@ pub fn read_rgba8(
     async move { readback?.await }
 }
 
+#[cfg_attr(
+    not(target_arch = "wasm32"),
+    expect(
+        clippy::unnecessary_wraps,
+        reason = "WebGL returns an error before submitting the snapshot"
+    )
+)]
 fn start_readback(
     device: &wgpu::Device,
     queue: &wgpu::Queue,

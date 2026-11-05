@@ -8,6 +8,10 @@ use wgpu::util::{DeviceExt, TextureDataOrder};
 
 #[test]
 #[ignore = "GPU end-to-end check; run explicitly with approval"]
+#[expect(
+    clippy::too_many_lines,
+    reason = "Keeps GPU fixture setup, execution and assertions together"
+)]
 fn khronos_neutral_and_blit_preserve_colors_without_double_gamma() {
     let (device, queue) = pollster::block_on(async {
         let adapter = wgpu::Instance::default()

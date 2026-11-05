@@ -2,6 +2,10 @@ use crate::geometry::cpu_mesh_buffers::CpuMeshBuffers;
 use crate::geometry::cpu_vertex_buffers::CpuVertexBuffers;
 use glam::Vec3;
 
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "Mesh coordinates and UVs use GPU f32 precision"
+)]
 pub fn plane(nb_subdivisions: u32, size: f32) -> CpuMeshBuffers {
     let mut positions = vec![[0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize];
     let mut normals = vec![[0.0, 0.0, 0.0]; (nb_subdivisions * nb_subdivisions) as usize];
@@ -115,6 +119,10 @@ pub fn cube() -> CpuMeshBuffers {
     cpu_buffers
 }
 
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "Mesh coordinates and UVs use GPU f32 precision"
+)]
 pub fn sphere(resolution: u32) -> CpuMeshBuffers {
     let mut positions = Vec::new();
     let mut normals = Vec::new();
@@ -124,15 +132,15 @@ pub fn sphere(resolution: u32) -> CpuMeshBuffers {
     let mut colors = Vec::new();
 
     let mut index = 0;
-    for i in 0..resolution {
-        let v = i as f32 / (resolution as f32 - 1.0);
-        let theta = v * std::f32::consts::PI;
+    for latitude_index in 0..resolution {
+        let uv_v = latitude_index as f32 / (resolution as f32 - 1.0);
+        let theta = uv_v * std::f32::consts::PI;
         let sin_theta = theta.sin();
         let cos_theta = theta.cos();
 
-        for j in 0..resolution {
-            let u = j as f32 / (resolution as f32 - 1.0);
-            let phi = u * 2.0 * std::f32::consts::PI;
+        for longitude_index in 0..resolution {
+            let uv_u = longitude_index as f32 / (resolution as f32 - 1.0);
+            let phi = uv_u * 2.0 * std::f32::consts::PI;
             let sin_phi = phi.sin();
             let cos_phi = phi.cos();
 
@@ -146,10 +154,10 @@ pub fn sphere(resolution: u32) -> CpuMeshBuffers {
             positions.push([x, y, z]);
             normals.push([x, y, z]);
             tangents.push([tx, 0.0, tz]);
-            uvs.push([1.0 - u, v]);
+            uvs.push([1.0 - uv_u, uv_v]);
             colors.push([1.0, 1.0, 1.0]);
 
-            if i < resolution - 1 && j < resolution - 1 {
+            if latitude_index < resolution - 1 && longitude_index < resolution - 1 {
                 indices.push(index);
                 indices.push(index + resolution + 1);
                 indices.push(index + resolution);

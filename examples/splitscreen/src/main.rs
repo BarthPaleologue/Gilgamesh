@@ -98,7 +98,12 @@ impl App for SplitScreenDemo {
     fn on_window_event(&mut self, event: &WindowEvent, context: &mut WindowContext<'_>) {
         if let WindowEvent::CursorMoved { position, .. } = event {
             let width = f64::from(context.frame.output().texture().width());
-            self.split = (position.x / width).clamp(0.0, 1.0) as f32;
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "A split fraction in [0, 1] only needs shader f32 precision"
+            )]
+            let split = (position.x / width).clamp(0.0, 1.0) as f32;
+            self.split = split;
         }
     }
 }

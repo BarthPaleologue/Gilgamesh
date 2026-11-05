@@ -24,6 +24,10 @@ use std::time::Duration;
 
 #[test]
 #[ignore = "GPU end-to-end check; run explicitly with approval"]
+#[expect(
+    clippy::too_many_lines,
+    reason = "Keeps GPU fixture setup, execution and assertions together"
+)]
 fn graph_execution_and_captures_keep_targets_and_hooks_independent() {
     let first = pollster::block_on(async {
         let mut executor = GraphExecutor::new().await;

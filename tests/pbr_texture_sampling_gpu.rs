@@ -118,6 +118,10 @@ fn albedo_encodings_match_equivalent_linear_constants() {
 
 #[test]
 #[ignore = "GPU end-to-end check; run explicitly with approval"]
+#[expect(
+    clippy::too_many_lines,
+    reason = "Keeps GPU fixture setup, execution and assertions together"
+)]
 fn roughness_and_normal_maps_match_equivalent_linear_surface_properties() {
     use gilgamesh::blocks::{rasterize, tone_map};
     use gilgamesh::core::graph_executor::GraphExecutor;

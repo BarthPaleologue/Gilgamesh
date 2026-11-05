@@ -17,6 +17,10 @@ fn main() {
     WindowRuntime::<GameOfLife>::run(768, 768);
 }
 
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "Pause, reset request and per-frame work flags vary independently"
+)]
 struct GameOfLife {
     states: [wgpu::Texture; 2],
     current: usize,

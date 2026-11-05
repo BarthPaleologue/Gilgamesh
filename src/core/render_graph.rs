@@ -481,6 +481,10 @@ struct Cached<K, V> {
 
 impl PassCache {
     /// Retains one value per `(K, V)` type pair; replaces it when the key changes.
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "Cache entries are indexed by their exact key and value types"
+    )]
     pub fn get_or_insert_with<K: Eq + 'static, V: 'static>(
         &mut self,
         key: K,

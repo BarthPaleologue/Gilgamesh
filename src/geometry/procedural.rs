@@ -7,6 +7,10 @@ use crate::geometry::cpu_vertex_buffers::CpuVertexBuffers;
 /// It is made of a subdivided plane, with a given `size` and number of subdivisions (`nb_subdivisions`)
 /// The `height_fn` takes x and z as parameters and is used to set the y coordinate of each vertex.
 /// Returns CPU mesh buffers without allocating GPU resources.
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "Mesh coordinates and UVs use GPU f32 precision"
+)]
 pub fn terrain(
     size: f32,
     nb_subdivisions: u32,

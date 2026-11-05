@@ -21,6 +21,10 @@ mod gpu {
 
     #[test]
     #[ignore = "GPU end-to-end check; run explicitly with approval"]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Keeps GPU fixture setup, execution and assertions together"
+    )]
     fn patterns_evolve_with_ping_pong_while_pause_and_custom_capture_preserve_state() {
         pollster::block_on(async {
             let mut runtime = HeadlessRuntime::<GameOfLife>::new(GRID_SIZE, GRID_SIZE).await;

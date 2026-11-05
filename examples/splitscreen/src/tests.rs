@@ -9,6 +9,10 @@ mod gpu {
 
     #[test]
     #[ignore = "GPU end-to-end check; run explicitly with approval"]
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "Small fixture dimensions are exactly representable as f32"
+    )]
     fn mouse_controls_color_depth_split_across_render_sizes() {
         pollster::block_on(async {
             let mut executor = GraphExecutor::new().await;
@@ -92,6 +96,14 @@ mod gpu {
         executor.execute(app.render_graph(), target).unwrap();
     }
 
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "Expected color channels are rounded to UNORM bytes"
+    )]
+    #[expect(
+        clippy::cast_sign_loss,
+        reason = "Expected color channels are nonnegative UNORM values"
+    )]
     fn ground_depth(camera: &Camera<Perspective>, width: u32, height: u32, x: u32, y: u32) -> u8 {
         let clip = DVec4::new(
             2.0 * (f64::from(x) + 0.5) / f64::from(width) - 1.0,

@@ -34,6 +34,10 @@ const COMPUTE: &str = r"
 
 #[test]
 #[ignore = "GPU end-to-end check; run explicitly with approval"]
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "Small fixture dimensions are exactly representable as f32"
+)]
 fn helpers_support_mrt_multiple_compute_outputs_and_changing_cached_parameters() {
     pollster::block_on(async {
         let mut executor = GraphExecutor::new().await;

@@ -9,6 +9,10 @@ use wgpu::{TextureFormat as Format, TextureUsages as Usage};
 
 #[test]
 #[ignore = "GPU end-to-end check; run explicitly with approval"]
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "Small fixture dimensions are exactly representable as f32"
+)]
 fn visualize_depth_shows_raw_depth_and_vertical_split_preserves_hdr() {
     pollster::block_on(async {
         let mut executor = GraphExecutor::new().await;
@@ -93,6 +97,10 @@ fn visualize_depth_shows_raw_depth_and_vertical_split_preserves_hdr() {
 
 #[test]
 #[ignore = "GPU end-to-end check; run explicitly with approval"]
+#[expect(
+    clippy::too_many_lines,
+    reason = "Keeps GPU fixture setup, execution and assertions together"
+)]
 fn nearest_resize_preserves_rgba_srgb_and_hdr_across_sizes() {
     pollster::block_on(async {
         let mut executor = GraphExecutor::new().await;

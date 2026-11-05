@@ -21,6 +21,18 @@ const COPY: &str = r"
 
 #[test]
 #[ignore = "GPU end-to-end check; run explicitly with approval"]
+#[expect(
+    clippy::cast_possible_truncation,
+    reason = "Fixture casts model pixel coordinates and rounded UNORM channel encoding"
+)]
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "Small fixture dimensions are exactly representable as f32"
+)]
+#[expect(
+    clippy::cast_sign_loss,
+    reason = "Expected color channels are nonnegative UNORM values"
+)]
 fn bilinear_interpolates_rgba_in_linear_space_and_clamps_edges() {
     pollster::block_on(async {
         let mut executor = GraphExecutor::new().await;
@@ -201,6 +213,14 @@ fn bilinear_keeps_hdr_and_blur_and_bloom_preserve_uniform_light() {
 
 #[test]
 #[ignore = "GPU end-to-end check; run explicitly with approval"]
+#[expect(
+    clippy::cast_possible_truncation,
+    reason = "Expected color channels are rounded to UNORM bytes"
+)]
+#[expect(
+    clippy::cast_sign_loss,
+    reason = "Expected color channels are nonnegative UNORM values"
+)]
 fn bloom_diffuses_subunit_light_and_uses_a_final_lerp_preserving_alpha() {
     pollster::block_on(async {
         let mut executor = GraphExecutor::new().await;

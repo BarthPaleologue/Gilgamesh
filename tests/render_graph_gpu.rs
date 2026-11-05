@@ -18,6 +18,10 @@ use wgpu::{TextureFormat as Format, TextureUsages as Usage};
 
 #[test]
 #[ignore = "GPU end-to-end check; run explicitly with approval"]
+#[expect(
+    clippy::too_many_lines,
+    reason = "Keeps GPU fixture setup, execution and assertions together"
+)]
 fn custom_blocks_mrt_compute_caches_and_independent_raster_inputs() {
     pollster::block_on(async {
         let mut executor = GraphExecutor::new().await;
@@ -185,6 +189,10 @@ fn custom_blocks_mrt_compute_caches_and_independent_raster_inputs() {
 
 #[test]
 #[ignore = "GPU end-to-end check; run explicitly with approval"]
+#[expect(
+    clippy::too_many_lines,
+    reason = "Keeps GPU fixture setup, execution and assertions together"
+)]
 fn imported_textures_keep_written_state_across_ping_pong_frames() {
     pollster::block_on(async {
         let mut executor = GraphExecutor::new().await;
@@ -685,6 +693,10 @@ fn assert_pixel(actual: [u8; 4], expected: [u8; 4]) {
 
 #[test]
 #[ignore = "GPU end-to-end check; run explicitly with approval"]
+#[expect(
+    clippy::too_many_lines,
+    reason = "Keeps GPU fixture setup, execution and assertions together"
+)]
 fn versions_preserve_old_reads_before_ping_pong_overwrites() {
     pollster::block_on(async {
         let mut executor = GraphExecutor::new().await;

@@ -11,6 +11,12 @@ license = "Apache-2.0"
 [workspace]
 members = ["examples/game_of_life", "examples/headless", "examples/splitscreen", "examples/starsystem", "examples/terrain"]
 
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+
+[lints]
+workspace = true
+
 [workspace.dependencies]
 gilgamesh = { path = "." }
 glam = "0.34.2"

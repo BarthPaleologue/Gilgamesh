@@ -9,6 +9,10 @@ use glam::DVec3;
 
 #[test]
 #[ignore = "GPU end-to-end check; run explicitly with approval"]
+#[expect(
+    clippy::too_many_lines,
+    reason = "Keeps GPU fixture setup, execution and assertions together"
+)]
 fn shared_materials_have_renderer_local_runtime() {
     let gpu = pollster::block_on(WGPUContext::new(wgpu::Instance::default(), None));
     let camera = Camera::new(Orthographic {
