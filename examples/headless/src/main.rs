@@ -5,6 +5,7 @@ use gilgamesh::core::{App, FrameBindingsData, HeadlessRuntime, WGPUContext};
 use gilgamesh::geometry::{Mesh, primitive};
 use gilgamesh::lights::DirectionalLight;
 use gilgamesh::materials::BlinnPhongMaterial;
+use gilgamesh::photometry::Nits;
 use gilgamesh::transform::Transformable;
 use glam::DVec3;
 use std::rc::Rc;
@@ -40,6 +41,7 @@ impl App for HeadlessScene {
 
         let mut plane_material = BlinnPhongMaterial::new("Ground");
         plane_material.set_diffuse_color(0.3, 0.35, 0.4);
+        plane_material.set_ambient_luminance(Nits::new(1.0));
         plane_material.set_ambient_color(0.02, 0.02, 0.02);
         let plane = Mesh::from_cpu_buffers(
             "Plane",
@@ -50,6 +52,7 @@ impl App for HeadlessScene {
 
         let mut sphere_material = BlinnPhongMaterial::new("Sphere");
         sphere_material.set_diffuse_color(0.9, 0.2, 0.05);
+        sphere_material.set_ambient_luminance(Nits::new(1.0));
         sphere_material.set_ambient_color(0.03, 0.01, 0.005);
         let sphere = Mesh::from_cpu_buffers(
             "Sphere",

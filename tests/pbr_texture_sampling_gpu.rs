@@ -1,6 +1,6 @@
 #![cfg(not(target_arch = "wasm32"))]
 
-use gilgamesh::photometry::Lux;
+use gilgamesh::photometry::{Lux, Nits};
 mod common;
 
 use common::read_rgba8;
@@ -297,11 +297,14 @@ fn emissive_textures_multiply_linear_hdr_factors_without_received_light() {
                 )
             };
             let mut reference = PbrMaterial::new("Constant emission");
+            reference.set_emissive_luminance(Nits::new(1.0));
             reference.set_emissive_color(factor[0] * gray, factor[1] * gray, factor[2] * gray);
             let mut textured = PbrMaterial::new("Textured emission");
             textured.set_emissive_texture(texture);
+            textured.set_emissive_luminance(Nits::new(1.0));
             textured.set_emissive_color(factor[0], factor[1], factor[2]);
             let mut disabled = textured.clone();
+            disabled.set_emissive_luminance(Nits::new(1.0));
             disabled.set_emissive_color(0.0, 0.0, 0.0);
             let mut images = Vec::new();
             for material in [reference, textured, disabled] {

@@ -1,3 +1,4 @@
+use crate::photometry::Nits;
 use crate::texture::{ColorTexture, Linear, Texture};
 use std::rc::Rc;
 
@@ -8,8 +9,9 @@ pub struct PbrMaterial {
     pub name: String,
 
     pub albedo_color: [f32; 3],
-    /// Linear emission, multiplied by the optional texture. Values above 1 produce HDR light.
+    /// Linear RGB multiplier of the white-reference luminance and optional texture.
     pub emissive_color: [f32; 3],
+    pub emissive_luminance: Nits,
     pub metallic: f32,
     pub roughness: f32,
 
@@ -28,7 +30,8 @@ impl PbrMaterial {
             name: name.to_string(),
 
             albedo_color: [1.0, 1.0, 1.0],
-            emissive_color: [0.0, 0.0, 0.0],
+            emissive_color: [1.0, 1.0, 1.0],
+            emissive_luminance: Nits::new(0.0),
             metallic: 0.7,
             roughness: 0.4,
 
@@ -51,6 +54,10 @@ impl PbrMaterial {
 
     pub fn set_emissive_texture(&mut self, texture: impl Into<ColorTexture>) {
         self.emissive_texture = Some(texture.into());
+    }
+
+    pub fn set_emissive_luminance(&mut self, luminance: Nits) {
+        self.emissive_luminance = luminance;
     }
 
     pub fn set_emissive_color(&mut self, r: f32, g: f32, b: f32) {

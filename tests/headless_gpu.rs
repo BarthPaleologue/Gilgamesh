@@ -14,7 +14,7 @@ use gilgamesh::geometry::{mesh::Mesh, primitive};
 use gilgamesh::input::mouse::Mouse;
 use gilgamesh::lights::directional_light::DirectionalLight;
 use gilgamesh::materials::pbr::PbrMaterial;
-use gilgamesh::photometry::Lux;
+use gilgamesh::photometry::{Lux, Nits};
 use gilgamesh::transform::Transformable;
 use glam::DVec3;
 use std::cell::Cell;
@@ -193,6 +193,7 @@ impl App for TestApp {
         let mut light = DirectionalLight::default();
         light.set_illuminance(Lux::new(0.0));
         let mut material = PbrMaterial::new("HDR");
+        material.set_emissive_luminance(Nits::new(1.0));
         material.set_emissive_color(4.0, 1.0, 0.25);
         Self {
             name: String::new(),
@@ -221,6 +222,7 @@ impl App for TestApp {
         assert_eq!(frame.mouse.scroll_delta_lines, 0.0);
         if frame.elapsed_seconds >= 0.04 {
             let mut blue = PbrMaterial::new("Blue");
+            blue.set_emissive_luminance(Nits::new(1.0));
             blue.set_emissive_color(0.0, 0.0, 4.0);
             self.mesh.set_material(Rc::new(blue.into()));
         }

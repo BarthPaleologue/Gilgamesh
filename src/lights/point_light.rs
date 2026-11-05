@@ -4,6 +4,8 @@ use crate::transform::{Transform, Transformable};
 use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
 
+/// An isotropic point emitter with inverse-square attenuation in meters.
+/// Rendering regularizes the singularity within one millimeter of the source.
 pub struct PointLight {
     color: [f32; 3],
     intensity: Candela,

@@ -170,7 +170,9 @@ impl From<&crate::materials::pbr::PbrMaterial> for PbrUniforms {
         PbrUniforms {
             albedo_color: material.albedo_color,
             has_albedo_texture: u32::from(material.albedo_texture.is_some()),
-            emissive_color: material.emissive_color,
+            emissive_color: material
+                .emissive_color
+                .map(|c| c * material.emissive_luminance.value()),
             has_emissive_texture: u32::from(material.emissive_texture.is_some()),
             metallic: material.metallic,
             has_metallic_texture: 0,
@@ -187,7 +189,9 @@ impl From<&crate::materials::blinn_phong::BlinnPhongMaterial> for BlinnPhongUnif
         BlinnPhongUniforms {
             diffuse_color: material.diffuse_color,
             has_diffuse_texture: u32::from(material.diffuse_texture.is_some()),
-            ambient_color: material.ambient_color,
+            ambient_color: material
+                .ambient_color
+                .map(|c| c * material.ambient_luminance.value()),
             has_ambient_texture: u32::from(material.ambient_texture.is_some()),
             specular_color: material.specular_color,
             has_specular_texture: u32::from(material.specular_texture.is_some()),
@@ -201,20 +205,23 @@ impl From<&crate::materials::blinn_phong::BlinnPhongMaterial> for BlinnPhongUnif
 mod pbr_tests {
     use super::PbrUniforms;
     use crate::materials::pbr::PbrMaterial;
+    use crate::photometry::Nits;
 
     #[test]
     fn constant_colors_can_be_configured_without_texture_resources() {
         let mut material = PbrMaterial::new("Constant");
         assert!(material.albedo_texture.is_none());
         assert!(material.emissive_texture.is_none());
+        assert_eq!(PbrUniforms::from(&material).emissive_color, [0.0; 3]);
         assert!(material.normal_map.is_none());
         assert!(material.roughness_map.is_none());
         material.set_albedo_color(0.2, 0.3, 0.4);
+        material.set_emissive_luminance(Nits::new(2.0));
         material.set_emissive_color(0.1, 0.0, 0.2);
 
         let uniforms = PbrUniforms::from(&material);
         assert_eq!(uniforms.albedo_color, [0.2, 0.3, 0.4]);
-        assert_eq!(uniforms.emissive_color, [0.1, 0.0, 0.2]);
+        assert_eq!(uniforms.emissive_color, [0.2, 0.0, 0.4]);
         assert_eq!(uniforms.metallic, 0.7);
         assert_eq!(uniforms.roughness, 0.4);
         assert_eq!(
@@ -242,21 +249,24 @@ mod pbr_tests {
 mod blinn_phong_tests {
     use super::BlinnPhongUniforms;
     use crate::materials::blinn_phong::BlinnPhongMaterial;
+    use crate::photometry::Nits;
 
     #[test]
     fn constant_colors_can_be_configured_without_texture_resources() {
         let mut material = BlinnPhongMaterial::new("Constant");
         assert!(material.diffuse_texture.is_none());
         assert!(material.ambient_texture.is_none());
+        assert_eq!(BlinnPhongUniforms::from(&material).ambient_color, [0.0; 3]);
         assert!(material.specular_texture.is_none());
         assert!(material.normal_map.is_none());
         material.set_diffuse_color(0.2, 0.3, 0.4);
+        material.set_ambient_luminance(Nits::new(2.0));
         material.set_ambient_color(0.1, 0.0, 0.2);
         material.set_specular_color(0.8, 0.7, 0.6);
 
         let uniforms = BlinnPhongUniforms::from(&material);
         assert_eq!(uniforms.diffuse_color, [0.2, 0.3, 0.4]);
-        assert_eq!(uniforms.ambient_color, [0.1, 0.0, 0.2]);
+        assert_eq!(uniforms.ambient_color, [0.2, 0.0, 0.4]);
         assert_eq!(uniforms.specular_color, [0.8, 0.7, 0.6]);
         assert_eq!(
             [

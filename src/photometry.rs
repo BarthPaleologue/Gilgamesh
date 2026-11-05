@@ -65,6 +65,28 @@ impl Lux {
     }
 }
 
+/// White-reference luminance in nits (candelas per square meter).
+#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
+pub struct Nits(f32);
+
+impl Nits {
+    /// # Panics
+    /// Panics if the luminance is negative or non-finite.
+    #[must_use]
+    pub const fn new(nits: f32) -> Self {
+        assert!(
+            nits.is_finite() && nits >= 0.0,
+            "Nits must be finite and nonnegative"
+        );
+        Self(nits)
+    }
+
+    #[must_use]
+    pub const fn value(self) -> f32 {
+        self.0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -82,6 +104,7 @@ mod tests {
             assert!(std::panic::catch_unwind(|| Candela::new(value)).is_err());
             assert!(std::panic::catch_unwind(|| Candela::from_lumens(value)).is_err());
             assert!(std::panic::catch_unwind(|| Lux::new(value)).is_err());
+            assert!(std::panic::catch_unwind(|| Nits::new(value)).is_err());
         }
         assert_eq!(Candela::new(0.0).value(), 0.0);
         assert_eq!(Lux::new(0.0).value(), 0.0);

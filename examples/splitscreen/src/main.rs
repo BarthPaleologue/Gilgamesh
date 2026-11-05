@@ -8,6 +8,7 @@ use gilgamesh::geometry::{Mesh, primitive};
 use gilgamesh::input::OrbitControl;
 use gilgamesh::lights::DirectionalLight;
 use gilgamesh::materials::BlinnPhongMaterial;
+use gilgamesh::photometry::Nits;
 use gilgamesh::transform::Transformable;
 use glam::DVec3;
 use std::rc::Rc;
@@ -29,6 +30,7 @@ impl App for SplitScreenDemo {
     fn new(ctx: &WGPUContext) -> Self {
         let mut ground_material = BlinnPhongMaterial::new("Ground");
         ground_material.set_diffuse_color(0.3, 0.35, 0.4);
+        ground_material.set_ambient_luminance(Nits::new(1.0));
         ground_material.set_ambient_color(0.02, 0.02, 0.02);
         let ground = Mesh::from_cpu_buffers(
             "Ground",
@@ -39,6 +41,7 @@ impl App for SplitScreenDemo {
 
         let mut sphere_material = BlinnPhongMaterial::new("Amber");
         sphere_material.set_diffuse_color(0.9, 0.2, 0.05);
+        sphere_material.set_ambient_luminance(Nits::new(1.0));
         sphere_material.set_ambient_color(0.03, 0.01, 0.005);
         let sphere = Mesh::from_cpu_buffers(
             "Sphere",
@@ -50,6 +53,7 @@ impl App for SplitScreenDemo {
 
         let mut cube_material = BlinnPhongMaterial::new("Blue");
         cube_material.set_diffuse_color(0.1, 0.45, 0.9);
+        cube_material.set_ambient_luminance(Nits::new(1.0));
         cube_material.set_ambient_color(0.01, 0.02, 0.03);
         let cube = Mesh::from_cpu_buffers(
             "Cube",

@@ -8,7 +8,7 @@ use gilgamesh::core::render_graph::{Image, ImageDescriptor, ImageSize, PassConte
 use gilgamesh::geometry::{mesh::Mesh, primitive};
 use gilgamesh::lights::directional_light::DirectionalLight;
 use gilgamesh::materials::pbr::PbrMaterial;
-use gilgamesh::photometry::Lux;
+use gilgamesh::photometry::{Lux, Nits};
 use gilgamesh::transform::Transformable;
 use glam::DVec3;
 use std::cell::{Cell, RefCell};
@@ -147,6 +147,7 @@ fn custom_blocks_mrt_compute_caches_and_independent_raster_inputs() {
         let mut light = DirectionalLight::default();
         light.set_illuminance(Lux::new(0.0));
         let mut material = PbrMaterial::new("Amber");
+        material.set_emissive_luminance(Nits::new(1.0));
         material.set_emissive_color(4.0, 1.0, 0.25);
         let mesh = Mesh::from_cpu_buffers(
             "Plane",

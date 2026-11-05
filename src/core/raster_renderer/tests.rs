@@ -4,7 +4,7 @@ use crate::geometry::primitive;
 use crate::lights::directional_light::DirectionalLight;
 use crate::materials::blinn_phong::BlinnPhongMaterial;
 use crate::materials::pbr::PbrMaterial;
-use crate::photometry::Lux;
+use crate::photometry::{Lux, Nits};
 use glam::DVec3;
 
 #[test]
@@ -183,10 +183,75 @@ fn directional_lights_accumulate_and_can_be_removed_between_frames() {
     }
 }
 
+#[test]
+#[ignore = "GPU end-to-end check; run explicitly with approval"]
+fn phong_point_lights_follow_inverse_square_and_scale_the_specular_lobe() {
+    let gpu = pollster::block_on(WGPUContext::new(wgpu::Instance::default(), None));
+    let camera = Camera::new(Orthographic {
+        size_vertical: 4.0,
+        near: 0.1,
+        far: 10.0,
+    });
+    camera.transform_mut().position = DVec3::new(0.0, 3.0, 0.0);
+    camera.transform_mut().look_at(DVec3::ZERO, DVec3::NEG_Z);
+    let color = attachment(&gpu.device, wgpu::TextureFormat::Rgba8Unorm);
+    let depth = attachment(&gpu.device, wgpu::TextureFormat::Depth32Float);
+    for specular_only in [false, true] {
+        let mut material = BlinnPhongMaterial::new("Photometric surface");
+        if specular_only {
+            material.set_diffuse_color(0.0, 0.0, 0.0);
+            material.set_specular_color(1.0, 1.0, 1.0);
+        } else {
+            material.set_specular_color(0.0, 0.0, 0.0);
+        }
+        let mesh = Mesh::from_cpu_buffers(
+            "Plane",
+            &primitive::plane(2, 2.0),
+            Rc::new(material.into()),
+            &gpu,
+        );
+        let mut renderer = RasterRenderer::new(&gpu, color.format());
+        let mut draw = |distance, intensity| {
+            let mut light = crate::lights::PointLight::default();
+            light.set_intensity(crate::photometry::Candela::new(intensity));
+            // Keep incidence and reflection angles fixed while changing the distance.
+            let texel_offset = 0.5 * camera.projection.size_vertical / f64::from(color.width());
+            light.transform_mut().position = DVec3::new(texel_offset, distance, texel_offset);
+            renderer.update_frame_bindings(
+                &FrameBindingsData::new(&camera, &[], &[light]),
+                1.0,
+                &gpu,
+            );
+            let image = render(&gpu, &mut renderer, &[&mesh], &color, &depth);
+            u16::from(pixel(&image, 32)[0])
+        };
+        let intensity = if specular_only { 0.1 } else { 1.0 };
+        let near = draw(1.0, intensity);
+        let far = draw(2.0, intensity);
+        let dim = draw(1.0, intensity / 2.0);
+        assert!(near > 30 && near < 250);
+        assert!(near.abs_diff(4 * far) <= 4, "{near} != 4 * {far}");
+        assert!(near.abs_diff(2 * dim) <= 2, "{near} != 2 * {dim}");
+        assert_eq!(draw(1.0, 0.0), 0);
+        if !specular_only {
+            assert!(
+                near.abs_diff(81) <= 1,
+                "One candela at one meter on a white Lambertian surface must produce 1/pi nits"
+            );
+        }
+    }
+}
+
 fn set_unlit_color(material: &mut Material, color: [f32; 3]) {
     match material {
-        Material::Pbr(material) => material.emissive_color = color,
-        Material::BlinnPhong(material) => material.ambient_color = color,
+        Material::Pbr(material) => {
+            material.emissive_color = color;
+            material.emissive_luminance = Nits::new(1.0);
+        }
+        Material::BlinnPhong(material) => {
+            material.ambient_color = color;
+            material.ambient_luminance = Nits::new(1.0);
+        }
     }
 }
 

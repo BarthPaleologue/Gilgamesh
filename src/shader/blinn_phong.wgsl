@@ -88,6 +88,15 @@ fn vs_main(in: VertexInput) -> VertexOutput {
     return output;
 }
 
+// Modified Phong BRDF: diffuse / pi, normalized reflection lobe with exponent 32.
+// https://www.cs.cornell.edu/courses/cs6620/2009sp/Homework/hw2/GICompendium.pdf
+fn phong_response(N: vec3f, V: vec3f, L: vec3f, diffuse: vec3f, specular: vec3f) -> vec3f {
+    let reflect_dir = reflect(-L, N);
+    let specular_lobe = (34.0 / (2.0 * 3.14159265359)) * pow(max(0.0, dot(V, reflect_dir)), 32.0);
+    let diffuse_weight = vec3f(1.0) - clamp(specular, vec3f(0.0), vec3f(1.0));
+    return (diffuse_weight * diffuse / 3.14159265359 + specular_lobe * specular) * max(0.0, dot(N, L));
+}
+
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var normal = in.vNormal;
@@ -110,37 +119,29 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     var ambient: vec3<f32> = phong.ambient_color;
     if(phong.has_ambient_texture > 0u) {
-        ambient = textureSample(ambient_texture, ambient_sampler, in.vUV).rgb;
+        ambient *= textureSample(ambient_texture, ambient_sampler, in.vUV).rgb;
     }
 
     let view_dir: vec3<f32> = normalize(camera.position - in.vPositionW);
 
-    var color = vec3<f32>(0.0);
+    var specular = phong.specular_color;
+    if(phong.has_specular_texture > 0u) {
+        specular *= textureSample(specular_texture, specular_sampler, in.vUV).r;
+    }
+
+    var color = vec3f(0.0);
     for (var i: u32 = 0u; i < light_counts.directional; i = i + 1u) {
         let light = directional_lights[i];
-        let reflect_dir: vec3<f32> = reflect(light.direction, normal);
-        let specular_strength: f32 = pow(max(0.0, dot(view_dir, reflect_dir)), 32.0);
-        var specular: vec3<f32> = specular_strength * light.color * light.intensity * phong.specular_color;
-        if(phong.has_specular_texture > 0u) {
-            specular = specular * textureSample(specular_texture, specular_sampler, in.vUV).r;
-        }
-
-        let ndl = max(0.0, dot(normal, -light.direction));
-        color += (diffuse * light.color * light.intensity + specular) * ndl;
+        let L = -normalize(light.direction);
+        color += phong_response(normal, view_dir, L, diffuse, specular) * light.color * light.intensity;
     }
 
     for (var i: u32 = 0u; i < light_counts.point; i = i + 1u) {
-        let light_dir: vec3<f32> = normalize(point_lights[i].position - in.vPositionW);
-        let ndl = max(0.0, dot(normal, light_dir));
-
-        let reflect_dir: vec3<f32> = reflect(-light_dir, normal);
-        let specular_strength: f32 = pow(max(0.0, dot(view_dir, reflect_dir)), 32.0);
-        var specular: vec3<f32> = specular_strength * point_lights[i].color * phong.specular_color;
-        if(phong.has_specular_texture > 0u) {
-             specular = specular * textureSample(specular_texture, specular_sampler, in.vUV).r;
-        }
-
-        color += (diffuse * point_lights[i].color * point_lights[i].intensity + specular) * ndl;
+        let light = point_lights[i];
+        let offset = light.position - in.vPositionW;
+        let distance = max(length(offset), 0.001);
+        let L = offset / distance;
+        color += phong_response(normal, view_dir, L, diffuse, specular) * light.color * (light.intensity / (distance * distance));
     }
 
     color += ambient;

@@ -1,3 +1,4 @@
+use crate::photometry::Nits;
 use crate::texture::{ColorTexture, Linear, Texture};
 use std::rc::Rc;
 
@@ -8,7 +9,9 @@ pub struct BlinnPhongMaterial {
     pub name: String,
 
     pub diffuse_color: [f32; 3],
+    /// Linear RGB multiplier of the white-reference luminance and optional texture.
     pub ambient_color: [f32; 3],
+    pub ambient_luminance: Nits,
     pub specular_color: [f32; 3],
 
     pub diffuse_texture: Option<ColorTexture>,
@@ -25,8 +28,9 @@ impl BlinnPhongMaterial {
             name: name.to_string(),
 
             diffuse_color: [1.0, 1.0, 1.0],
-            ambient_color: [0.0, 0.0, 0.0],
-            specular_color: [1.0, 1.0, 1.0],
+            ambient_color: [1.0, 1.0, 1.0],
+            ambient_luminance: Nits::new(0.0),
+            specular_color: [0.04, 0.04, 0.04],
 
             diffuse_texture: None,
             ambient_texture: None,
@@ -47,6 +51,10 @@ impl BlinnPhongMaterial {
 
     pub fn set_ambient_texture(&mut self, texture: impl Into<ColorTexture>) {
         self.ambient_texture = Some(texture.into());
+    }
+
+    pub fn set_ambient_luminance(&mut self, luminance: Nits) {
+        self.ambient_luminance = luminance;
     }
 
     pub fn set_ambient_color(&mut self, r: f32, g: f32, b: f32) {

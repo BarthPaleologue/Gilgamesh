@@ -8,7 +8,7 @@ use gilgamesh::input::OrbitControl;
 use gilgamesh::lights::debug::create_point_light_debug_mesh;
 use gilgamesh::lights::{Light, PointLight};
 use gilgamesh::materials::PbrMaterial;
-use gilgamesh::photometry::Candela;
+use gilgamesh::photometry::{Candela, Nits};
 use gilgamesh::texture::{Linear, Srgb};
 use gilgamesh::transform::{Transform, Transformable};
 use glam::{DQuat, DVec3};
@@ -56,6 +56,7 @@ impl App for StarSystemDemo {
         sun_material.set_albedo_color(0.0, 0.0, 0.0);
         sun_material.metallic = 0.0;
         sun_material.set_emissive_texture(sun_texture);
+        sun_material.set_emissive_luminance(Nits::new(1.0));
         sun_material.set_emissive_color(20.0, 20.0, 20.0);
         let sun = Mesh::from_cpu_buffers(
             "Sun",
