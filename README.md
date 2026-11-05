@@ -27,6 +27,7 @@ A small 3D WGPU engine written in Rust that does not rely on the ECS pattern.
 - Physics plugin
 - Visual testing
 - MCP support
+- Vertex pulling
 
 ![sinc function](cover.png)
 
