@@ -44,7 +44,9 @@ pub fn rasterize<'a>(
             let renderer = context.cache.get_or_insert_with(color_format, || {
                 RasterRenderer::new(context.gpu, color_format)
             });
-            renderer.update_frame_bindings(&bindings, context.gpu);
+            let size = context.images.get(color).texture().size();
+            let aspect_ratio = f64::from(size.width) / f64::from(size.height);
+            renderer.update_frame_bindings(&bindings, aspect_ratio, context.gpu);
             renderer.encode(
                 meshes,
                 context.gpu,

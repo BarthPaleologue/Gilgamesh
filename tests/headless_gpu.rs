@@ -42,6 +42,8 @@ fn graph_execution_and_captures_keep_targets_and_hooks_independent() {
         let first = target.read_image(executor.wgpu_context()).await.unwrap();
         assert_eq!(first.dimensions(), (67, 33));
         assert_pixel(first.get_pixel(33, 16).0, [253, 182, 158, 255]);
+        assert_square_footprint(&first);
+        let projection = app.camera.projection;
         let background = first.get_pixel(0, 0).0;
         assert_ne!(background, first.get_pixel(33, 16).0);
         assert_eq!(first.get_pixel(66, 32).0, background);
@@ -72,18 +74,19 @@ fn graph_execution_and_captures_keep_targets_and_hooks_independent() {
             };
             assert_eq!(context.capture_frame().await.unwrap(), first);
             assert_eq!(app.frames.len(), 2);
-            let custom = context.render_image(&mut app, 129, 65).await.unwrap();
-            assert_eq!(custom.dimensions(), (129, 65));
-            assert_pixel(custom.get_pixel(64, 32).0, [253, 182, 158, 255]);
+            let custom = context.render_image(&mut app, 65, 129).await.unwrap();
+            assert_eq!(custom.dimensions(), (65, 129));
+            assert_square_footprint(&custom);
+            assert_pixel(custom.get_pixel(32, 64).0, [253, 182, 158, 255]);
             assert_eq!(context.capture_frame().await.unwrap(), first);
-            assert_eq!(app.frames[2], (0.02, 0.0, 129, 65));
-            assert_eq!(app.camera.projection.aspect_ratio, 129.0 / 65.0);
-            assert_eq!(app.name(), "129x65 at 0.02");
+            assert_eq!(app.frames[2], (0.02, 0.0, 65, 129));
+            assert_eq!(app.name(), "65x129 at 0.02");
+            assert_eq!(app.camera.projection, projection);
         }
         assert_eq!(app.frames.len(), 3);
         render_frame(&mut executor, &mut app, &mut target, 0.04, 0.02);
-        assert_eq!(app.camera.projection.aspect_ratio, 67.0 / 33.0);
         assert_eq!(app.name(), "67x33 at 0.04");
+        assert_eq!(app.camera.projection, projection);
         assert_pixel(
             target
                 .read_image(executor.wgpu_context())
@@ -126,7 +129,6 @@ fn graph_execution_and_captures_keep_targets_and_hooks_independent() {
         let custom = runtime.render_image(129, 65);
         assert_eq!(runtime.app().frames[2], (0.04, 0.0, 129, 65));
         runtime.render(Duration::ZERO);
-        assert_eq!(runtime.app().camera.projection.aspect_ratio, 67.0 / 33.0);
         assert_eq!(custom.await.unwrap().dimensions(), (129, 65));
         assert_eq!(runtime.capture_frame().await.unwrap(), main);
         runtime.resize(3, 4);
@@ -180,7 +182,6 @@ impl App for TestApp {
     fn new(ctx: &WGPUContext) -> Self {
         let camera = Camera::new(Orthographic {
             size_vertical: 4.0,
-            aspect_ratio: 1.0,
             near: 0.1,
             far: 10.0,
         });
@@ -215,8 +216,6 @@ impl App for TestApp {
         );
         assert_eq!(frame.mouse.delta, [0.0; 2]);
         assert_eq!(frame.mouse.scroll_delta_lines, 0.0);
-        self.camera.projection.aspect_ratio =
-            f64::from(frame.render_width) / f64::from(frame.render_height);
         if frame.elapsed_seconds >= 0.04 {
             let mut blue = PbrMaterial::new("Blue");
             blue.set_emissive_color(0.0, 0.0, 4.0);
@@ -276,4 +275,19 @@ fn assert_pixel(actual: [u8; 4], expected: [u8; 4]) {
     for (actual, expected) in actual.into_iter().zip(expected) {
         assert!(actual.abs_diff(expected) <= 1, "{actual} != {expected}");
     }
+}
+
+fn assert_square_footprint(image: &image::RgbaImage) {
+    let background = image.get_pixel(0, 0);
+    let horizontal = (0..image.width())
+        .filter(|&x| image.get_pixel(x, image.height() / 2) != background)
+        .count();
+    let vertical = (0..image.height())
+        .filter(|&y| image.get_pixel(image.width() / 2, y) != background)
+        .count();
+    assert!(horizontal > 0 && vertical > 0);
+    assert!(
+        horizontal.abs_diff(vertical) <= 1,
+        "Square plane rendered as {horizontal}x{vertical}"
+    );
 }

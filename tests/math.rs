@@ -235,7 +235,7 @@ fn gpu_uniforms_keep_their_layout_and_column_major_matrices() {
     let camera: Camera = Camera::default();
     camera.transform_mut().position = DVec3::new(0.0, 0.0, 5.0);
     let mut uniforms = CameraUniforms::default();
-    uniforms.update(&camera);
+    uniforms.update(&camera, 1.0);
     let floats: &[f32] = bytemuck::cast_slice(std::slice::from_ref(&uniforms));
     assert_eq!(&floats[16..19], &[0.0, 0.0, 5.0]);
 }
@@ -263,7 +263,7 @@ fn shader_positions_follow_parent_translation_and_rotation() {
     ] {
         parent.borrow_mut().position = translation;
         let mut camera_uniforms = CameraUniforms::default();
-        camera_uniforms.update(&camera);
+        camera_uniforms.update(&camera, 1.0);
         let floats: &[f32] = bytemuck::cast_slice(std::slice::from_ref(&camera_uniforms));
         assert_eq!(&floats[16..19], &expected);
 

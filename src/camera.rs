@@ -1,7 +1,7 @@
 mod projection;
 pub mod uniforms;
 
-pub use projection::{CameraProjection, OffAxis, Orthographic, Perspective, Projection};
+pub use projection::{CameraProjection, Orthographic, Perspective, Projection};
 
 use glam::DMat4;
 use std::cell::{Ref, RefCell, RefMut};
@@ -27,11 +27,11 @@ impl<ProjectionType: CameraProjection> Camera<ProjectionType> {
     pub fn view_matrix(&self) -> DMat4 {
         self.transform().world_matrix().inverse()
     }
-    pub fn projection_matrix(&self) -> DMat4 {
-        self.projection.matrix()
+    pub fn projection_matrix(&self, aspect_ratio: f64) -> DMat4 {
+        self.projection.matrix(aspect_ratio)
     }
-    pub fn projection_view(&self) -> DMat4 {
-        self.projection_matrix() * self.view_matrix()
+    pub fn projection_view(&self, aspect_ratio: f64) -> DMat4 {
+        self.projection_matrix(aspect_ratio) * self.view_matrix()
     }
 }
 

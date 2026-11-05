@@ -374,7 +374,6 @@ fn imported_textures_keep_written_state_across_ping_pong_frames() {
 fn camera_at(x: f64) -> Camera<Orthographic> {
     let camera = Camera::new(Orthographic {
         size_vertical: 4.0,
-        aspect_ratio: 67.0 / 33.0,
         near: 0.1,
         far: 10.0,
     });

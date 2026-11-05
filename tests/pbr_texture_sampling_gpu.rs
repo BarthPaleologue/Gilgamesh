@@ -84,7 +84,7 @@ fn albedo_encodings_match_equivalent_linear_constants() {
     camera.transform_mut().look_at(DVec3::ZERO, DVec3::Y);
     let light = DirectionalLight::default();
     let mut renderer = RasterRenderer::new(&gpu, wgpu::TextureFormat::Rgba8UnormSrgb);
-    renderer.update_frame_bindings(&FrameBindingsData::new(&camera, &light, &[]), &gpu);
+    renderer.update_frame_bindings(&FrameBindingsData::new(&camera, &light, &[]), 1.0, &gpu);
     let mut images = Vec::new();
     for mesh in &meshes {
         let mut encoder = gpu

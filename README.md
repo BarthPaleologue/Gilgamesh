@@ -116,7 +116,6 @@ impl App for TerrainApp {
     }
 
     fn update_before_render(&mut self, frame: &FrameContext<'_>) {
-        self.camera.projection.aspect_ratio = frame.render_width as f64 / frame.render_height as f64;
         self.orbit_control.update(&mut self.camera, frame.mouse, frame.delta_seconds);
         self.terrain.transform_mut().rotation = DQuat::from_rotation_y(frame.elapsed_seconds);
     }
@@ -139,6 +138,16 @@ fn main() {
     WindowRuntime::<TerrainApp>::run(1000, 800);
 }
 ```
+
+The rasterization block derives the camera's aspect ratio from its render target,
+including when resizing or rendering a separate capture. For direct matrix access,
+pass the view's width/height ratio to `camera.projection_matrix(aspect_ratio)` or
+`camera.projection_view(aspect_ratio)`.
+
+`Perspective::frustum_offset` shifts the frustum center in units of half-width and
+half-height (positive right/up). Its default is zero; values outside `[-1, 1]` are
+valid. `fov_vertical` is the opening before this shift, not the angle between the
+shifted top and bottom rays.
 
 ## About
 

@@ -24,7 +24,7 @@ pub trait App: Sized {
     fn name(&self) -> &str;
 
     /// Prepares the application and camera for this render's dimensions and time.
-    fn update_before_render(&mut self, frame: &FrameContext<'_>);
+    fn update_before_render(&mut self, _frame: &FrameContext<'_>) {}
 
     /// Describes this render, borrowing any scenes and parameters it needs.
     /// Export one color image at the render dimensions for presentation and capture.

@@ -159,10 +159,10 @@ fn rotation_stays_between_the_poles_and_reverses_without_accumulated_input() {
 fn controls_preserve_camera_projection() {
     let mut camera = Camera::new(Perspective {
         fov_vertical: std::f64::consts::FRAC_PI_3,
-        aspect_ratio: 1.5,
         near: 0.5,
+        frustum_offset: glam::DVec2::new(0.25, -0.5),
     });
-    let projection = camera.projection_matrix();
+    let projection = camera.projection_matrix(1.5);
     let input = Mouse {
         left_button_pressed: true,
         delta: [12.0, -8.0],
@@ -170,7 +170,7 @@ fn controls_preserve_camera_projection() {
         ..Mouse::default()
     };
     OrbitControl::default().update(&mut camera, &input, 1.0 / 60.0);
-    assert_eq!(camera.projection_matrix(), projection);
+    assert_eq!(camera.projection_matrix(1.5), projection);
     assert!(camera.transform().rotation.is_normalized());
     assert!(camera.transform().position.length() > 0.0);
 }

@@ -84,10 +84,11 @@ impl RasterRenderer {
     pub fn update_frame_bindings(
         &mut self,
         context: &FrameBindingsData<'_>,
+        aspect_ratio: f64,
         wgpu_context: &WGPUContext,
     ) {
         self.frame.update(
-            &context.camera,
+            &context.camera_uniforms(aspect_ratio),
             context.directional_light,
             context.point_lights,
             &wgpu_context.queue,

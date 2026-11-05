@@ -111,12 +111,13 @@ mod gpu {
             1.0,
             1.0,
         );
-        let world = camera.projection_view().inverse() * clip;
+        let aspect_ratio = f64::from(width) / f64::from(height);
+        let world = camera.projection_view(aspect_ratio).inverse() * clip;
         let origin = camera.transform().world_position();
         let ray = world.truncate() / world.w - origin;
         let ground = origin + ray * (-origin.y / ray.y);
         assert!(ground.x.abs() < 7.0 && ground.z.abs() < 7.0);
-        let projected = camera.projection_view() * ground.extend(1.0);
+        let projected = camera.projection_view(aspect_ratio) * ground.extend(1.0);
         let depth = projected.z / projected.w;
         let srgb = if depth <= 0.003_130_8 {
             12.92 * depth

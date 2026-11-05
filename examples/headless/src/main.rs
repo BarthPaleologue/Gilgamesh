@@ -1,6 +1,6 @@
 use gilgamesh::blocks::{rasterize, tone_map};
 use gilgamesh::camera::{Camera, Perspective};
-use gilgamesh::core::app::{App, FrameContext};
+use gilgamesh::core::app::App;
 use gilgamesh::core::headless_runtime::HeadlessRuntime;
 use gilgamesh::core::render_context::FrameBindingsData;
 use gilgamesh::core::render_graph::{RenderGraph, TextureFormat};
@@ -72,11 +72,6 @@ impl App for HeadlessScene {
 
     fn name(&self) -> &'static str {
         "Headless scene"
-    }
-
-    fn update_before_render(&mut self, frame: &FrameContext<'_>) {
-        self.camera.projection.aspect_ratio =
-            f64::from(frame.render_width) / f64::from(frame.render_height);
     }
 
     fn render_graph(&self) -> RenderGraph<'_> {

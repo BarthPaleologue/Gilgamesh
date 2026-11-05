@@ -4,9 +4,10 @@ use crate::lights::directional_light::DirectionalLight;
 use crate::lights::point_light::PointLight;
 use crate::settings::MAX_POINT_LIGHTS;
 
-/// Captures camera uniforms while borrowing the application's lights for a render pass.
+/// Borrows the application's camera and lights for a render pass.
+/// Camera uniforms are resolved using the rendered view's aspect ratio.
 pub struct FrameBindingsData<'a> {
-    pub camera: CameraUniforms,
+    camera_uniforms: Box<dyn Fn(f64) -> CameraUniforms + 'a>,
     pub(crate) directional_light: &'a DirectionalLight,
     pub(crate) point_lights: &'a [PointLight],
 }
@@ -15,7 +16,7 @@ impl<'a> FrameBindingsData<'a> {
     /// # Panics
     /// Panics if more than [`MAX_POINT_LIGHTS`] lights are supplied.
     pub fn new(
-        camera: &Camera<impl CameraProjection>,
+        camera: &'a Camera<impl CameraProjection>,
         directional_light: &'a DirectionalLight,
         point_lights: &'a [PointLight],
     ) -> Self {
@@ -24,13 +25,19 @@ impl<'a> FrameBindingsData<'a> {
             "A render context supports at most {MAX_POINT_LIGHTS} point lights, got {}.",
             point_lights.len(),
         );
-        let mut camera_uniforms = CameraUniforms::default();
-        camera_uniforms.update(camera);
         Self {
-            camera: camera_uniforms,
+            camera_uniforms: Box::new(move |aspect_ratio| {
+                let mut uniforms = CameraUniforms::default();
+                uniforms.update(camera, aspect_ratio);
+                uniforms
+            }),
             directional_light,
             point_lights,
         }
+    }
+
+    pub(crate) fn camera_uniforms(&self, aspect_ratio: f64) -> CameraUniforms {
+        (self.camera_uniforms)(aspect_ratio)
     }
 }
 
@@ -62,40 +69,37 @@ mod tests {
     }
 
     #[test]
-    fn captures_camera_matrix_and_position_before_later_changes() {
-        let mut camera: Camera<Perspective> = Camera::default();
+    fn resolves_camera_for_each_render_aspect_ratio() {
+        let camera: Camera<Perspective> = Camera::default();
         camera.transform_mut().position = DVec3::new(3.0, 4.0, 5.0);
-        let matrix = camera.projection_view().as_mat4().to_cols_array();
         let light = DirectionalLight::default();
         let context = FrameBindingsData::new(&camera, &light, &[]);
 
-        camera.projection.aspect_ratio = 2.0;
-        camera.transform_mut().position = DVec3::new(6.0, 7.0, 8.0);
-        let next = FrameBindingsData::new(&camera, &light, &[]);
-        drop(camera);
-
-        let captured: [f32; 20] = bytemuck::cast(context.camera);
-        assert_eq!(captured[..16], matrix);
-        assert_eq!(captured[16..19], [3.0, 4.0, 5.0]);
-        assert_ne!(
-            bytemuck::bytes_of(&context.camera),
-            bytemuck::bytes_of(&next.camera)
-        );
+        for aspect_ratio in [1.0, 2.0, 0.5] {
+            let resolved: [f32; 20] = bytemuck::cast(context.camera_uniforms(aspect_ratio));
+            assert_eq!(
+                resolved[..16],
+                camera
+                    .projection_view(aspect_ratio)
+                    .as_mat4()
+                    .to_cols_array()
+            );
+            assert_eq!(resolved[16..19], [3.0, 4.0, 5.0]);
+        }
     }
 
     #[test]
     fn different_projection_types_produce_the_same_bindings_type() {
         struct CustomProjection(Perspective);
         impl CameraProjection for CustomProjection {
-            fn matrix(&self) -> DMat4 {
-                self.0.matrix()
+            fn matrix(&self, aspect_ratio: f64) -> DMat4 {
+                self.0.matrix(aspect_ratio)
             }
         }
 
         let perspective: Camera<Perspective> = Camera::default();
         let orthographic = Camera::new(Orthographic {
             size_vertical: 4.0,
-            aspect_ratio: 1.5,
             near: 0.1,
             far: 100.0,
         });
@@ -110,12 +114,12 @@ mod tests {
             FrameBindingsData::new(&custom, &light, &[]),
         ];
         let matrices = [
-            perspective.projection_view(),
-            orthographic.projection_view(),
-            custom.projection_view(),
+            perspective.projection_view(1.5),
+            orthographic.projection_view(1.5),
+            custom.projection_view(1.5),
         ];
         for (frame, matrix) in frames.into_iter().zip(matrices) {
-            let camera: [f32; 20] = bytemuck::cast(frame.camera);
+            let camera: [f32; 20] = bytemuck::cast(frame.camera_uniforms(1.5));
             assert_eq!(camera[..16], matrix.as_mat4().to_cols_array());
         }
     }

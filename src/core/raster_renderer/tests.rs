@@ -17,7 +17,6 @@ fn shared_materials_have_renderer_local_runtime() {
     let gpu = pollster::block_on(WGPUContext::new(wgpu::Instance::default(), None));
     let camera = Camera::new(Orthographic {
         size_vertical: 4.0,
-        aspect_ratio: 1.0,
         near: 0.1,
         far: 10.0,
     });
@@ -48,7 +47,11 @@ fn shared_materials_have_renderer_local_runtime() {
         ]
         .map(|format| {
             let mut renderer = RasterRenderer::new(&gpu, format);
-            renderer.update_frame_bindings(&FrameBindingsData::new(&camera, &light, &[]), &gpu);
+            renderer.update_frame_bindings(
+                &FrameBindingsData::new(&camera, &light, &[]),
+                1.0,
+                &gpu,
+            );
             (renderer, attachment(&gpu.device, format))
         });
 

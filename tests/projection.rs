@@ -1,6 +1,6 @@
 use gilgamesh::camera::uniforms::CameraUniforms;
-use gilgamesh::camera::{Camera, CameraProjection, OffAxis, Orthographic, Perspective};
-use glam::{DMat4, DVec3, Vec3};
+use gilgamesh::camera::{Camera, CameraProjection, Orthographic, Perspective};
+use glam::{DMat4, DVec2, DVec3, Vec3, dcamera::rh::proj::directx};
 use std::f64::consts::FRAC_PI_3;
 
 fn assert_projected(matrix: DMat4, point: DVec3, expected: DVec3) {
@@ -17,10 +17,10 @@ fn perspective_uses_radians_and_reverse_depth() {
     let aspect_ratio = 1.5;
     let camera = Camera::new(Perspective {
         fov_vertical: FRAC_PI_3,
-        aspect_ratio,
         near,
+        ..Default::default()
     });
-    let projection = camera.projection_matrix();
+    let projection = camera.projection_matrix(aspect_ratio);
     for distance in [near, 2.0 * near, 1e12] {
         assert_projected(
             projection,
@@ -39,7 +39,7 @@ fn perspective_uses_radians_and_reverse_depth() {
 #[test]
 fn default_camera_preserves_distant_depths_after_gpu_conversion() {
     let camera: Camera = Camera::default();
-    let matrix = camera.projection_matrix().as_mat4();
+    let matrix = camera.projection_matrix(1.0).as_mat4();
     let nearer = matrix.project_point3(Vec3::new(0.0, 0.0, -100_000_000.0)).z;
     let farther = matrix.project_point3(Vec3::new(0.0, 0.0, -100_001_024.0)).z;
     assert!(0.0 < farther && farther < nearer && nearer < 1.0);
@@ -51,11 +51,10 @@ fn orthographic_keeps_visible_size_at_every_depth_and_tracks_parameter_changes()
     let far = 100.0;
     let mut camera = Camera::new(Orthographic {
         size_vertical: 4.0,
-        aspect_ratio: 1.5,
         near,
         far,
     });
-    let projection = camera.projection_matrix();
+    let projection = camera.projection_matrix(1.5);
     for (distance, depth) in [(near, 1.0), (far, 0.0)] {
         for (x, expected_x) in [(-3.0, -1.0), (3.0, 1.0)] {
             for (y, expected_y) in [(-2.0, -1.0), (2.0, 1.0)] {
@@ -68,38 +67,35 @@ fn orthographic_keeps_visible_size_at_every_depth_and_tracks_parameter_changes()
         }
     }
     camera.projection.size_vertical = 8.0;
-    camera.projection.aspect_ratio = 2.0;
     assert_projected(
-        camera.projection_matrix(),
+        camera.projection_matrix(2.0),
         DVec3::new(8.0, 4.0, -near),
         DVec3::new(1.0, 1.0, 1.0),
     );
 }
 
 #[test]
-fn off_axis_maps_signed_angular_bounds_to_clip_edges() {
+fn shifted_perspective_preserves_signed_angular_frusta() {
     let near = 0.25;
     for [angle_left, angle_right, angle_bottom, angle_top] in
         [[-0.7_f64, 0.4, -0.3, 0.6], [0.1, 0.6, -0.4, -0.1]]
     {
-        let projection = OffAxis {
-            angle_left,
-            angle_right,
-            angle_bottom,
-            angle_top,
+        let [left, right, bottom, top] =
+            [angle_left, angle_right, angle_bottom, angle_top].map(f64::tan);
+        let width = right - left;
+        let height = top - bottom;
+        let projection = Perspective {
+            fov_vertical: 2.0 * (height / 2.0).atan(),
+            frustum_offset: DVec2::new((right + left) / width, (top + bottom) / height),
             near,
         };
-        let matrix = projection.matrix();
+        let matrix = projection.matrix(width / height);
         for distance in [near, 2.0 * near, 1e12] {
-            for (angle_x, expected_x) in [(angle_left, -1.0), (angle_right, 1.0)] {
-                for (angle_y, expected_y) in [(angle_bottom, -1.0), (angle_top, 1.0)] {
+            for (x, expected_x) in [(left, -1.0), (right, 1.0)] {
+                for (y, expected_y) in [(bottom, -1.0), (top, 1.0)] {
                     assert_projected(
                         matrix,
-                        DVec3::new(
-                            distance * angle_x.tan(),
-                            distance * angle_y.tan(),
-                            -distance,
-                        ),
+                        DVec3::new(distance * x, distance * y, -distance),
                         DVec3::new(expected_x, expected_y, near / distance),
                     );
                 }
@@ -110,38 +106,48 @@ fn off_axis_maps_signed_angular_bounds_to_clip_edges() {
 }
 
 #[test]
-fn symmetric_off_axis_matches_perspective() {
-    let aspect_ratio = 1.5;
-    let vertical_angle = FRAC_PI_3 / 2.0;
-    let horizontal_angle = (vertical_angle.tan() * aspect_ratio).atan();
-    let perspective = Perspective {
+fn centered_perspective_matches_glam() {
+    let projection = Perspective {
         fov_vertical: FRAC_PI_3,
-        aspect_ratio,
-        near: 0.1,
-    }
-    .matrix();
-    let off_axis = OffAxis {
-        angle_left: -horizontal_angle,
-        angle_right: horizontal_angle,
-        angle_bottom: -vertical_angle,
-        angle_top: vertical_angle,
-        near: 0.1,
-    }
-    .matrix();
-    for (actual, expected) in off_axis
-        .to_cols_array()
-        .into_iter()
-        .zip(perspective.to_cols_array())
-    {
-        assert!((actual - expected).abs() < 1e-12);
+        ..Default::default()
+    };
+    assert_eq!(
+        projection.matrix(1.5),
+        directx::perspective_infinite_reverse(FRAC_PI_3, 1.5, projection.near)
+    );
+}
+
+#[test]
+fn render_aspect_changes_width_preserving_shift_and_height() {
+    let projection = Perspective {
+        fov_vertical: FRAC_PI_3,
+        frustum_offset: DVec2::new(0.5, -1.5),
+        near: 0.25,
+    };
+    let half_height = (FRAC_PI_3 / 2.0).tan();
+    for aspect_ratio in [0.5, 1.0, 2.0] {
+        let matrix = projection.matrix(aspect_ratio);
+        for (point, expected) in [
+            (
+                DVec3::new(1.5 * half_height * aspect_ratio, -0.5 * half_height, -1.0),
+                DVec3::new(1.0, 1.0, 0.25),
+            ),
+            (
+                DVec3::new(-0.5 * half_height * aspect_ratio, -2.5 * half_height, -1.0),
+                DVec3::new(-1.0, -1.0, 0.25),
+            ),
+        ] {
+            assert_projected(matrix, point, expected);
+        }
     }
 }
 
 fn camera_uniforms<ProjectionType: CameraProjection>(
     camera: &Camera<ProjectionType>,
+    aspect_ratio: f64,
 ) -> CameraUniforms {
     let mut uniforms = CameraUniforms::default();
-    uniforms.update(camera);
+    uniforms.update(camera, aspect_ratio);
     uniforms
 }
 
@@ -150,32 +156,36 @@ fn typed_and_runtime_projection_cameras_share_the_uniform_interface() {
     let perspective: Camera<Perspective> = Camera::default();
     let orthographic = Camera::new(Orthographic {
         size_vertical: 4.0,
-        aspect_ratio: 1.5,
         near: 0.5,
         far: 100.0,
     });
-    let off_axis = Camera::new(OffAxis {
-        angle_left: -0.7,
-        angle_right: 0.4,
-        angle_bottom: -0.3,
-        angle_top: 0.6,
-        near: 0.25,
+    let shifted = Camera::new(Perspective {
+        frustum_offset: DVec2::new(-0.25, 0.5),
+        ..Default::default()
     });
-    let cameras = [
-        (camera_uniforms(&perspective), perspective.projection.into()),
-        (
-            camera_uniforms(&orthographic),
-            orthographic.projection.into(),
-        ),
-        (camera_uniforms(&off_axis), off_axis.projection.into()),
-    ];
-    let mut runtime_camera: Camera = Camera::default();
-    for (typed_uniforms, projection) in cameras {
-        runtime_camera.projection = projection;
-        let runtime_uniforms = camera_uniforms(&runtime_camera);
-        assert_eq!(
-            bytemuck::bytes_of(&typed_uniforms),
-            bytemuck::bytes_of(&runtime_uniforms)
-        );
+    for aspect_ratio in [0.5, 1.5, 2.0] {
+        let cameras = [
+            (
+                camera_uniforms(&perspective, aspect_ratio),
+                perspective.projection.into(),
+            ),
+            (
+                camera_uniforms(&orthographic, aspect_ratio),
+                orthographic.projection.into(),
+            ),
+            (
+                camera_uniforms(&shifted, aspect_ratio),
+                shifted.projection.into(),
+            ),
+        ];
+        let mut runtime_camera: Camera = Camera::default();
+        for (typed_uniforms, projection) in cameras {
+            runtime_camera.projection = projection;
+            let runtime_uniforms = camera_uniforms(&runtime_camera, aspect_ratio);
+            assert_eq!(
+                bytemuck::bytes_of(&typed_uniforms),
+                bytemuck::bytes_of(&runtime_uniforms)
+            );
+        }
     }
 }

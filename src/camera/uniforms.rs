@@ -11,8 +11,15 @@ pub struct CameraUniforms {
 }
 
 impl CameraUniforms {
-    pub fn update<ProjectionType: CameraProjection>(&mut self, camera: &Camera<ProjectionType>) {
-        self.proj_view = camera.projection_view().as_mat4().to_cols_array_2d();
+    pub fn update<ProjectionType: CameraProjection>(
+        &mut self,
+        camera: &Camera<ProjectionType>,
+        aspect_ratio: f64,
+    ) {
+        self.proj_view = camera
+            .projection_view(aspect_ratio)
+            .as_mat4()
+            .to_cols_array_2d();
         self.position = camera.transform().world_position().as_vec3().to_array();
     }
 }
