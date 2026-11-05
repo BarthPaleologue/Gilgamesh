@@ -25,6 +25,7 @@ fn rendering_shaders_translate_to_webgl2() {
     let fullscreen_sources = [
         include_str!("../src/blocks/tone_map.wgsl"),
         include_str!("../src/blocks/expose.wgsl"),
+        include_str!("../src/blocks/overlay.wgsl"),
         include_str!("../src/blocks/resize_nearest.wgsl"),
         include_str!("../src/blocks/resize_bilinear.wgsl"),
         include_str!("../src/blocks/bloom.wgsl"),

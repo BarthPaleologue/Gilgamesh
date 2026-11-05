@@ -2,6 +2,7 @@
 
 mod bloom;
 mod expose;
+mod overlay;
 mod pyramid_blur;
 mod rasterize;
 mod render_scene;
@@ -14,6 +15,7 @@ mod visualize_depth;
 
 pub use bloom::bloom;
 pub use expose::expose;
+pub use overlay::overlay;
 pub use pyramid_blur::pyramid_blur;
 pub use rasterize::{RasterOutput, rasterize};
 pub use render_scene::render_scene;
