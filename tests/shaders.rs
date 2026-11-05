@@ -20,11 +20,12 @@ fn pbr_shader_is_valid() {
 }
 
 #[test]
-fn fullscreen_blocks_translate_to_webgl2_shaders() {
+fn rendering_shaders_translate_to_webgl2() {
     use naga::back::glsl;
 
-    for fragment in [
+    let fullscreen_sources = [
         include_str!("../src/blocks/tone_map.wgsl"),
+        include_str!("../src/blocks/expose.wgsl"),
         include_str!("../src/blocks/resize_nearest.wgsl"),
         include_str!("../src/blocks/resize_bilinear.wgsl"),
         include_str!("../src/blocks/bloom.wgsl"),
@@ -34,8 +35,12 @@ fn fullscreen_blocks_translate_to_webgl2_shaders() {
         include_str!("../src/blocks/visualize_depth.wgsl"),
         include_str!("../src/blocks/vertical_split_screen.wgsl"),
         include_str!("../src/core/image_blit.wgsl"),
-    ] {
-        let source = [include_str!("../src/core/fullscreen_pass.wgsl"), fragment].join("\n");
+    ]
+    .map(|fragment| [include_str!("../src/core/fullscreen_pass.wgsl"), fragment].join("\n"));
+    for source in fullscreen_sources.into_iter().chain([
+        include_str!("../src/shader/blinn_phong.wgsl").to_owned(),
+        include_str!("../src/shader/pbr.wgsl").to_owned(),
+    ]) {
         let module = validate_shader(&source);
         let info = Validator::new(ValidationFlags::all(), Capabilities::empty())
             .validate(&module)
@@ -97,6 +102,9 @@ fn uniform_bindings_have_webgl_compatible_sizes() {
                             * std::mem::size_of::<gilgamesh::lights::point_light::PointLightUniforms>(
                             ),
                     ),
+                    Some("camera") => Some(std::mem::size_of::<
+                        gilgamesh::camera::uniforms::CameraUniforms,
+                    >()),
                     Some("light_counts") => Some(std::mem::size_of::<[u32; 4]>()),
                     _ => None,
                 };

@@ -12,14 +12,14 @@ A small 3D WGPU engine written in Rust that does not rely on the ECS pattern.
 
 - Up to 64 point lights per render pass
 - Up to 64 directional lights per render pass
-- Built-in Phong shading
+- PBR and normalized Phong shading
+- Photometric lighting (candelas, lux, nits) and photographic camera exposure
 - Normal mapping
 - Procedural mesh generation
 
 ## Coming Soon
 
 - Shadow mapping
-- PBR shading
 - GLTF support
 
 ![sinc function](cover.png)
@@ -71,7 +71,7 @@ Implement `App` to own and update your camera, controls, and meshes.
 Here is a procedural terrain example:
 
 ```rust,no_run
-use gilgamesh::blocks::{rasterize, tone_map};
+use gilgamesh::blocks::{expose, rasterize, tone_map};
 use gilgamesh::camera::{Camera, Perspective};
 use gilgamesh::core::{App, FrameBindingsData, FrameContext, WGPUContext, WindowRuntime};
 use gilgamesh::core::render_graph::{RenderGraph, TextureFormat};
@@ -121,10 +121,11 @@ impl App for TerrainApp {
         let scene = rasterize(
             FrameBindingsData::new(&self.camera, &self.directional_lights, &[]),
             [&self.terrain],
-            TextureFormat::Rgba16Float,
+            TextureFormat::Rgba32Float,
             &mut graph,
         );
-        let image = tone_map(scene.color, TextureFormat::Rgba8UnormSrgb, &mut graph);
+        let exposed = expose(scene.color, self.camera.exposure, TextureFormat::Rgba16Float, &mut graph);
+        let image = tone_map(exposed, TextureFormat::Rgba8UnormSrgb, &mut graph);
         graph.export(image);
         graph
     }

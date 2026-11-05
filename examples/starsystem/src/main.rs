@@ -1,4 +1,4 @@
-use gilgamesh::blocks::{bloom, rasterize, tone_map};
+use gilgamesh::blocks::{bloom, expose, rasterize, tone_map};
 use gilgamesh::camera::{Camera, Perspective};
 use gilgamesh::core::render_graph::{RenderGraph, TextureFormat};
 use gilgamesh::core::{App, FrameBindingsData, FrameContext, WGPUContext, WindowRuntime};
@@ -44,7 +44,7 @@ impl App for StarSystemDemo {
         .map(|(r, g, b)| {
             let mut light = PointLight::default();
             light.set_color(r, g, b);
-            light.set_intensity(Candela::new(200.0));
+            light.set_intensity(Candela::new(8_000_000.0));
             light
         });
         let point_light_meshes = point_lights
@@ -56,8 +56,7 @@ impl App for StarSystemDemo {
         sun_material.set_albedo_color(0.0, 0.0, 0.0);
         sun_material.metallic = 0.0;
         sun_material.set_emissive_texture(sun_texture);
-        sun_material.set_emissive_luminance(Nits::new(1.0));
-        sun_material.set_emissive_color(20.0, 20.0, 20.0);
+        sun_material.set_emissive_luminance(Nits::new(800_000.0));
         let sun = Mesh::from_cpu_buffers(
             "Sun",
             &primitive::sphere(32),
@@ -66,7 +65,7 @@ impl App for StarSystemDemo {
         );
 
         let mut sun_light = PointLight::default();
-        sun_light.set_intensity(Candela::new(200.0));
+        sun_light.set_intensity(Candela::new(8_000_000.0));
         sun_light.transform_mut().parent = Some(sun.transform_rc());
         let [red_light, blue_light, green_light, yellow_light] = point_lights;
         let point_lights = [red_light, blue_light, green_light, yellow_light, sun_light];
@@ -154,10 +153,16 @@ impl App for StarSystemDemo {
             self.point_light_meshes
                 .iter()
                 .chain([&self.sun, &self.earth, &self.plane]),
+            TextureFormat::Rgba32Float,
+            &mut graph,
+        );
+        let exposed = expose(
+            scene.color,
+            self.camera.exposure,
             TextureFormat::Rgba16Float,
             &mut graph,
         );
-        let color = bloom(scene.color, 5, 0.04, &mut graph);
+        let color = bloom(exposed, 5, 0.04, &mut graph);
         let image = tone_map(color, TextureFormat::Rgba8UnormSrgb, &mut graph);
         graph.export(image);
         graph
@@ -278,7 +283,7 @@ mod tests {
     fn earth_maps_render_in_the_star_system_graph() {
         HeadlessRuntime::<StarSystemDemo>::run(400, 320, async |mut runtime| {
             for light in &mut runtime.app_mut().point_lights {
-                light.set_intensity(Candela::new(200.0));
+                light.set_intensity(Candela::new(8_000_000.0));
             }
             runtime.render(Duration::ZERO);
             let image = runtime.capture_frame().await.unwrap();

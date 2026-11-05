@@ -83,7 +83,8 @@ fn albedo_encodings_match_equivalent_linear_constants() {
     let camera: Camera = Camera::default();
     camera.transform_mut().position = DVec3::new(0.0, 3.0, 3.0);
     camera.transform_mut().look_at(DVec3::ZERO, DVec3::Y);
-    let light = DirectionalLight::default();
+    let mut light = DirectionalLight::default();
+    light.set_illuminance(Lux::new(1.0));
     let mut renderer = RasterRenderer::new(&gpu, wgpu::TextureFormat::Rgba8UnormSrgb);
     renderer.update_frame_bindings(
         &FrameBindingsData::new(&camera, std::slice::from_ref(&light), &[]),
@@ -138,7 +139,8 @@ fn roughness_and_normal_maps_match_equivalent_linear_surface_properties() {
         let camera: Camera = Camera::default();
         camera.transform_mut().position = DVec3::new(3.0, 3.0, 0.0);
         camera.transform_mut().look_at(DVec3::ZERO, DVec3::Y);
-        let light = DirectionalLight::default();
+        let mut light = DirectionalLight::default();
+        light.set_illuminance(Lux::new(1.0));
         let mut target = executor.create_target(64, 64);
         let mut captures = Vec::new();
         for roughness in [32_u8, 128, 224] {

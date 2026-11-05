@@ -72,10 +72,7 @@ impl MaterialPipeline {
                     compilation_options: wgpu::PipelineCompilationOptions::default(),
                     targets: &[Some(wgpu::ColorTargetState {
                         format: target_format,
-                        blend: Some(wgpu::BlendState {
-                            color: wgpu::BlendComponent::REPLACE,
-                            alpha: wgpu::BlendComponent::REPLACE,
-                        }),
+                        blend: None,
                         write_mask: wgpu::ColorWrites::ALL,
                     })],
                 }),

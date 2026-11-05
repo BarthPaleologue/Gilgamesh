@@ -2,6 +2,7 @@ use crate::lights::light::Light;
 use crate::photometry::Lux;
 use bytemuck::{Pod, Zeroable};
 
+/// A distant emitter. The default is daylight at 100,000 lux.
 pub struct DirectionalLight {
     color: [f32; 3],
     illuminance: Lux,
@@ -32,7 +33,7 @@ impl Default for DirectionalLight {
     fn default() -> Self {
         DirectionalLight {
             color: [1.0, 1.0, 1.0],
-            illuminance: Lux::new(1.0),
+            illuminance: Lux::new(100_000.0),
             direction: [0.707, -0.707, 0.0],
         }
     }

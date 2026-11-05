@@ -1,6 +1,7 @@
 //! Built-in render graph blocks. Compose them with ordinary Rust functions.
 
 mod bloom;
+mod expose;
 mod pyramid_blur;
 mod rasterize;
 mod resize_bilinear;
@@ -11,6 +12,7 @@ mod vertical_split_screen;
 mod visualize_depth;
 
 pub use bloom::bloom;
+pub use expose::expose;
 pub use pyramid_blur::pyramid_blur;
 pub use rasterize::{RasterOutput, rasterize};
 pub use resize_bilinear::resize_bilinear;

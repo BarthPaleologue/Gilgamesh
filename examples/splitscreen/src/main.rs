@@ -1,4 +1,4 @@
-use gilgamesh::blocks::{rasterize, tone_map, vertical_split_screen, visualize_depth};
+use gilgamesh::blocks::{expose, rasterize, tone_map, vertical_split_screen, visualize_depth};
 use gilgamesh::camera::{Camera, Perspective};
 use gilgamesh::core::render_graph::{RenderGraph, TextureFormat};
 use gilgamesh::core::{
@@ -30,7 +30,7 @@ impl App for SplitScreenDemo {
     fn new(ctx: &WGPUContext) -> Self {
         let mut ground_material = BlinnPhongMaterial::new("Ground");
         ground_material.set_diffuse_color(0.3, 0.35, 0.4);
-        ground_material.set_ambient_luminance(Nits::new(1.0));
+        ground_material.set_ambient_luminance(Nits::new(10_000.0));
         ground_material.set_ambient_color(0.02, 0.02, 0.02);
         let ground = Mesh::from_cpu_buffers(
             "Ground",
@@ -41,7 +41,7 @@ impl App for SplitScreenDemo {
 
         let mut sphere_material = BlinnPhongMaterial::new("Amber");
         sphere_material.set_diffuse_color(0.9, 0.2, 0.05);
-        sphere_material.set_ambient_luminance(Nits::new(1.0));
+        sphere_material.set_ambient_luminance(Nits::new(10_000.0));
         sphere_material.set_ambient_color(0.03, 0.01, 0.005);
         let sphere = Mesh::from_cpu_buffers(
             "Sphere",
@@ -53,7 +53,7 @@ impl App for SplitScreenDemo {
 
         let mut cube_material = BlinnPhongMaterial::new("Blue");
         cube_material.set_diffuse_color(0.1, 0.45, 0.9);
-        cube_material.set_ambient_luminance(Nits::new(1.0));
+        cube_material.set_ambient_luminance(Nits::new(10_000.0));
         cube_material.set_ambient_color(0.01, 0.02, 0.03);
         let cube = Mesh::from_cpu_buffers(
             "Cube",
@@ -86,10 +86,16 @@ impl App for SplitScreenDemo {
         let scene = rasterize(
             FrameBindingsData::new(&self.camera, &self.directional_lights, &[]),
             &self.meshes,
+            TextureFormat::Rgba32Float,
+            &mut graph,
+        );
+        let exposed = expose(
+            scene.color,
+            self.camera.exposure,
             TextureFormat::Rgba16Float,
             &mut graph,
         );
-        let color = tone_map(scene.color, TextureFormat::Rgba8UnormSrgb, &mut graph);
+        let color = tone_map(exposed, TextureFormat::Rgba8UnormSrgb, &mut graph);
         let depth = visualize_depth(scene.depth, &mut graph);
         let image = vertical_split_screen(color, depth, self.split, &mut graph);
         graph.export(image);

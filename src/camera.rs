@@ -1,6 +1,8 @@
+mod exposure;
 mod projection;
 pub mod uniforms;
 
+pub use exposure::Exposure;
 pub use projection::{CameraProjection, Orthographic, Perspective, Projection};
 
 use glam::DMat4;
@@ -13,6 +15,8 @@ use crate::transform::{Transform, Transformable};
 pub struct Camera<ProjectionType: CameraProjection = Projection> {
     transform: Rc<RefCell<Transform>>,
     pub projection: ProjectionType,
+    /// Photographic settings for the [`crate::blocks::expose`] image-processing block.
+    pub exposure: Exposure,
 }
 
 impl<ProjectionType: CameraProjection> Camera<ProjectionType> {
@@ -20,6 +24,7 @@ impl<ProjectionType: CameraProjection> Camera<ProjectionType> {
         Self {
             transform: Rc::new(RefCell::new(Transform::new())),
             projection,
+            exposure: Exposure::default(),
         }
     }
 

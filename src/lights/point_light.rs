@@ -5,6 +5,7 @@ use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
 
 /// An isotropic point emitter with inverse-square attenuation in meters.
+/// The default is an 800 lumen isotropic source, stored in candelas.
 /// Rendering regularizes the singularity within one millimeter of the source.
 pub struct PointLight {
     color: [f32; 3],
@@ -40,7 +41,7 @@ impl Default for PointLight {
     fn default() -> Self {
         PointLight {
             color: [1.0, 1.0, 1.0],
-            intensity: Candela::new(1.0),
+            intensity: Candela::from_lumens(800.0),
             transform: Rc::new(RefCell::new(Transform::new())),
         }
     }

@@ -12,7 +12,8 @@ pub struct RasterOutput {
     pub depth: Image,
 }
 
-/// Rasterizes scene data into linear color and reverse depth.
+/// Rasterizes scene data into scene-linear luminance and reverse depth.
+/// Use `Rgba32Float` for physical luminance, then apply [`super::expose`] before bloom and tone mapping.
 pub fn rasterize<'a>(
     bindings: FrameBindingsData<'a>,
     meshes: impl IntoIterator<Item = &'a Mesh> + 'a,

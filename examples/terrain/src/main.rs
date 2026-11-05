@@ -1,4 +1,4 @@
-use gilgamesh::blocks::{rasterize, tone_map};
+use gilgamesh::blocks::{expose, rasterize, tone_map};
 use gilgamesh::camera::{Camera, Perspective};
 use gilgamesh::core::render_graph::{RenderGraph, TextureFormat};
 use gilgamesh::core::{App, FrameBindingsData, FrameContext, WGPUContext, WindowRuntime};
@@ -55,10 +55,16 @@ impl App for TerrainView {
         let scene = rasterize(
             FrameBindingsData::new(&self.camera, &self.directional_lights, &[]),
             [&self.terrain],
+            TextureFormat::Rgba32Float,
+            &mut graph,
+        );
+        let exposed = expose(
+            scene.color,
+            self.camera.exposure,
             TextureFormat::Rgba16Float,
             &mut graph,
         );
-        let image = tone_map(scene.color, TextureFormat::Rgba8UnormSrgb, &mut graph);
+        let image = tone_map(exposed, TextureFormat::Rgba8UnormSrgb, &mut graph);
         graph.export(image);
         graph
     }

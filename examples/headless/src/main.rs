@@ -1,4 +1,4 @@
-use gilgamesh::blocks::{rasterize, tone_map};
+use gilgamesh::blocks::{expose, rasterize, tone_map};
 use gilgamesh::camera::{Camera, Perspective};
 use gilgamesh::core::render_graph::{RenderGraph, TextureFormat};
 use gilgamesh::core::{App, FrameBindingsData, HeadlessRuntime, WGPUContext};
@@ -41,7 +41,7 @@ impl App for HeadlessScene {
 
         let mut plane_material = BlinnPhongMaterial::new("Ground");
         plane_material.set_diffuse_color(0.3, 0.35, 0.4);
-        plane_material.set_ambient_luminance(Nits::new(1.0));
+        plane_material.set_ambient_luminance(Nits::new(10_000.0));
         plane_material.set_ambient_color(0.02, 0.02, 0.02);
         let plane = Mesh::from_cpu_buffers(
             "Plane",
@@ -52,7 +52,7 @@ impl App for HeadlessScene {
 
         let mut sphere_material = BlinnPhongMaterial::new("Sphere");
         sphere_material.set_diffuse_color(0.9, 0.2, 0.05);
-        sphere_material.set_ambient_luminance(Nits::new(1.0));
+        sphere_material.set_ambient_luminance(Nits::new(10_000.0));
         sphere_material.set_ambient_color(0.03, 0.01, 0.005);
         let sphere = Mesh::from_cpu_buffers(
             "Sphere",
@@ -79,10 +79,16 @@ impl App for HeadlessScene {
         let scene = rasterize(
             FrameBindingsData::new(&self.camera, &self.directional_lights, &[]),
             [&self.plane, &self.sphere],
+            TextureFormat::Rgba32Float,
+            &mut graph,
+        );
+        let exposed = expose(
+            scene.color,
+            self.camera.exposure,
             TextureFormat::Rgba16Float,
             &mut graph,
         );
-        let image = tone_map(scene.color, TextureFormat::Rgba8UnormSrgb, &mut graph);
+        let image = tone_map(exposed, TextureFormat::Rgba8UnormSrgb, &mut graph);
         graph.export(image);
         graph
     }

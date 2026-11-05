@@ -242,6 +242,147 @@ fn phong_point_lights_follow_inverse_square_and_scale_the_specular_lobe() {
     }
 }
 
+#[test]
+#[ignore = "GPU end-to-end check; run explicitly with approval"]
+fn exposure_scales_lighting_and_emission_in_fullscreen_pass() {
+    use crate::blocks::{expose, rasterize};
+    use crate::camera::Exposure;
+    use crate::core::graph_executor::GraphExecutor;
+    use crate::core::render_graph::RenderGraph;
+
+    pollster::block_on(async {
+        let mut executor = GraphExecutor::new().await;
+        let camera = Camera::new(Orthographic {
+            size_vertical: 4.0,
+            near: 0.1,
+            far: 10.0,
+        });
+        camera.transform_mut().position = DVec3::new(0.0, 3.0, 0.0);
+        camera.transform_mut().look_at(DVec3::ZERO, DVec3::NEG_Z);
+        let mut light = DirectionalLight::default();
+        light.set_illuminance(Lux::new(50_000.0));
+        let mut target = executor.create_target(32, 32);
+        for emission_only in [false, true] {
+            for mut material in [
+                Material::from(PbrMaterial::new("PBR")),
+                Material::from(BlinnPhongMaterial::new("Phong")),
+            ] {
+                if emission_only {
+                    match &mut material {
+                        Material::Pbr(pbr) => pbr.set_emissive_luminance(Nits::new(5_000.0)),
+                        Material::BlinnPhong(phong) => {
+                            phong.set_ambient_luminance(Nits::new(5_000.0));
+                        }
+                    }
+                }
+                let mesh = Mesh::from_cpu_buffers(
+                    "Plane",
+                    &primitive::plane(2, 2.0),
+                    Rc::new(material),
+                    executor.wgpu_context(),
+                );
+                let mut samples = Vec::new();
+                for exposure in [
+                    Exposure::default(),
+                    Exposure::default().with_compensation_stops(1.0),
+                    Exposure::default(),
+                ] {
+                    let lights = if emission_only {
+                        &[][..]
+                    } else {
+                        std::slice::from_ref(&light)
+                    };
+                    let mut graph = RenderGraph::new();
+                    let scene = rasterize(
+                        FrameBindingsData::new(&camera, lights, &[]),
+                        [&mesh],
+                        wgpu::TextureFormat::Rgba32Float,
+                        &mut graph,
+                    );
+                    let image = expose(
+                        scene.color,
+                        exposure,
+                        wgpu::TextureFormat::Rgba8Unorm,
+                        &mut graph,
+                    );
+                    graph.export(image);
+                    executor.execute(graph, &mut target).unwrap();
+                    let image = target.read_image(executor.wgpu_context()).await.unwrap();
+                    samples.push(u16::from(image.get_pixel(16, 16)[0]));
+                }
+                let [baseline, brighter, restored] = samples[..] else {
+                    unreachable!()
+                };
+                assert!(baseline > 5 && baseline < 120);
+                assert!(brighter.abs_diff(2 * baseline) <= 1);
+                assert_eq!(restored, baseline);
+            }
+        }
+    });
+}
+
+#[test]
+#[ignore = "GPU end-to-end check; run explicitly with approval"]
+fn bright_emission_survives_float32_rasterization_and_fullscreen_exposure() {
+    use crate::blocks::{expose, rasterize, tone_map};
+    use crate::core::graph_executor::GraphExecutor;
+    use crate::core::render_graph::RenderGraph;
+
+    pollster::block_on(async {
+        let mut executor = GraphExecutor::new().await;
+        let camera = Camera::new(Orthographic {
+            size_vertical: 4.0,
+            near: 0.1,
+            far: 10.0,
+        });
+        camera.transform_mut().position = DVec3::new(0.0, 3.0, 0.0);
+        camera.transform_mut().look_at(DVec3::ZERO, DVec3::NEG_Z);
+        for material in [
+            {
+                let mut pbr = PbrMaterial::new("Bright emitter");
+                pbr.set_emissive_luminance(Nits::new(100_000_000.0));
+                Material::from(pbr)
+            },
+            {
+                let mut phong = BlinnPhongMaterial::new("Bright ambient");
+                phong.set_ambient_luminance(Nits::new(100_000_000.0));
+                Material::from(phong)
+            },
+        ] {
+            let mesh = Mesh::from_cpu_buffers(
+                "Plane",
+                &primitive::plane(2, 2.0),
+                Rc::new(material),
+                executor.wgpu_context(),
+            );
+            let mut graph = RenderGraph::new();
+            let scene = rasterize(
+                FrameBindingsData::new(&camera, &[], &[]),
+                [&mesh],
+                wgpu::TextureFormat::Rgba32Float,
+                &mut graph,
+            );
+            let exposed = expose(
+                scene.color,
+                camera.exposure,
+                wgpu::TextureFormat::Rgba16Float,
+                &mut graph,
+            );
+            let image = tone_map(exposed, wgpu::TextureFormat::Rgba8UnormSrgb, &mut graph);
+            graph.export(image);
+            let mut target = executor.create_target(32, 32);
+            executor.execute(graph, &mut target).unwrap();
+            let image = target.read_image(executor.wgpu_context()).await.unwrap();
+            let pixel = image.get_pixel(16, 16);
+            assert!(
+                pixel.0[..3].iter().all(|&channel| channel >= 254),
+                "Bright emission must stay finite through HDR and tone mapping: {pixel:?}"
+            );
+            assert_eq!(pixel[3], 255);
+        }
+    });
+}
+
 fn set_unlit_color(material: &mut Material, color: [f32; 3]) {
     match material {
         Material::Pbr(material) => {
