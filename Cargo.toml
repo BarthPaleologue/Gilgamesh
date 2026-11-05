@@ -13,6 +13,8 @@ members = ["examples/game_of_life", "examples/headless", "examples/splitscreen",
 
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -1 }
+allow_attributes_without_reason = "warn"
+allow_attributes = "warn"
 
 [lints]
 workspace = true
