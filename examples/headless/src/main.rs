@@ -1,6 +1,6 @@
-use gilgamesh::blocks::{expose, rasterize, tone_map};
+use gilgamesh::blocks::render_scene;
 use gilgamesh::camera::{Camera, Perspective};
-use gilgamesh::core::render_graph::{RenderGraph, TextureFormat};
+use gilgamesh::core::render_graph::RenderGraph;
 use gilgamesh::core::{App, FrameBindingsData, HeadlessRuntime, WGPUContext};
 use gilgamesh::geometry::{Mesh, primitive};
 use gilgamesh::lights::DirectionalLight;
@@ -76,20 +76,12 @@ impl App for HeadlessScene {
 
     fn frame_graph(&self) -> RenderGraph<'_> {
         let mut graph = RenderGraph::new();
-        let scene = rasterize(
+        let image = render_scene(
             FrameBindingsData::new(&self.camera, &self.directional_lights, &[]),
             [&self.plane, &self.sphere],
-            TextureFormat::Rgba32Float,
             [3_840.0, 3_840.0, 7_680.0, 1.0],
             &mut graph,
         );
-        let exposed = expose(
-            scene.color,
-            self.camera.exposure,
-            TextureFormat::Rgba16Float,
-            &mut graph,
-        );
-        let image = tone_map(exposed, TextureFormat::Rgba8UnormSrgb, &mut graph);
         graph.export(image);
         graph
     }

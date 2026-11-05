@@ -5,7 +5,7 @@ use wgpu::TextureUsages as Usage;
 
 #[test]
 fn blocks_compose_in_nested_calls_without_a_gpu() {
-    use crate::blocks::{rasterize, tone_map};
+    use crate::blocks::{render_scene, resize_nearest};
     use crate::camera::Camera;
     use crate::core::render_context::FrameBindingsData;
     use crate::lights::directional_light::DirectionalLight;
@@ -13,16 +13,14 @@ fn blocks_compose_in_nested_calls_without_a_gpu() {
     let camera: Camera = Camera::default();
     let light = DirectionalLight::default();
     let mut graph = RenderGraph::new();
-    let output = tone_map(
-        rasterize(
+    let output = resize_nearest(
+        render_scene(
             FrameBindingsData::new(&camera, std::slice::from_ref(&light), &[]),
             [],
-            TextureFormat::Rgba16Float,
             [0.1, 0.1, 0.2, 1.0],
             &mut graph,
-        )
-        .color,
-        TextureFormat::Rgba8UnormSrgb,
+        ),
+        ImageSize::Target,
         &mut graph,
     );
     graph.export(output);

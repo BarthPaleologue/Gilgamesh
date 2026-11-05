@@ -1,5 +1,5 @@
 use crate::camera::uniforms::CameraUniforms;
-use crate::camera::{Camera, CameraProjection};
+use crate::camera::{Camera, CameraProjection, Exposure};
 use crate::lights::directional_light::DirectionalLight;
 use crate::lights::point_light::PointLight;
 use crate::settings::{MAX_DIRECTIONAL_LIGHTS, MAX_POINT_LIGHTS};
@@ -8,6 +8,7 @@ use crate::settings::{MAX_DIRECTIONAL_LIGHTS, MAX_POINT_LIGHTS};
 /// Camera uniforms are resolved using the rendered view's aspect ratio.
 pub struct FrameBindingsData<'a> {
     camera_uniforms: Box<dyn Fn(f64) -> CameraUniforms + 'a>,
+    pub(crate) exposure: Exposure,
     pub(crate) directional_lights: &'a [DirectionalLight],
     pub(crate) point_lights: &'a [PointLight],
 }
@@ -36,6 +37,7 @@ impl<'a> FrameBindingsData<'a> {
                 uniforms.update(camera, aspect_ratio);
                 uniforms
             }),
+            exposure: camera.exposure,
             directional_lights,
             point_lights,
         }

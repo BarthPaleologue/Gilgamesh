@@ -71,10 +71,10 @@ Implement `App` to own and update your camera, controls, and meshes.
 Here is a procedural terrain example:
 
 ```rust,no_run
-use gilgamesh::blocks::{expose, rasterize, tone_map};
+use gilgamesh::blocks::render_scene;
 use gilgamesh::camera::{Camera, Perspective};
 use gilgamesh::core::{App, FrameBindingsData, FrameContext, WGPUContext, WindowRuntime};
-use gilgamesh::core::render_graph::{RenderGraph, TextureFormat};
+use gilgamesh::core::render_graph::RenderGraph;
 use gilgamesh::geometry::{Mesh, procedural};
 use gilgamesh::input::OrbitControl;
 use gilgamesh::lights::DirectionalLight;
@@ -118,15 +118,12 @@ impl App for TerrainApp {
 
     fn frame_graph(&self) -> RenderGraph<'_> {
         let mut graph = RenderGraph::new();
-        let scene = rasterize(
+        let image = render_scene(
             FrameBindingsData::new(&self.camera, &self.directional_lights, &[]),
             [&self.terrain],
-            TextureFormat::Rgba32Float,
             [3_840.0, 3_840.0, 7_680.0, 1.0],
             &mut graph,
         );
-        let exposed = expose(scene.color, self.camera.exposure, TextureFormat::Rgba16Float, &mut graph);
-        let image = tone_map(exposed, TextureFormat::Rgba8UnormSrgb, &mut graph);
         graph.export(image);
         graph
     }
