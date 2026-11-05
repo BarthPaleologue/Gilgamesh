@@ -163,7 +163,9 @@ impl GraphExecutor {
             .resize_with(graph.passes.len(), PassCache::default);
         let mut passes: Vec<_> = graph.passes.into_iter().map(Some).collect();
         for index in plan.order {
-            let pass = passes[index].take().unwrap();
+            let pass = passes[index]
+                .take()
+                .expect("The compiled order executes each pass exactly once");
             let cache = &mut self.passes[index];
             cache.begin_render();
             encoder.push_debug_group(&pass.label);
@@ -244,7 +246,8 @@ fn plan_transients(graph: &RenderGraph<'_>, plan: &GraphPlan, keys: &[ImageKey])
     let mut slots = vec![None; graph.images.len()];
     for image in roots {
         let key = keys[image];
-        let (first, last) = plan.lifetimes[image].unwrap();
+        let (first, last) =
+            plan.lifetimes[image].expect("A graph-created image has a writer and a lifetime");
         let slot = allocations
             .iter()
             .position(|(existing, last_use)| {

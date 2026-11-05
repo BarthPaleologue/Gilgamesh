@@ -240,7 +240,7 @@ fn test_texture(pixel: [u8; 4], gpu: &WGPUContext) -> Rc<Texture<Linear>> {
     let mut png = Cursor::new(Vec::new());
     image::DynamicImage::ImageRgba8(image::RgbaImage::from_pixel(1, 1, image::Rgba(pixel)))
         .write_to(&mut png, image::ImageFormat::Png)
-        .unwrap();
+        .expect("Failed to encode the test texture as PNG");
     Rc::new(Texture::<Linear>::new("PBR data", png.get_ref(), gpu))
 }
 

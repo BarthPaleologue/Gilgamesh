@@ -500,7 +500,10 @@ impl PassCache {
             }),
             Entry::Occupied(entry) => {
                 let entry = entry.into_mut();
-                let cached = entry.value.downcast_mut::<Cached<K, V>>().unwrap();
+                let cached = entry
+                    .value
+                    .downcast_mut::<Cached<K, V>>()
+                    .expect("Cache entries are indexed by their exact key and value types");
                 if cached.key != key {
                     *cached = Cached {
                         key,
@@ -511,7 +514,11 @@ impl PassCache {
             }
         };
         entry.used = true;
-        &mut entry.value.downcast_mut::<Cached<K, V>>().unwrap().value
+        &mut entry
+            .value
+            .downcast_mut::<Cached<K, V>>()
+            .expect("Cache entries are indexed by their exact key and value types")
+            .value
     }
 
     pub(crate) fn begin_render(&mut self) {

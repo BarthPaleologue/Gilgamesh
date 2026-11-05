@@ -18,7 +18,10 @@ mod output;
 fn main() {
     HeadlessRuntime::<HeadlessScene>::run(800, 600, async |mut runtime| {
         runtime.render(Duration::ZERO);
-        let screenshot = runtime.capture_frame().await.unwrap();
+        let screenshot = runtime
+            .capture_frame()
+            .await
+            .expect("Failed to capture the headless frame");
         output::save(&screenshot, "headless.png");
     });
 }

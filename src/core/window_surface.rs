@@ -31,7 +31,10 @@ impl WindowSurface {
     /// # Panics
     /// Panics if a surface cannot be created for the window.
     pub fn recreate_surface(&mut self, ctx: &WGPUContext, window: Arc<Window>) {
-        self.surface = ctx.instance.create_surface(window).unwrap();
+        self.surface = ctx
+            .instance
+            .create_surface(window)
+            .expect("Failed to recreate the window presentation surface");
         self.surface.configure(&ctx.device, &self.config);
     }
 }

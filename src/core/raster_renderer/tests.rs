@@ -179,7 +179,7 @@ fn render(
         &gpu.queue,
         color,
     ))
-    .unwrap()
+    .expect("Failed to read the rendered test texture")
     .into_raw()
 }
 

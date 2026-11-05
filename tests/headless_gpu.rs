@@ -163,7 +163,9 @@ fn render_frame(
         mouse: &mouse,
         wgpu_context: executor.wgpu_context(),
     });
-    executor.execute(app.render_graph(), target).unwrap();
+    executor
+        .execute(app.render_graph(), target)
+        .expect("Failed to render the headless test frame");
 }
 
 struct TestApp {
@@ -267,7 +269,7 @@ async fn blit_and_read(executor: &GraphExecutor, target: &FrameTarget) -> image:
     ctx.queue.submit([encoder.finish()]);
     gilgamesh::core::readback::read_rgba8(&ctx.device, &ctx.queue, &output)
         .await
-        .unwrap()
+        .expect("Failed to read the blitted test frame")
 }
 
 fn assert_pixel(actual: [u8; 4], expected: [u8; 4]) {

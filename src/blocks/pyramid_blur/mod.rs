@@ -34,7 +34,9 @@ pub fn pyramid_blur(source: Image, levels: u32, graph: &mut RenderGraph<'_>) -> 
             break;
         }
     }
-    let mut blurred = pyramid.pop().unwrap();
+    let mut blurred = pyramid
+        .pop()
+        .expect("A nonzero level count creates at least one blur image");
     for image in pyramid.into_iter().rev() {
         let expanded = upsample(blurred, graph.image_descriptor(image).size, graph);
         blurred = merge_levels(image, expanded, graph);

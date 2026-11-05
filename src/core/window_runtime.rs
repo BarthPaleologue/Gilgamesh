@@ -48,7 +48,9 @@ impl<Application: App> WindowRuntime<Application> {
             }
         }
 
-        let event_loop = EventLoop::<Self>::with_user_event().build().unwrap();
+        let event_loop = EventLoop::<Self>::with_user_event()
+            .build()
+            .expect("Failed to create the window event loop");
         let attributes = Window::default_attributes()
             .with_inner_size(Size::Physical(PhysicalSize { width, height }));
         #[cfg(target_arch = "wasm32")]
@@ -66,7 +68,9 @@ impl<Application: App> WindowRuntime<Application> {
         #[cfg(not(target_arch = "wasm32"))]
         {
             let mut application = application;
-            event_loop.run_app(&mut application).unwrap();
+            event_loop
+                .run_app(&mut application)
+                .expect("Window event loop failed");
         }
 
         #[cfg(target_arch = "wasm32")]
@@ -81,7 +85,9 @@ impl<Application: App> WindowRuntime<Application> {
             wgpu::InstanceDescriptor::new_with_display_handle(Box::new(display)),
         )
         .await;
-        let surface = instance.create_surface(window.clone()).unwrap();
+        let surface = instance
+            .create_surface(window.clone())
+            .expect("Failed to create a presentation surface for the window");
         let wgpu_context = WGPUContext::new(instance, Some(&surface)).await;
         let window_surface = WindowSurface::new(&wgpu_context, surface, window.inner_size());
         let executor = GraphExecutor::from_context(wgpu_context);
@@ -230,7 +236,11 @@ impl<Application: App + 'static> ApplicationHandler<WindowRuntime<Application>>
         }
         self.state = ApplicationState::Initializing;
 
-        let window = Arc::new(event_loop.create_window(self.attributes.clone()).unwrap());
+        let window = Arc::new(
+            event_loop
+                .create_window(self.attributes.clone())
+                .expect("Failed to create the application window"),
+        );
         let display = event_loop.owned_display_handle();
 
         #[cfg(not(target_arch = "wasm32"))]

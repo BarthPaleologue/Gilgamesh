@@ -30,10 +30,11 @@ impl WGPUContext {
         #[cfg(target_arch = "wasm32")]
         let adapter = if compatible_surface.is_none() && adapter.is_err() {
             // WebGL selects its adapter from a canvas, even when no image is presented.
-            let canvas = web_sys::OffscreenCanvas::new(1, 1).unwrap();
+            let canvas = web_sys::OffscreenCanvas::new(1, 1)
+                .expect("Failed to create the offscreen canvas for WebGL adapter selection");
             let surface = instance
                 .create_surface(wgpu::SurfaceTarget::OffscreenCanvas(canvas))
-                .unwrap();
+                .expect("Failed to create the offscreen surface for WebGL adapter selection");
             instance
                 .request_adapter(&wgpu::RequestAdapterOptions {
                     compatible_surface: Some(&surface),
@@ -43,7 +44,7 @@ impl WGPUContext {
         } else {
             adapter
         };
-        let adapter = adapter.unwrap();
+        let adapter = adapter.expect("Failed to find a compatible GPU adapter");
 
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
@@ -66,7 +67,7 @@ impl WGPUContext {
                 ..Default::default()
             })
             .await
-            .unwrap();
+            .expect("Failed to create a GPU device with the required features and limits");
 
         WGPUContext {
             instance,
