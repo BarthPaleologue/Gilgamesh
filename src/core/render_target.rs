@@ -6,6 +6,7 @@ pub struct RenderTarget<'a> {
 }
 
 /// Owns persistent scene attachments, independent of a presentation surface.
+#[must_use]
 pub struct OffscreenTarget {
     pub color: wgpu::TextureView,
     pub depth: wgpu::TextureView,

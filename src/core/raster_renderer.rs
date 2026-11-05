@@ -23,6 +23,7 @@ struct CachedTransform {
     bindings: ObjectBindings,
 }
 
+#[must_use]
 pub struct RasterRenderer {
     pub(crate) frame: FrameBindings,
     pipelines: HashMap<PipelineKey, Rc<MaterialPipeline>>,

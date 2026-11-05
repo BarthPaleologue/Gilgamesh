@@ -65,6 +65,7 @@ impl ColorEncoding for Linear {
 ///     phong.set_normal_map(linear);
 /// }
 /// ```
+#[must_use]
 pub struct Texture<Encoding: ColorEncoding> {
     view: wgpu::TextureView,
     sampler: wgpu::Sampler,

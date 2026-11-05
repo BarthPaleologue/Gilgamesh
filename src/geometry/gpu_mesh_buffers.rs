@@ -28,6 +28,7 @@ impl Vertex {
 }
 
 /// GPU vertex and index buffers, without a retained copy of the CPU geometry.
+#[must_use]
 pub struct GpuMeshBuffers {
     vertex_buffer: Buffer,
     index_buffer: Buffer,
@@ -71,19 +72,23 @@ impl GpuMeshBuffers {
         )
     }
 
+    #[must_use]
     pub fn vertex_buffer(&self) -> &Buffer {
         &self.vertex_buffer
     }
 
+    #[must_use]
     pub fn index_buffer(&self) -> &Buffer {
         &self.index_buffer
     }
 
+    #[must_use]
     pub fn index_count(&self) -> u32 {
         self.index_count
     }
 }
 
+#[must_use]
 pub fn to_gpu_vertices(vertices: &CpuVertexBuffers) -> Vec<Vertex> {
     let nb_vertices = vertices.positions.len();
     let mut data: Vec<Vertex> = Vec::with_capacity(nb_vertices);

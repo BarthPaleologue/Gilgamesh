@@ -67,6 +67,7 @@ impl ImageSize {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[must_use]
 pub struct ImageDescriptor {
     pub size: ImageSize,
     pub format: wgpu::TextureFormat,
@@ -438,6 +439,7 @@ pub struct PassImages<'a> {
 impl PassImages<'_> {
     /// # Panics
     /// Panics if the image does not belong to this graph or was not declared by this pass.
+    #[must_use]
     pub fn get(&self, image: Image) -> &wgpu::TextureView {
         assert!(
             image.graph == self.graph

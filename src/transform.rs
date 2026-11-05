@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 /// A rigid transform composed of a translation and a rotation.
 #[derive(Debug)]
+#[must_use]
 pub struct Transform {
     /// Position in the parent's coordinate space.
     pub position: DVec3,
@@ -64,6 +65,7 @@ impl Transform {
         self.rotation = DQuat::from_rotation_axes(right, corrected_up, back);
     }
 
+    #[must_use]
     pub fn world_matrix(&self) -> DMat4 {
         let mut world_matrix = DMat4::from_rotation_translation(self.rotation, self.position);
 
@@ -75,6 +77,7 @@ impl Transform {
         world_matrix
     }
 
+    #[must_use]
     pub fn world_position(&self) -> DVec3 {
         if let Some(parent) = &self.parent {
             parent
@@ -86,19 +89,23 @@ impl Transform {
         }
     }
 
+    #[must_use]
     pub fn local_direction_to_world(&self, local_direction: DVec3) -> DVec3 {
         (self.rotation * local_direction).normalize()
     }
 
     /// Local -Z expressed in the parent's coordinate space.
+    #[must_use]
     pub fn forward(&self) -> DVec3 {
         self.local_direction_to_world(DVec3::NEG_Z)
     }
 
+    #[must_use]
     pub fn right(&self) -> DVec3 {
         self.local_direction_to_world(DVec3::X)
     }
 
+    #[must_use]
     pub fn up(&self) -> DVec3 {
         self.local_direction_to_world(DVec3::Y)
     }

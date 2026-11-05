@@ -5,6 +5,7 @@ use crate::core::render_target::create_color_view;
 use crate::core::wgpu_context::WGPUContext;
 
 /// Executes borrowed render descriptions and retains their GPU state between renders.
+#[must_use]
 pub struct GraphExecutor {
     wgpu_context: WGPUContext,
     images: Vec<PooledImage>,
@@ -41,6 +42,7 @@ impl GraphExecutor {
         }
     }
 
+    #[must_use]
     pub fn wgpu_context(&self) -> &WGPUContext {
         &self.wgpu_context
     }
@@ -275,11 +277,13 @@ fn create_image(device: &wgpu::Device, label: &str, key: ImageKey) -> wgpu::Text
 }
 
 /// Owns the exported image independently of the executor's intermediate texture pool.
+#[must_use]
 pub struct FrameTarget {
     image: wgpu::TextureView,
 }
 
 impl FrameTarget {
+    #[must_use]
     pub fn output(&self) -> &wgpu::TextureView {
         &self.image
     }

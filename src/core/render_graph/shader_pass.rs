@@ -34,6 +34,7 @@ impl<'a> Binding<'a> {
 }
 
 /// Explicit workgroups or a 2D image domain.
+#[must_use]
 pub enum Dispatch {
     Workgroups([u32; 3]),
     Image {

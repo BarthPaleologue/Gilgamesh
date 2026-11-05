@@ -1,6 +1,7 @@
 use crate::core::fullscreen_pass;
 
 /// A fullscreen fragment pass over equally sized, single-sample textures.
+#[must_use]
 pub struct ColorPass {
     pipeline: wgpu::RenderPipeline,
     source_layout: wgpu::BindGroupLayout,
@@ -35,6 +36,7 @@ impl ColorPass {
         )
     }
 
+    #[must_use]
     pub fn bind_source(
         &self,
         device: &wgpu::Device,

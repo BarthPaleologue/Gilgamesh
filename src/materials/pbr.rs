@@ -3,6 +3,7 @@ use std::rc::Rc;
 
 /// Surface properties, shared independently of any renderer.
 #[derive(Clone)]
+#[must_use]
 pub struct PbrMaterial {
     pub name: String,
 

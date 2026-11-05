@@ -3,6 +3,7 @@ use glam::{Vec2, Vec3};
 
 /// CPU-side vertex attributes and triangle indices, before conversion for GPU upload.
 #[derive(Debug, Default)]
+#[must_use]
 pub struct CpuMeshBuffers {
     pub vertices: CpuVertexBuffers,
     pub indices: Vec<u32>,

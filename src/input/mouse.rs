@@ -1,5 +1,6 @@
 use winit::event::{ElementState, MouseScrollDelta, WindowEvent};
 
+#[must_use]
 pub struct Mouse {
     pub position: [f64; 2],
     pub new_position: [f64; 2],

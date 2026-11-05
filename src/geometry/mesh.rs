@@ -8,6 +8,7 @@ use crate::geometry::gpu_mesh_buffers::GpuMeshBuffers;
 use crate::materials::material::Material;
 use crate::transform::{Transform, Transformable};
 
+#[must_use]
 pub struct Mesh {
     name: String,
     transform: Rc<RefCell<Transform>>,
@@ -57,14 +58,17 @@ impl Mesh {
         self.material = material;
     }
 
+    #[must_use]
     pub fn name(&self) -> &str {
         &self.name
     }
 
+    #[must_use]
     pub fn material(&self) -> &Rc<Material> {
         &self.material
     }
 
+    #[must_use]
     pub fn geometry(&self) -> &GpuMeshBuffers {
         &self.gpu_buffers
     }
