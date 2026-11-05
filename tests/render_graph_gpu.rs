@@ -146,7 +146,7 @@ fn custom_blocks_mrt_compute_caches_and_independent_raster_inputs() {
         material.set_emissive_color(4.0, 1.0, 0.25);
         let mesh = Mesh::from_cpu_buffers(
             "Plane",
-            primitive::plane(2, 2.0),
+            &primitive::plane(2, 2.0),
             Rc::new(material.into()),
             gpu,
         );

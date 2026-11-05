@@ -33,7 +33,7 @@ impl App for SplitScreenDemo {
         ground_material.set_ambient_color(0.02, 0.02, 0.02);
         let ground = Mesh::from_cpu_buffers(
             "Ground",
-            primitive::plane(2, 14.0),
+            &primitive::plane(2, 14.0),
             Rc::new(ground_material.into()),
             ctx,
         );
@@ -43,7 +43,7 @@ impl App for SplitScreenDemo {
         sphere_material.set_ambient_color(0.03, 0.01, 0.005);
         let sphere = Mesh::from_cpu_buffers(
             "Sphere",
-            primitive::sphere(32),
+            &primitive::sphere(32),
             Rc::new(sphere_material.into()),
             ctx,
         );
@@ -54,7 +54,7 @@ impl App for SplitScreenDemo {
         cube_material.set_ambient_color(0.01, 0.02, 0.03);
         let cube = Mesh::from_cpu_buffers(
             "Cube",
-            primitive::cube(),
+            &primitive::cube(),
             Rc::new(cube_material.into()),
             ctx,
         );

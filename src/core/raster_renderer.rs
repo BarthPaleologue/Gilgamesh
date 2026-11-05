@@ -83,7 +83,7 @@ impl RasterRenderer {
 
     pub fn update_frame_bindings(
         &mut self,
-        context: FrameBindingsData<'_>,
+        context: &FrameBindingsData<'_>,
         wgpu_context: &WGPUContext,
     ) {
         self.frame.update(
@@ -100,7 +100,7 @@ impl RasterRenderer {
         render_objects: RenderObjects,
         wgpu_context: &WGPUContext,
         encoder: &mut wgpu::CommandEncoder,
-        target: RenderTarget<'_>,
+        target: &RenderTarget<'_>,
     ) where
         RenderObjects: IntoIterator<Item = &'a Mesh>,
     {

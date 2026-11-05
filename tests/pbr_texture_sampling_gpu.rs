@@ -74,7 +74,7 @@ fn albedo_encodings_match_equivalent_linear_constants() {
     let meshes = [constant, textured, linear_constant, linear_textured].map(|material| {
         Mesh::from_cpu_buffers(
             "Albedo",
-            primitive::plane(2, 4.0),
+            &primitive::plane(2, 4.0),
             Rc::new(material.into()),
             &gpu,
         )
@@ -84,7 +84,7 @@ fn albedo_encodings_match_equivalent_linear_constants() {
     camera.transform_mut().look_at(DVec3::ZERO, DVec3::Y);
     let light = DirectionalLight::default();
     let mut renderer = RasterRenderer::new(&gpu, wgpu::TextureFormat::Rgba8UnormSrgb);
-    renderer.update_frame_bindings(FrameBindingsData::new(&camera, &light, &[]), &gpu);
+    renderer.update_frame_bindings(&FrameBindingsData::new(&camera, &light, &[]), &gpu);
     let mut images = Vec::new();
     for mesh in &meshes {
         let mut encoder = gpu
@@ -94,7 +94,7 @@ fn albedo_encodings_match_equivalent_linear_constants() {
             [mesh],
             &gpu,
             &mut encoder,
-            RenderTarget {
+            &RenderTarget {
                 color: &color_view,
                 depth: &depth_view,
             },
@@ -147,7 +147,7 @@ fn roughness_and_normal_maps_match_equivalent_linear_surface_properties() {
                 }
                 let mesh = Mesh::from_cpu_buffers(
                     "Plane",
-                    primitive::plane(2, 4.0),
+                    &primitive::plane(2, 4.0),
                     Rc::new(material.into()),
                     executor.wgpu_context(),
                 );
@@ -206,7 +206,7 @@ fn roughness_and_normal_maps_match_equivalent_linear_surface_properties() {
             }
             let mesh = Mesh::from_cpu_buffers(
                 "Plane",
-                geometry,
+                &geometry,
                 Rc::new(material.into()),
                 executor.wgpu_context(),
             );
@@ -299,7 +299,7 @@ fn emissive_textures_multiply_linear_hdr_factors_without_received_light() {
             for material in [reference, textured, disabled] {
                 let mesh = Mesh::from_cpu_buffers(
                     "Emitter",
-                    primitive::plane(2, 4.0),
+                    &primitive::plane(2, 4.0),
                     Rc::new(material.into()),
                     executor.wgpu_context(),
                 );

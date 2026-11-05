@@ -29,14 +29,15 @@ impl Transformable for Mesh {
 }
 
 impl Mesh {
-    /// Uploads the geometry and releases the CPU buffers after construction.
+    /// Uploads borrowed geometry without retaining the CPU buffers.
+    /// The caller can reuse or release the CPU data independently of the mesh.
     pub fn from_cpu_buffers(
         name: &str,
-        cpu_buffers: CpuMeshBuffers,
+        cpu_buffers: &CpuMeshBuffers,
         material: Rc<Material>,
         wgpu_context: &WGPUContext,
     ) -> Mesh {
-        let gpu_buffers = GpuMeshBuffers::from_cpu_buffers(&cpu_buffers, wgpu_context);
+        let gpu_buffers = GpuMeshBuffers::from_cpu_buffers(cpu_buffers, wgpu_context);
         Self::from_gpu_buffers(name, gpu_buffers, material)
     }
 

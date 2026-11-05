@@ -31,9 +31,9 @@ fn shared_materials_have_renderer_local_runtime() {
         let material = Rc::new(description);
         let source = Rc::downgrade(&material);
         let mut left =
-            Mesh::from_cpu_buffers("Left", primitive::plane(2, 1.0), material.clone(), &gpu);
+            Mesh::from_cpu_buffers("Left", &primitive::plane(2, 1.0), material.clone(), &gpu);
         let right =
-            Mesh::from_cpu_buffers("Right", primitive::plane(2, 1.0), material.clone(), &gpu);
+            Mesh::from_cpu_buffers("Right", &primitive::plane(2, 1.0), material.clone(), &gpu);
         left.transform_mut().position.x = -1.0;
         right.transform_mut().position.x = 1.0;
         let left_transform = Rc::downgrade(&left.transform_rc());
@@ -44,7 +44,7 @@ fn shared_materials_have_renderer_local_runtime() {
         ]
         .map(|format| {
             let mut renderer = RasterRenderer::new(&gpu, format);
-            renderer.update_frame_bindings(FrameBindingsData::new(&camera, &light, &[]), &gpu);
+            renderer.update_frame_bindings(&FrameBindingsData::new(&camera, &light, &[]), &gpu);
             (renderer, attachment(&gpu.device, format))
         });
 
@@ -76,7 +76,7 @@ fn shared_materials_have_renderer_local_runtime() {
         let mut material = material;
         set_unlit_color(Rc::make_mut(&mut material), [0.0, 0.0, 1.0]);
         assert!(source.upgrade().is_none());
-        let mesh = Mesh::from_cpu_buffers("Edited", primitive::plane(2, 1.0), material, &gpu);
+        let mesh = Mesh::from_cpu_buffers("Edited", &primitive::plane(2, 1.0), material, &gpu);
         for (renderer, color) in &mut renderers {
             let image = render(&gpu, renderer, &[&mesh], color, &depth);
             assert_channel(&image, 32, 2);
@@ -164,7 +164,7 @@ fn render(
         meshes.iter().copied(),
         gpu,
         &mut encoder,
-        RenderTarget {
+        &RenderTarget {
             color: &color.create_view(&wgpu::TextureViewDescriptor::default()),
             depth: &depth.create_view(&wgpu::TextureViewDescriptor::default()),
         },

@@ -71,7 +71,7 @@ impl App for StarSystemDemo {
         sun_material.set_emissive_color(20.0, 20.0, 20.0);
         let sun = Mesh::from_cpu_buffers(
             "Sun",
-            primitive::sphere(32),
+            &primitive::sphere(32),
             Rc::new(sun_material.into()),
             ctx,
         );
@@ -102,7 +102,7 @@ impl App for StarSystemDemo {
         )));
         let earth = Mesh::from_cpu_buffers(
             "Earth",
-            primitive::sphere(32),
+            &primitive::sphere(32),
             Rc::new(earth_material.into()),
             ctx,
         );
@@ -119,7 +119,7 @@ impl App for StarSystemDemo {
         plane_material.roughness = 0.8;
         let plane = Mesh::from_cpu_buffers(
             "Plane",
-            primitive::plane(10, 40.0),
+            &primitive::plane(10, 40.0),
             Rc::new(plane_material.into()),
             ctx,
         );

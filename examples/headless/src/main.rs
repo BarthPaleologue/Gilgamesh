@@ -43,7 +43,7 @@ impl App for HeadlessScene {
         plane_material.set_ambient_color(0.02, 0.02, 0.02);
         let plane = Mesh::from_cpu_buffers(
             "Plane",
-            primitive::plane(2, 8.0),
+            &primitive::plane(2, 8.0),
             Rc::new(plane_material.into()),
             ctx,
         );
@@ -53,7 +53,7 @@ impl App for HeadlessScene {
         sphere_material.set_ambient_color(0.03, 0.01, 0.005);
         let sphere = Mesh::from_cpu_buffers(
             "Sphere",
-            primitive::sphere(32),
+            &primitive::sphere(32),
             Rc::new(sphere_material.into()),
             ctx,
         );

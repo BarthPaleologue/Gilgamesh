@@ -44,12 +44,12 @@ pub fn rasterize<'a>(
             let renderer = context.cache.get_or_insert_with(color_format, || {
                 RasterRenderer::new(context.gpu, color_format)
             });
-            renderer.update_frame_bindings(bindings, context.gpu);
+            renderer.update_frame_bindings(&bindings, context.gpu);
             renderer.encode(
                 meshes,
                 context.gpu,
                 context.encoder,
-                RenderTarget {
+                &RenderTarget {
                     color: context.images.get(color),
                     depth: context.images.get(depth),
                 },

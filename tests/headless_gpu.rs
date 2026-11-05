@@ -190,7 +190,7 @@ impl App for TestApp {
             light,
             mesh: Mesh::from_cpu_buffers(
                 "Plane",
-                primitive::plane(2, 2.0),
+                &primitive::plane(2, 2.0),
                 Rc::new(material.into()),
                 ctx,
             ),

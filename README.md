@@ -106,7 +106,7 @@ impl App for TerrainApp {
         });
         let mut material = BlinnPhongMaterial::new("sincMaterial");
         material.set_diffuse_color(0.5, 0.2, 1.0);
-        let terrain = Mesh::from_cpu_buffers("sinc", cpu_buffers, Rc::new(material.into()), ctx);
+        let terrain = Mesh::from_cpu_buffers("sinc", &cpu_buffers, Rc::new(material.into()), ctx);
 
         Self { camera, orbit_control, terrain, directional_light: DirectionalLight::default() }
     }
