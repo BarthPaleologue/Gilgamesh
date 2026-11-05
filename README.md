@@ -71,18 +71,14 @@ Implement `App` to own and update your camera, controls, and meshes.
 Here is a procedural terrain example:
 
 ```rust,no_run
-use gilgamesh::camera::{Camera, Perspective};
-use gilgamesh::core::app::{App, FrameContext};
-use gilgamesh::core::window_runtime::WindowRuntime;
-use gilgamesh::core::render_context::FrameBindingsData;
-use gilgamesh::core::render_graph::{RenderGraph, TextureFormat};
 use gilgamesh::blocks::{rasterize, tone_map};
-use gilgamesh::core::wgpu_context::WGPUContext;
-use gilgamesh::geometry::mesh::Mesh;
-use gilgamesh::geometry::procedural;
-use gilgamesh::input::orbit_control::OrbitControl;
-use gilgamesh::lights::directional_light::DirectionalLight;
-use gilgamesh::materials::blinn_phong::BlinnPhongMaterial;
+use gilgamesh::camera::{Camera, Perspective};
+use gilgamesh::core::{App, FrameBindingsData, FrameContext, WGPUContext, WindowRuntime};
+use gilgamesh::core::render_graph::{RenderGraph, TextureFormat};
+use gilgamesh::geometry::{Mesh, procedural};
+use gilgamesh::input::OrbitControl;
+use gilgamesh::lights::DirectionalLight;
+use gilgamesh::materials::BlinnPhongMaterial;
 use gilgamesh::transform::Transformable;
 use glam::DQuat;
 use std::rc::Rc;

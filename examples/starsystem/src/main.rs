@@ -1,19 +1,13 @@
 use gilgamesh::blocks::{bloom, rasterize, tone_map};
 use gilgamesh::camera::{Camera, Perspective};
-use gilgamesh::core::app::{App, FrameContext};
-use gilgamesh::core::render_context::FrameBindingsData;
 use gilgamesh::core::render_graph::{RenderGraph, TextureFormat};
-use gilgamesh::core::wgpu_context::WGPUContext;
-use gilgamesh::core::window_runtime::WindowRuntime;
+use gilgamesh::core::{App, FrameBindingsData, FrameContext, WGPUContext, WindowRuntime};
 use gilgamesh::embed_texture;
-use gilgamesh::geometry::mesh::Mesh;
-use gilgamesh::geometry::primitive;
-use gilgamesh::input::orbit_control::OrbitControl;
+use gilgamesh::geometry::{Mesh, primitive};
+use gilgamesh::input::OrbitControl;
 use gilgamesh::lights::debug::create_point_light_debug_mesh;
-use gilgamesh::lights::directional_light::DirectionalLight;
-use gilgamesh::lights::light::Light;
-use gilgamesh::lights::point_light::PointLight;
-use gilgamesh::materials::pbr::PbrMaterial;
+use gilgamesh::lights::{DirectionalLight, Light, PointLight};
+use gilgamesh::materials::PbrMaterial;
 use gilgamesh::texture::{Linear, Srgb};
 use gilgamesh::transform::{Transform, Transformable};
 use glam::{DQuat, DVec3};
@@ -176,8 +170,8 @@ impl App for StarSystemDemo {
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
     use super::StarSystemDemo;
-    use gilgamesh::core::headless_runtime::HeadlessRuntime;
-    use gilgamesh::lights::light::Light;
+    use gilgamesh::core::HeadlessRuntime;
+    use gilgamesh::lights::Light;
     use std::time::Duration;
 
     #[test]

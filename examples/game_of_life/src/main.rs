@@ -1,8 +1,6 @@
 use gilgamesh::blocks::resize_nearest;
-use gilgamesh::core::app::{App, FrameContext};
 use gilgamesh::core::render_graph::{ImageSize, RenderGraph};
-use gilgamesh::core::wgpu_context::WGPUContext;
-use gilgamesh::core::window_runtime::{WindowContext, WindowRuntime};
+use gilgamesh::core::{App, FrameContext, WGPUContext, WindowContext, WindowRuntime};
 use wgpu::{TextureFormat, TextureUsages};
 use winit::event::{ElementState, WindowEvent};
 use winit::keyboard::{KeyCode, PhysicalKey};

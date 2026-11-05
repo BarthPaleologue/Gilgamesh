@@ -9,6 +9,12 @@ pub mod wgpu_context;
 pub mod window_runtime;
 pub mod window_surface;
 
+pub use app::{App, FrameContext};
+pub use headless_runtime::HeadlessRuntime;
+pub use render_context::FrameBindingsData;
+pub use wgpu_context::WGPUContext;
+pub use window_runtime::{WindowContext, WindowRuntime};
+
 pub(crate) mod frame_bindings;
 pub(crate) mod fullscreen_pass;
 pub(crate) mod material_pipeline;

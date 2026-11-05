@@ -15,7 +15,7 @@ fn shaders_are_valid() {
 #[cfg(not(target_arch = "wasm32"))]
 mod gpu {
     use super::super::*;
-    use gilgamesh::core::headless_runtime::HeadlessRuntime;
+    use gilgamesh::core::HeadlessRuntime;
     use std::collections::BTreeSet;
     use std::time::Duration;
 

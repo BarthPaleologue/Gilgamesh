@@ -2,7 +2,7 @@
 mod gpu {
     use super::super::*;
     use gilgamesh::core::graph_executor::{FrameTarget, GraphExecutor};
-    use gilgamesh::input::mouse::Mouse;
+    use gilgamesh::input::Mouse;
     use glam::DVec4;
     use winit::dpi::PhysicalPosition;
     use winit::event::DeviceId;

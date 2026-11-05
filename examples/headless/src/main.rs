@@ -1,13 +1,10 @@
 use gilgamesh::blocks::{rasterize, tone_map};
 use gilgamesh::camera::{Camera, Perspective};
-use gilgamesh::core::app::App;
-use gilgamesh::core::headless_runtime::HeadlessRuntime;
-use gilgamesh::core::render_context::FrameBindingsData;
 use gilgamesh::core::render_graph::{RenderGraph, TextureFormat};
-use gilgamesh::core::wgpu_context::WGPUContext;
-use gilgamesh::geometry::{mesh::Mesh, primitive};
-use gilgamesh::lights::directional_light::DirectionalLight;
-use gilgamesh::materials::blinn_phong::BlinnPhongMaterial;
+use gilgamesh::core::{App, FrameBindingsData, HeadlessRuntime, WGPUContext};
+use gilgamesh::geometry::{Mesh, primitive};
+use gilgamesh::lights::DirectionalLight;
+use gilgamesh::materials::BlinnPhongMaterial;
 use gilgamesh::transform::Transformable;
 use glam::DVec3;
 use std::rc::Rc;
