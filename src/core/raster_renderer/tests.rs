@@ -2,6 +2,7 @@ use super::*;
 use crate::camera::{Camera, Orthographic};
 use crate::geometry::primitive;
 use crate::lights::directional_light::DirectionalLight;
+use crate::materials::PbrMaterial;
 use crate::photometry::{Lux, Nits};
 use glam::DVec3;
 
@@ -77,6 +78,8 @@ fn shared_materials_have_renderer_local_runtime() {
     let mut material = material;
     set_unlit_color(Rc::make_mut(&mut material), [0.0, 0.0, 1.0]);
     assert!(source.upgrade().is_none());
+    let mut description = material.as_ref().clone();
+    description.set_double_sided(true);
     let mesh = Mesh::from_cpu_buffers("Edited", &primitive::plane(2, 1.0), material, &gpu);
     for (renderer, color) in &mut renderers {
         let image = render(&gpu, renderer, &[&mesh], color, &depth);
@@ -102,8 +105,6 @@ fn shared_materials_have_renderer_local_runtime() {
     assert!(left_transform.upgrade().is_none());
     assert!(right_transform.upgrade().is_none());
 
-    let mut description = mesh.material().as_ref().clone();
-    description.set_double_sided(true);
     let mut mesh = mesh;
     mesh.transform_mut().rotation = glam::DQuat::from_rotation_x(std::f64::consts::PI);
     let (renderer, color) = &mut renderers[0];

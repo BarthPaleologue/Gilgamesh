@@ -84,3 +84,111 @@ impl PbrMaterial {
         self.double_sided = double_sided;
     }
 }
+
+impl super::Material for PbrMaterial {
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn raster(&self) -> super::RasterMaterial<'_> {
+        use crate::texture::SampledTexture;
+
+        let mut raster =
+            super::RasterMaterial::new(include_str!("../shader/pbr.wgsl"), PbrUniforms::from(self));
+        raster.double_sided = self.double_sided;
+        raster.textures = vec![
+            self.albedo_texture
+                .as_ref()
+                .map(|t| t as &dyn SampledTexture),
+            self.emissive_texture
+                .as_ref()
+                .map(|t| t as &dyn SampledTexture),
+            self.normal_map.as_deref().map(|t| t as &dyn SampledTexture),
+            None,
+            self.roughness_map
+                .as_deref()
+                .map(|t| t as &dyn SampledTexture),
+        ];
+        raster
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+struct PbrUniforms {
+    albedo_color: [f32; 3],
+    has_albedo_texture: u32,
+
+    emissive_color: [f32; 3],
+    has_emissive_texture: u32,
+
+    metallic: f32,
+    has_metallic_texture: u32,
+    roughness: f32,
+    has_roughness_texture: u32,
+
+    has_normal_map: u32,
+    _padding: [u32; 3],
+}
+
+impl From<&PbrMaterial> for PbrUniforms {
+    fn from(material: &PbrMaterial) -> Self {
+        PbrUniforms {
+            albedo_color: material.albedo_color,
+            has_albedo_texture: u32::from(material.albedo_texture.is_some()),
+            emissive_color: material
+                .emissive_color
+                .map(|c| c * material.emissive_luminance.value()),
+            has_emissive_texture: u32::from(material.emissive_texture.is_some()),
+            metallic: material.metallic,
+            has_metallic_texture: 0,
+            roughness: material.roughness,
+            has_roughness_texture: u32::from(material.roughness_map.is_some()),
+            has_normal_map: u32::from(material.normal_map.is_some()),
+            _padding: [0; 3],
+        }
+    }
+}
+
+#[cfg(test)]
+mod pbr_tests {
+    use super::{PbrMaterial, PbrUniforms};
+    use crate::photometry::Nits;
+
+    #[test]
+    fn constant_colors_can_be_configured_without_texture_resources() {
+        let mut material = PbrMaterial::new("Constant");
+        assert!(material.albedo_texture.is_none());
+        assert!(material.emissive_texture.is_none());
+        assert_eq!(PbrUniforms::from(&material).emissive_color, [0.0; 3]);
+        assert!(material.normal_map.is_none());
+        assert!(material.roughness_map.is_none());
+        material.set_albedo_color(0.2, 0.3, 0.4);
+        material.set_emissive_luminance(Nits::new(2.0));
+        material.set_emissive_color(0.1, 0.0, 0.2);
+
+        let uniforms = PbrUniforms::from(&material);
+        assert_eq!(uniforms.albedo_color, [0.2, 0.3, 0.4]);
+        assert_eq!(uniforms.emissive_color, [0.2, 0.0, 0.4]);
+        assert_eq!(uniforms.metallic, 0.0);
+        assert_eq!(uniforms.roughness, 0.4);
+        assert_eq!(
+            [
+                uniforms.has_albedo_texture,
+                uniforms.has_emissive_texture,
+                uniforms.has_normal_map,
+                uniforms.has_metallic_texture,
+                uniforms.has_roughness_texture,
+            ],
+            [0; 5],
+        );
+    }
+
+    #[test]
+    fn gpu_uniforms_match_shader_layout() {
+        assert_eq!(std::mem::size_of::<PbrUniforms>(), 64);
+        assert_eq!(std::mem::offset_of!(PbrUniforms, emissive_color), 16);
+        assert_eq!(std::mem::offset_of!(PbrUniforms, metallic), 32);
+        assert_eq!(std::mem::offset_of!(PbrUniforms, roughness), 40);
+    }
+}

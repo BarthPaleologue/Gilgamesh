@@ -11,7 +11,11 @@ use glam::DVec3;
 use std::rc::Rc;
 use std::time::Duration;
 
+mod checker;
 mod output;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod tests;
 
 fn main() {
     HeadlessRuntime::<HeadlessScene>::run(800, 600, async |mut runtime| {
@@ -39,10 +43,10 @@ impl App for HeadlessScene {
             .transform_mut()
             .look_at(DVec3::new(0.0, 0.75, 0.0), DVec3::Y);
 
-        let mut plane_material = PbrMaterial::new("Ground");
-        plane_material.set_albedo_color(0.3, 0.35, 0.4);
-        plane_material.set_emissive_luminance(Nits::new(10_000.0));
-        plane_material.set_emissive_color(0.02, 0.02, 0.02);
+        let plane_material = checker::CheckerMaterial {
+            colors: [[2_000.0, 3_000.0, 4_000.0], [8_000.0, 9_000.0, 10_000.0]],
+            scale: 8.0,
+        };
         let plane = Mesh::from_cpu_buffers(
             "Plane",
             &primitive::plane(2, 8.0),

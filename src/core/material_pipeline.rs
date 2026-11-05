@@ -6,6 +6,8 @@ use crate::texture;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct PipelineConfig {
+    pub shader_source: &'static str,
+    pub texture_count: usize,
     pub polygon_mode: wgpu::PolygonMode,
     pub back_face_culling: bool,
 }
@@ -28,13 +30,17 @@ impl MaterialPipeline {
             .device
             .create_shader_module(wgpu::ShaderModuleDescriptor {
                 label: Some("Material Shader"),
-                source: wgpu::ShaderSource::Wgsl(include_str!("../shader/pbr.wgsl").into()),
+                source: wgpu::ShaderSource::Wgsl(
+                    [include_str!("../shader/raster.wgsl"), config.shader_source]
+                        .join("\n")
+                        .into(),
+                ),
             });
         let material_layout =
             ctx.device
                 .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                     label: Some("Material Bind Group Layout"),
-                    entries: &material_bind_group_layout_entries(),
+                    entries: &material_bind_group_layout_entries(config.texture_count),
                 });
         let pipeline_layout = ctx
             .device
@@ -97,9 +103,9 @@ impl MaterialPipeline {
     }
 }
 
-fn material_bind_group_layout_entries() -> Vec<wgpu::BindGroupLayoutEntry> {
+fn material_bind_group_layout_entries(texture_count: usize) -> Vec<wgpu::BindGroupLayoutEntry> {
     let mut entries = vec![uniform_layout_entry(0)];
-    entries.extend((0..5).flat_map(|i| {
+    entries.extend((0..texture_count).flat_map(|i| {
         texture::bind_group_layout_entries(
             1 + 2 * u32::try_from(i).expect("Material texture index fits in u32"),
         )
@@ -110,15 +116,18 @@ fn material_bind_group_layout_entries() -> Vec<wgpu::BindGroupLayoutEntry> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::materials::{Material, PbrMaterial};
 
     #[test]
     fn material_layouts_match_the_shader_binding_types_and_uniform_sizes() {
-        let source = include_str!("../shader/pbr.wgsl");
-        let uniform_size = std::mem::size_of::<crate::core::prepared_material::PbrUniforms>();
-        let module = naga::front::wgsl::parse_str(source).unwrap();
+        let material = PbrMaterial::new("PBR layout");
+        let raster = material.raster();
+        let source = [include_str!("../shader/raster.wgsl"), raster.shader_source].join("\n");
+        let uniform_size = raster.uniforms.len();
+        let module = naga::front::wgsl::parse_str(&source).unwrap();
         let mut layouter = naga::proc::Layouter::default();
         layouter.update(module.to_ctx()).unwrap();
-        let entries = material_bind_group_layout_entries();
+        let entries = material_bind_group_layout_entries(raster.textures.len());
         let variables: Vec<_> = module
             .global_variables
             .iter()

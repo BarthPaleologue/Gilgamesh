@@ -6,7 +6,7 @@ use crate::core::render_context::FrameBindingsData;
 use crate::core::render_target::RenderTarget;
 use crate::core::wgpu_context::WGPUContext;
 use crate::geometry::mesh::Mesh;
-use crate::materials::pbr::PbrMaterial;
+use crate::materials::material::Material;
 use crate::texture::{Linear, Texture};
 use crate::transform::{Transform, Transformable};
 use std::cell::RefCell;
@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 
 struct CachedMaterial {
-    source: Weak<PbrMaterial>,
+    source: Weak<dyn Material>,
     prepared: PreparedMaterial,
 }
 
@@ -27,7 +27,7 @@ struct CachedTransform {
 pub struct RasterRenderer {
     pub(crate) frame: FrameBindings,
     pipelines: HashMap<PipelineConfig, Rc<MaterialPipeline>>,
-    materials: HashMap<*const PbrMaterial, CachedMaterial>,
+    materials: HashMap<*const (), CachedMaterial>,
     transforms: HashMap<*const RefCell<Transform>, CachedTransform>,
     object_layout: wgpu::BindGroupLayout,
     pub(crate) fallback_texture: Texture<Linear>,
@@ -141,11 +141,11 @@ impl RasterRenderer {
 
     fn render_mesh(&mut self, mesh: &Mesh, pass: &mut wgpu::RenderPass<'_>, ctx: &WGPUContext) {
         let material = mesh.material();
-        let material_key = Rc::as_ptr(material);
+        let material_key = Rc::as_ptr(material).cast::<()>();
         // The weak reference keeps the allocation's identity stable and makes edits
         // through Rc::make_mut detach from any previously prepared description.
         if !self.materials.contains_key(&material_key) {
-            let prepared = PreparedMaterial::new(material, self.polygon_mode, self, ctx);
+            let prepared = PreparedMaterial::new(material.as_ref(), self.polygon_mode, self, ctx);
             self.materials.insert(
                 material_key,
                 CachedMaterial {

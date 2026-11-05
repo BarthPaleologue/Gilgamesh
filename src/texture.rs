@@ -102,7 +102,7 @@ impl From<Rc<Texture<Linear>>> for ColorTexture {
 }
 
 /// Supplies GPU bindings independently of the texture's storage encoding.
-pub(crate) trait SampledTexture {
+pub trait SampledTexture {
     fn create_bind_group_entries(&self, start_index: u32) -> [wgpu::BindGroupEntry<'_>; 2];
 }
 

@@ -134,6 +134,11 @@ fn main() {
 }
 ```
 
+Applications can implement `materials::Material` to supply their own raster shader,
+uniforms and textures. `PbrMaterial` uses this same contract. See the
+[headless checkerboard material](examples/headless/src/checker.rs) and its
+[WGSL shader](examples/headless/src/checker.wgsl) for an example.
+
 ## About
 
 Loosely based

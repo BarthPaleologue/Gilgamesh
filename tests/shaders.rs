@@ -11,7 +11,11 @@ fn validate_shader(source: &str) -> naga::Module {
 
 #[test]
 fn pbr_shader_is_valid() {
-    validate_shader(include_str!("../src/shader/pbr.wgsl"));
+    validate_shader(concat!(
+        include_str!("../src/shader/raster.wgsl"),
+        "\n",
+        include_str!("../src/shader/pbr.wgsl")
+    ));
 }
 
 #[test]
@@ -32,10 +36,12 @@ fn rendering_shaders_translate_to_webgl2() {
         include_str!("../src/core/image_blit.wgsl"),
     ]
     .map(|fragment| [include_str!("../src/core/fullscreen_pass.wgsl"), fragment].join("\n"));
-    for source in fullscreen_sources
-        .into_iter()
-        .chain([include_str!("../src/shader/pbr.wgsl").to_owned()])
-    {
+    let material_sources = [
+        include_str!("../src/shader/pbr.wgsl"),
+        include_str!("../examples/headless/src/checker.wgsl"),
+    ]
+    .map(|material| [include_str!("../src/shader/raster.wgsl"), material].join("\n"));
+    for source in fullscreen_sources.into_iter().chain(material_sources) {
         let module = validate_shader(&source);
         let info = Validator::new(ValidationFlags::all(), Capabilities::empty())
             .validate(&module)
@@ -69,7 +75,11 @@ fn rendering_shaders_translate_to_webgl2() {
 
 #[test]
 fn uniform_bindings_have_webgl_compatible_sizes() {
-    let source = include_str!("../src/shader/pbr.wgsl");
+    let source = concat!(
+        include_str!("../src/shader/raster.wgsl"),
+        "\n",
+        include_str!("../src/shader/pbr.wgsl")
+    );
     let module = validate_shader(source);
     let mut layouter = naga::proc::Layouter::default();
     layouter.update(module.to_ctx()).unwrap();
@@ -108,7 +118,11 @@ fn uniform_bindings_have_webgl_compatible_sizes() {
 
 #[test]
 fn shader_bindings_separate_frame_material_and_object_data() {
-    let source = include_str!("../src/shader/pbr.wgsl");
+    let source = concat!(
+        include_str!("../src/shader/raster.wgsl"),
+        "\n",
+        include_str!("../src/shader/pbr.wgsl")
+    );
     let module = validate_shader(source);
     let bindings: std::collections::BTreeSet<_> = module
         .global_variables
